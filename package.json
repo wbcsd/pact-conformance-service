@@ -23,6 +23,8 @@
     "@aws-sdk/lib-dynamodb": "^3.734.0",
     "@types/aws-lambda": "^8.10.147",
     "@types/jsonwebtoken": "^9.0.9",
+    "pg": "^8.11.3",
+    "@types/pg": "^8.10.9",
     "ajv": "^8.17.1",
     "ajv-errors": "^3.0.0",
     "ajv-formats": "^3.0.1",
