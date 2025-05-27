@@ -1,6 +1,6 @@
-# Pathfinder API V3 Test Cases - Expected Results
+# PACT API V3 Test Cases - Expected Results
 
-This document outlines the test cases used to validate Pathfinder API V3 implementations, their expected responses, and example payloads.
+This document outlines the test cases used to validate PACT API V3 implementations, their expected responses, and example payloads.
 
 ## Test Case #1: Obtain auth token with valid credentials
 
@@ -696,7 +696,7 @@ Example valid response body:
   "access_token": "eyJhbGciOiJSUzI...",
   "token_type": "Bearer",
   "expires_in": 3600,
-  "scope": "pathfinder.read"
+  "scope": "PACT.read"
 }
 ```
 
