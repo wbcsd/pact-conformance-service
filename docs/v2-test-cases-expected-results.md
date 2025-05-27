@@ -1,4 +1,4 @@
-# PACT API V2 Test Cases - Expected Results
+# PACT Tech Specs Test Cases - Expected Results
 
 This document outlines the test cases used to validate PACT API V2 implementations, their expected responses, and example payloads.
 
