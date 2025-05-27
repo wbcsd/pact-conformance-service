@@ -1,6 +1,6 @@
-# Pathfinder API V2 Test Cases - Expected Results
+# PACT API V2 Test Cases - Expected Results
 
-This document outlines the test cases used to validate Pathfinder API V2 implementations, their expected responses, and example payloads.
+This document outlines the test cases used to validate PACT API V2 implementations, their expected responses, and example payloads.
 
 ## Test Case #1: Obtain auth token with valid credentials
 
@@ -368,7 +368,7 @@ Request body:
   "id": "test-run-id-12345",
   "source": "https://webhook.example.com",
   "time": "2023-05-19T10:30:00Z",
-  "type": "org.wbcsd.pathfinder.ProductFootprintRequest.Created.v1",
+  "type": "org.wbcsd.PACT.ProductFootprintRequest.Created.v1",
   "data": {
     "pf": {
       "productIds": ["urn:gtin:1234567890123"]
@@ -409,7 +409,7 @@ Request body:
 
 ```
 {
-  "type": "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
+  "type": "org.wbcsd.PACT.ProductFootprintRequest.Fulfilled.v1",
   "specversion": "1.0",
   "id": "505e5d-4f9b-4b3b-9c05bc35-68f8",
   "source": "https://webhook.example.com",
@@ -485,7 +485,7 @@ Request body:
 
 ```
 {
-  "type": "org.wbcsd.pathfinder.ProductFootprintRequest.Rejected.v1",
+  "type": "org.wbcsd.PACT.ProductFootprintRequest.Rejected.v1",
   "specversion": "1.0",
   "id": "505e5d-4f9b-4b3b-9c05bc35-68f8",
   "source": "https://webhook.example.com",
@@ -531,7 +531,7 @@ Request body:
 
 ```
 {
-  "type": "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+  "type": "org.wbcsd.PACT.ProductFootprint.Published.v1",
   "specversion": "1.0",
   "id": "123e4567-e89b-12d3-a456-426614174000",
   "source": "https://webhook.example.com",
@@ -573,7 +573,7 @@ Request body:
 
 ```
 {
-  "type": "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+  "type": "org.wbcsd.PACT.ProductFootprint.Published.v1",
   "specversion": "1.0",
   "id": "test-run-id-12345",
   "source": "https://webhook.example.com",
@@ -619,7 +619,7 @@ Request body:
   "id": "test-run-id-12345",
   "source": "https://webhook.example.com",
   "time": "2023-05-19T13:30:00Z",
-  "type": "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+  "type": "org.wbcsd.PACT.ProductFootprint.Published.v1",
   "data": {
     "pf": {
       "productIds": ["urn:gtin:4712345060507"]
@@ -657,7 +657,7 @@ Example valid response body:
   "access_token": "eyJhbGciOiJSUzI...",
   "token_type": "Bearer",
   "expires_in": 3600,
-  "scope": "pathfinder.read"
+  "scope": "PACT.read"
 }
 ```
 
