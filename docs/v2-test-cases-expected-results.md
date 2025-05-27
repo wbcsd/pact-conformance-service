@@ -196,14 +196,16 @@ Example valid response body:
       "productDescription": "Biodiesel (bulk - no packaging)",
       "productIds": ["urn:gtin:1234567890789"]
     }
-  ],
-  "links": {
-    "first": "{API_BASE_URL}/2/footprints?page=1&pageSize=10",
-    "prev": "{API_BASE_URL}/2/footprints?page=1&pageSize=10",
-    "next": "{API_BASE_URL}/2/footprints?page=3&pageSize=10",
-    "last": "{API_BASE_URL}/2/footprints?page=5&pageSize=10"
-  }
+  ]
 }
+```
+
+Response headers:
+
+```
+
+Link: <{API_BASE_URL}/2/footprints?offset=1&limit=10>; rel="first", <{API_BASE_URL}/2/footprints?offset=1&limit=10>; rel="prev", <{API_BASE_URL}/2/footprints?offset=3&limit=10>; rel="next", <{API_BASE_URL}/2/footprints?offset=5&limit=10>; rel="last"
+
 ```
 
 ## Test Case #6: Attempt ListFootPrints with Invalid Token

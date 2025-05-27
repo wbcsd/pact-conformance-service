@@ -237,14 +237,16 @@ Example valid response body:
         "urn:eclass:0173-1#01-CCC789#005"
       ]
     }
-  ],
-  "links": {
-    "first": "{API_BASE_URL}/3/footprints?page=1&pageSize=10",
-    "prev": "{API_BASE_URL}/3/footprints?page=1&pageSize=10",
-    "next": "{API_BASE_URL}/3/footprints?page=3&pageSize=10",
-    "last": "{API_BASE_URL}/3/footprints?page=5&pageSize=10"
-  }
+  ]
 }
+```
+
+Response headers:
+
+```
+
+Link: <{API_BASE_URL}/3/footprints?offset=1&limit=10>; rel="first", <{API_BASE_URL}/3/footprints?offset=1&limit=10>; rel="prev", <{API_BASE_URL}/3/footprints?offset=3&limit=10>; rel="next", <{API_BASE_URL}/3/footprints?offset=5&limit=10>; rel="last"
+
 ```
 
 ## Test Case #6: Attempt ListFootPrints with Invalid Token
@@ -733,7 +735,7 @@ This test verifies the filtering capabilities of the ListFootprints API using th
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?$productId=urn:gtin:1234567890123`
+- Endpoint: `{API_BASE_URL}/3/footprints?productId=urn:gtin:1234567890123`
 
 Request headers:
 
@@ -778,7 +780,7 @@ This test verifies the filtering capabilities of the ListFootprints API using th
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?$companyId=urn:uuid:abc12345-6789-4def-0123-456789abcdef`
+- Endpoint: `{API_BASE_URL}/3/footprints?companyId=urn:uuid:abc12345-6789-4def-0123-456789abcdef`
 
 Request headers:
 
@@ -820,7 +822,7 @@ This test verifies the filtering capabilities of the ListFootprints API using th
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?$geography=DE`
+- Endpoint: `{API_BASE_URL}/3/footprints?geography=DE`
 
 Request headers:
 
@@ -872,7 +874,7 @@ This test verifies the filtering capabilities of the ListFootprints API using th
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?$classification=urn:eclass:0173-1#01-AAA123#005`
+- Endpoint: `{API_BASE_URL}/3/footprints?classification=urn:eclass:0173-1#01-AAA123#005`
 
 Request headers:
 
@@ -917,7 +919,7 @@ This test verifies the filtering capabilities of the ListFootprints API using th
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?$validOn=2023-01-15T10:15:30Z`
+- Endpoint: `{API_BASE_URL}/3/footprints?validOn=2023-01-15T10:15:30Z`
 
 Request headers:
 
@@ -959,7 +961,7 @@ This test verifies the filtering capabilities of the ListFootprints API using th
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?$validAfter=2023-01-14T10:15:30Z`
+- Endpoint: `{API_BASE_URL}/3/footprints?validAfter=2023-01-14T10:15:30Z`
 
 Request headers:
 
@@ -1001,7 +1003,7 @@ This test verifies the filtering capabilities of the ListFootprints API using th
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?$validBefore=2026-01-01T00:00:00Z`
+- Endpoint: `{API_BASE_URL}/3/footprints?validBefore=2026-01-01T00:00:00Z`
 
 Request headers:
 
@@ -1043,7 +1045,7 @@ This test verifies the filtering capabilities of the ListFootprints API using th
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?$status=Active`
+- Endpoint: `{API_BASE_URL}/3/footprints?status=Active`
 
 Request headers:
 
@@ -1085,7 +1087,7 @@ This test verifies the filtering capabilities of the ListFootprints API using mu
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?$status=Active&$productId=urn:gtin:1234567890123`
+- Endpoint: `{API_BASE_URL}/3/footprints?status=Active&productId=urn:gtin:1234567890123`
 
 Request headers:
 
