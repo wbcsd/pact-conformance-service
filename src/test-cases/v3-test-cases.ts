@@ -28,6 +28,10 @@ interface FootprintsData {
   data: Footprint[];
 }
 
+function isValidDate(date: Date) {
+  return date instanceof Date && !isNaN(date.getTime());
+}
+
 const getFilterParameters = (footprints: FootprintsData) => {
   if (!footprints.data?.[0]) {
     throw new Error(
@@ -38,6 +42,16 @@ const getFilterParameters = (footprints: FootprintsData) => {
   const firstFootprint = footprints.data[0];
 
   // TODO validate required params are present
+  if (
+    !firstFootprint.validityPeriodStart ||
+    !firstFootprint.validityPeriodEnd ||
+    !isValidDate(new Date(firstFootprint.validityPeriodStart)) ||
+    !isValidDate(new Date(firstFootprint.validityPeriodEnd))
+  ) {
+    throw new Error(
+      "Invalid footprints data: Missing or invalid validityPeriodStart or validityPeriodEnd in the first footprint from the list. Please check the API response."
+    );
+  }
 
   return {
     productId: firstFootprint.productIds[0],
