@@ -16,6 +16,7 @@ export interface Database {
   getTestResults(testRunId: string): Promise<{
     testRunId: string;
     timestamp?: string;
+    techSpecVersion?: string;
     results: TestResult[];
   }>;
   saveTestData(testRunId: string, testData: TestData): Promise<void>;
