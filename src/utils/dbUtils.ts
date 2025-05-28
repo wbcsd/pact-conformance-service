@@ -95,18 +95,22 @@ export const saveTestCaseResults = async (
 ): Promise<void> => {
   console.log(`Saving ${testResults.length} test cases...`);
 
-  // Process test results sequentially
-  for (const testResult of testResults) {
-    try {
-      await saveTestCaseResult(testRunId, testResult, false);
-    } catch (error: any) {
-      console.error(`Failed to save test case ${testResult.name}:`, error);
+  const results = await Promise.allSettled(
+    testResults.map((testResult) =>
+      saveTestCaseResult(testRunId, testResult, false)
+    )
+  );
 
-      if (error.name === "ConditionalCheckFailedException") {
+  for (const result of results) {
+    if (result.status === "rejected") {
+      console.error("Failed to save test case:", result.reason);
+      if (result.reason.name === "ConditionalCheckFailedException") {
         console.debug("Item already exists, no action taken.");
       } else {
-        throw error;
+        throw result.reason;
       }
+    } else {
+      console.log("Test case saved successfully:", result.value);
     }
   }
 
