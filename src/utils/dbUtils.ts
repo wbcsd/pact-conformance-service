@@ -109,8 +109,6 @@ export const saveTestCaseResults = async (
       } else {
         throw result.reason;
       }
-    } else {
-      console.log("Test case saved successfully:", result.value);
     }
   }
 
