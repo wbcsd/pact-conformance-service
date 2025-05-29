@@ -233,7 +233,7 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints/random-string-as-id-${randomString(16)}`,
       expectedStatusCodes: [404],
       condition: ({ code }) => {
-        return code === "NoSuchFootprint";
+        return code === "NotFound";
       },
       conditionErrorMessage: `Expected error code NoSuchFootprint in response.`,
       mandatoryVersion: ["V3.0"],
