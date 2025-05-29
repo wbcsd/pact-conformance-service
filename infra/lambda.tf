@@ -10,8 +10,9 @@ resource "aws_lambda_function" "run_test_cases" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE_NAME = aws_dynamodb_table.run_test_cases_table.name
-      WEBHOOK_URL         = "${aws_apigatewayv2_api.http_api.api_endpoint}/2/events"
+      DYNAMODB_TABLE_NAME      = aws_dynamodb_table.run_test_cases_table.name
+      WEBHOOK_URL              = "${aws_apigatewayv2_api.http_api.api_endpoint}/2/events"
+      DEFAULT_FETCH_TIMEOUT_MS = "5000"
     }
   }
 }
