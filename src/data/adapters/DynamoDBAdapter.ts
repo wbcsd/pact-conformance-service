@@ -82,14 +82,19 @@ export class DynamoDBAdapter implements Database {
   ): Promise<void> {
     console.log(`Saving ${testResults.length} test cases...`);
 
-    for (const testResult of testResults) {
-      try {
-        await this.saveTestCaseResult(testRunId, testResult, false);
-      } catch (error: any) {
-        if (error.name === "ConditionalCheckFailedException") {
+    const results = await Promise.allSettled(
+      testResults.map((testResult) =>
+        this.saveTestCaseResult(testRunId, testResult, false)
+      )
+    );
+
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error("Failed to save test case:", result.reason);
+        if (result.reason.name === "ConditionalCheckFailedException") {
           console.debug("Item already exists, no action taken.");
         } else {
-          throw error;
+          throw result.reason;
         }
       }
     }
