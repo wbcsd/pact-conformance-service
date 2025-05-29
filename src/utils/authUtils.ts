@@ -53,13 +53,26 @@ export const getAccessToken = async (
   baseUrl: string,
   clientId: string,
   clientSecret: string,
-  customAuthUrl?: string
+  customAuthUrl?: string,
+  scope?: string,
+  audience?: string,
+  resource?: string
 ): Promise<string> => {
   const url = customAuthUrl || `${baseUrl}/auth/token`;
 
   const encodedCredentials = Buffer.from(
     `${clientId}:${clientSecret}`
   ).toString("base64");
+
+  // Add scope, audience and resource to the body
+  // Make sure to url encode things, otherwise it will not work
+  // Only include scope, audience and resource if they are provided
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    ...(scope && { scope }),
+    ...(audience && { audience }),
+    ...(resource && { resource })
+  });
 
   const response = await fetch(url, {
     method: "POST",
@@ -68,7 +81,7 @@ export const getAccessToken = async (
       "Content-Type": "application/x-www-form-urlencoded",
       Authorization: `Basic ${encodedCredentials}`,
     },
-    body: "grant_type=client_credentials",
+    body: body.toString()
   });
 
   if (!response.ok) {
