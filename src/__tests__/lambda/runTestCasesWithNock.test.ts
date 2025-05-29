@@ -372,7 +372,7 @@ describe("runTestCases Lambda handler with nock", () => {
     // Mock for Test Case 8: Non-existent footprint
     persistentNock(mockBaseUrl)
       .get(/\/3\/footprints\/random-string-as-id/)
-      .reply(404, { code: "NoSuchFootprint", message: "Footprint not found" });
+      .reply(404, { code: "NotFound", message: "Footprint not found" });
 
     // Mock for Test Case 12 & 16: Events
     persistentNock(mockBaseUrl).post("/3/events").reply(200);

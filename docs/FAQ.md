@@ -10,6 +10,6 @@ Mandatory functionality of the PACT Technical Specifications are tested. The too
 ### How is Authentication information handled?
 ACT requires users to provide the Solution API URl and `client_id` and `client_secret` to authentication to their solution and run tests. This authentication information is only stored in memory during testing and will never be saved nor transferred.
 
-### What is the time duration of the tests?
-30 seconds. Some tests are evaluated immediately (i.e. via synchronous requests); those tests that require an asynchronous response is evaluated for a duration of 30 seconds, after which if the response is not received, the test is marked as failed. 
+### Is there a time duration for the testing suite?
+Yes, the conformance tool expects the test solution responds to each test case after some duration, and if a response is not received by this duration (i.e. timeout duration), the test case fails. The timeout differs between synchronous and asynchronous test cases; for synchronous test cases, the time duration is 2 seconds. For asynchronous test cases, it is 30 seconds.
 

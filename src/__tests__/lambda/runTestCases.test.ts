@@ -5,6 +5,7 @@ import * as runTestCaseModule from "../../utils/runTestCase";
 import * as dbUtils from "../../utils/dbUtils";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { mockFootprintsV3 } from "../mocks/footprints";
+import { TestResultStatus } from "../../types/types";
 
 // Mock the environment variables
 process.env.WEBHOOK_URL = "https://webhook.test.url";
@@ -75,7 +76,7 @@ describe("runTestCases Lambda handler general tests", () => {
     // Mock the test case runner to return success by default
     (runTestCaseModule.runTestCase as jest.Mock).mockResolvedValue({
       name: "Test Case",
-      status: "SUCCESS",
+      status: TestResultStatus.SUCCESS,
       success: true,
       mandatory: true,
       testKey: "TESTCASE#1",
@@ -105,7 +106,7 @@ describe("runTestCases Lambda handler general tests", () => {
         if (testCase.testKey === "TESTCASE#4") {
           return Promise.resolve({
             name: testCase.name,
-            status: "FAILURE",
+            status: TestResultStatus.FAILURE,
             success: false,
             errorMessage: "Test failed",
             mandatory: true,
@@ -114,7 +115,7 @@ describe("runTestCases Lambda handler general tests", () => {
         }
         return Promise.resolve({
           name: testCase.name,
-          status: "SUCCESS",
+          status: TestResultStatus.SUCCESS,
           success: true,
           mandatory: true,
           testKey: testCase.testKey,
@@ -194,7 +195,7 @@ describe("runTestCases Lambda handler general tests", () => {
         if (testCase.testKey === "TESTCASE#4") {
           return Promise.resolve({
             name: testCase.name,
-            status: "FAILURE",
+            status: TestResultStatus.FAILURE,
             success: false,
             errorMessage: "Mandatory test failed",
             mandatory: true,
@@ -206,7 +207,7 @@ describe("runTestCases Lambda handler general tests", () => {
         if (testCase.testKey === "TESTCASE#12") {
           return Promise.resolve({
             name: testCase.name,
-            status: "FAILURE",
+            status: TestResultStatus.FAILURE,
             success: false,
             errorMessage: "Optional test failed",
             mandatory: false,
@@ -216,7 +217,7 @@ describe("runTestCases Lambda handler general tests", () => {
 
         return Promise.resolve({
           name: testCase.name,
-          status: "SUCCESS",
+          status: TestResultStatus.SUCCESS,
           success: true,
           mandatory: !isOptional,
           testKey: testCase.testKey,
@@ -314,7 +315,7 @@ describe("runTestCases Lambda handler V2 specific", () => {
     // Mock the test case runner to return success by default
     (runTestCaseModule.runTestCase as jest.Mock).mockResolvedValue({
       name: "Test Case",
-      status: "SUCCESS",
+      status: TestResultStatus.SUCCESS,
       success: true,
       mandatory: true,
       testKey: "TESTCASE#1",
@@ -422,7 +423,7 @@ describe("runTestCases Lambda handler V3 specific", () => {
     // Mock the test case runner to return success by default
     (runTestCaseModule.runTestCase as jest.Mock).mockResolvedValue({
       name: "Test Case",
-      status: "SUCCESS",
+      status: TestResultStatus.SUCCESS,
       success: true,
       mandatory: true,
       testKey: "TESTCASE#1",

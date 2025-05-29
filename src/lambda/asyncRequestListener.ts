@@ -1,5 +1,10 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { EventTypes, EventTypesV3, TestResult } from "../types/types";
+import {
+  EventTypes,
+  EventTypesV3,
+  TestResult,
+  TestResultStatus,
+} from "../types/types";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
@@ -66,7 +71,7 @@ export const handler = async (
         if (isValid) {
           testResult = {
             name: TEST_CASE_13_NAME,
-            status: "SUCCESS",
+            status: TestResultStatus.SUCCESS,
             success: true,
             mandatory: isMandatory,
             testKey: "TESTCASE#13",
@@ -77,7 +82,7 @@ export const handler = async (
         } else {
           testResult = {
             name: TEST_CASE_13_NAME,
-            status: "FAILURE",
+            status: TestResultStatus.FAILURE,
             success: false,
             mandatory: isMandatory,
             testKey: "TESTCASE#13",
@@ -100,7 +105,7 @@ export const handler = async (
         if (!testPassed) {
           testResult = {
             ...testResult,
-            status: "FAILURE",
+            status: TestResultStatus.FAILURE,
             success: false,
             errorMessage: `Product IDs do not match, the request was made for productIds [${testData.productIds}] but received data for productIds [${productIds}]`,
           };
@@ -127,7 +132,7 @@ export const handler = async (
         ) {
           testResult = {
             name: TEST_CASE_14_NAME,
-            status: "SUCCESS",
+            status: TestResultStatus.SUCCESS,
             success: true,
             mandatory: isMandatory,
             testKey: "TESTCASE#14",
@@ -138,7 +143,7 @@ export const handler = async (
         } else {
           testResult = {
             name: TEST_CASE_14_NAME,
-            status: "FAILURE",
+            status: TestResultStatus.FAILURE,
             success: false,
             mandatory: isMandatory,
             testKey: "TESTCASE#14",

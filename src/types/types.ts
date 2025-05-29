@@ -1,3 +1,21 @@
+// Constants for test run status
+export enum TestRunStatus {
+  PASS = "PASS",
+  FAIL = "FAIL",
+  PENDING = "PENDING",
+}
+
+// Constants for test result status
+export enum TestResultStatus {
+  PENDING = "PENDING",
+  SUCCESS = "SUCCESS",
+  FAILURE = "FAILURE",
+}
+
+export enum TestCaseNames {
+  AUTHENTICATE_WITH_INCORRECT_CREDENTIALS = "Authenticate with incorrect credentials",
+}
+
 export interface TestRun {
   testId: string;
   timestamp: number;
@@ -5,18 +23,8 @@ export interface TestRun {
 }
 interface TestCaseResult {
   name: string;
-  status: string;
+  status: TestResultStatus;
   message?: string;
-}
-export enum TestCaseNames {
-  AUTHENTICATE_WITH_INCORRECT_CREDENTIALS = "Authenticate with incorrect credentials",
-}
-
-// Constants for test run status
-export enum TestRunStatus {
-  PASS = "PASS",
-  FAIL = "FAIL",
-  PENDING = "PENDING",
 }
 
 export interface TestCase {
@@ -37,7 +45,7 @@ export interface TestCase {
 export interface TestResult {
   name: string;
   success: boolean;
-  status: "PENDING" | "SUCCESS" | "FAILURE";
+  status: TestResultStatus;
   errorMessage?: string;
   apiResponse?: string;
   mandatory: boolean;

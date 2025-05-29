@@ -1,7 +1,18 @@
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
-import { ApiVersion, TestCase, TestResult } from "../types/types";
+import {
+  ApiVersion,
+  TestCase,
+  TestResult,
+  TestResultStatus,
+} from "../types/types";
+
+// Setup timeout for the fetch request
+const DEFAULT_FETCH_TIMEOUT_MS = parseInt(
+  process.env.FETCH_TIMEOUT_MS || "5000",
+  10
+);
 
 const isMandatoryVersion = (testCase: TestCase, version: ApiVersion) => {
   if (testCase.mandatoryVersion) {
@@ -47,7 +58,7 @@ export const runTestCase = async (
   if (!testCase.endpoint && !testCase.customUrl) {
     return {
       name: testCase.name,
-      status: "FAILURE",
+      status: TestResultStatus.FAILURE,
       success: false,
       errorMessage: "Either endpoint or customUrl must be provided",
       mandatory: isMandatoryVersion(testCase, version),
@@ -87,7 +98,10 @@ export const runTestCase = async (
   const curlCmd = generateCurlCommand(url, testCase.method, headers, body);
 
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(url, {
+      ...options,
+      signal: AbortSignal.timeout(DEFAULT_FETCH_TIMEOUT_MS),
+    });
 
     if (
       testCase.expectedStatusCodes &&
@@ -95,7 +109,7 @@ export const runTestCase = async (
     ) {
       return {
         name: testCase.name,
-        status: "FAILURE",
+        status: TestResultStatus.FAILURE,
         success: false,
         errorMessage: `Expected status [${testCase.expectedStatusCodes.join(
           ","
@@ -126,7 +140,7 @@ export const runTestCase = async (
         return {
           name: testCase.name,
           success: false,
-          status: "FAILURE",
+          status: TestResultStatus.FAILURE,
           errorMessage: `Schema validation failed: ${JSON.stringify(
             validate.errors
           )}`,
@@ -150,7 +164,7 @@ export const runTestCase = async (
       if (!conditionPassed) {
         return {
           name: testCase.name,
-          status: "FAILURE",
+          status: TestResultStatus.FAILURE,
           success: false,
           errorMessage: testCase.conditionErrorMessage,
           apiResponse: JSON.stringify(responseData),
@@ -164,7 +178,7 @@ export const runTestCase = async (
 
     return {
       name: testCase.name,
-      status: "SUCCESS",
+      status: TestResultStatus.SUCCESS,
       success: true,
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
@@ -172,11 +186,17 @@ export const runTestCase = async (
       documentationUrl: testCase.documentationUrl,
     };
   } catch (error: any) {
+    // Check if the error is due to timeout
+    const isTimeoutError = error.name === "AbortError";
+    const errorMessage = isTimeoutError
+      ? `Request timeout after ${DEFAULT_FETCH_TIMEOUT_MS}ms`
+      : error.message;
+
     return {
       name: testCase.name,
-      status: "FAILURE",
+      status: TestResultStatus.FAILURE,
       success: false,
-      errorMessage: error.message,
+      errorMessage: errorMessage,
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: curlCmd,

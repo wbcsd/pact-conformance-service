@@ -17,6 +17,7 @@ interface Footprint {
   companyIds: string[];
   pcf: {
     geographyCountry: string;
+    referencePeriodEnd: string;
   };
   productClassifications: string[];
   validityPeriodStart: string;
@@ -41,16 +42,39 @@ const getFilterParameters = (footprints: FootprintsData) => {
 
   const firstFootprint = footprints.data[0];
 
-  // TODO validate required params are present
-  if (
-    !firstFootprint.validityPeriodStart ||
-    !firstFootprint.validityPeriodEnd ||
-    !isValidDate(new Date(firstFootprint.validityPeriodStart)) ||
-    !isValidDate(new Date(firstFootprint.validityPeriodEnd))
-  ) {
-    throw new Error(
-      "Invalid footprints data: Missing or invalid validityPeriodStart or validityPeriodEnd in the first footprint from the list. Please check the API response."
-    );
+  // Check if validityPeriodStart or validityPeriodEnd are empty or invalid
+  const hasValidityPeriod =
+    firstFootprint.validityPeriodStart &&
+    firstFootprint.validityPeriodEnd &&
+    isValidDate(new Date(firstFootprint.validityPeriodStart)) &&
+    isValidDate(new Date(firstFootprint.validityPeriodEnd));
+
+  let validityStart: string;
+  let validityEnd: string;
+
+  if (!hasValidityPeriod) {
+    // Use PCF reference period as fallback
+    if (!firstFootprint.pcf.referencePeriodEnd) {
+      throw new Error(
+        "Invalid footprints data: Missing validityPeriod dates and pcf.referencePeriodEnd. Please check the API response."
+      );
+    }
+
+    const referencePeriodEnd = new Date(firstFootprint.pcf.referencePeriodEnd);
+    if (!isValidDate(referencePeriodEnd)) {
+      throw new Error(
+        "Invalid footprints data: Invalid pcf.referencePeriodEnd date. Please check the API response."
+      );
+    }
+
+    // Use referencePeriodEnd as validityStart and add 3 years for validityEnd
+    validityStart = firstFootprint.pcf.referencePeriodEnd;
+    const endDate = new Date(referencePeriodEnd);
+    endDate.setFullYear(endDate.getFullYear() + 3);
+    validityEnd = endDate.toISOString();
+  } else {
+    validityStart = firstFootprint.validityPeriodStart;
+    validityEnd = firstFootprint.validityPeriodEnd;
   }
 
   return {
@@ -61,9 +85,9 @@ const getFilterParameters = (footprints: FootprintsData) => {
     classification: firstFootprint.productClassifications
       ? firstFootprint.productClassifications[0]
       : "",
-    validOn: firstFootprint.validityPeriodStart,
-    validAfter: getDateOneDayBefore(firstFootprint.validityPeriodStart),
-    validBefore: getDateOneDayAfter(firstFootprint.validityPeriodEnd),
+    validOn: validityStart,
+    validAfter: getDateOneDayBefore(validityStart),
+    validBefore: getDateOneDayAfter(validityEnd),
     status: firstFootprint.status,
     id: firstFootprint.id,
   };
@@ -209,7 +233,7 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints/random-string-as-id-${randomString(16)}`,
       expectedStatusCodes: [404],
       condition: ({ code }) => {
-        return code === "NoSuchFootprint";
+        return code === "NotFound";
       },
       conditionErrorMessage: `Expected error code NoSuchFootprint in response.`,
       mandatoryVersion: ["V3.0"],
@@ -474,14 +498,36 @@ export const generateV3TestCases = ({
           (footprint: {
             validityPeriodStart: string;
             validityPeriodEnd: string;
-          }) =>
-            new Date(footprint.validityPeriodStart) <=
-              new Date(filterParams.validOn) &&
-            new Date(footprint.validityPeriodEnd) >=
-              new Date(filterParams.validOn)
+            pcf: { referencePeriodEnd: string };
+          }) => {
+            // Use validity period if available, otherwise fall back to reference period
+            const hasValidityPeriod =
+              footprint.validityPeriodStart &&
+              footprint.validityPeriodEnd &&
+              isValidDate(new Date(footprint.validityPeriodStart)) &&
+              isValidDate(new Date(footprint.validityPeriodEnd));
+
+            if (hasValidityPeriod) {
+              return (
+                new Date(footprint.validityPeriodStart) <=
+                  new Date(filterParams.validOn) &&
+                new Date(footprint.validityPeriodEnd) >=
+                  new Date(filterParams.validOn)
+              );
+            } else if (footprint.pcf.referencePeriodEnd) {
+              const refEnd = new Date(footprint.pcf.referencePeriodEnd);
+              const refEndPlus3Years = new Date(refEnd);
+              refEndPlus3Years.setFullYear(refEndPlus3Years.getFullYear() + 3);
+              return (
+                refEnd <= new Date(filterParams.validOn) &&
+                refEndPlus3Years >= new Date(filterParams.validOn)
+              );
+            }
+            return false;
+          }
         );
       },
-      conditionErrorMessage: `One or more footprints do not match the condition: 'validityPeriodStart <= ${filterParams.validOn} <= validityPeriodEnd'`,
+      conditionErrorMessage: `One or more footprints do not match the condition: 'validityPeriodStart <= ${filterParams.validOn} <= validityPeriodEnd' or fallback reference period logic`,
       testKey: "TESTCASE#24",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
@@ -495,12 +541,31 @@ export const generateV3TestCases = ({
       schema: simpleResponseSchema,
       condition: ({ data }) => {
         return data.every(
-          (footprint: { validityPeriodStart: string }) =>
-            new Date(footprint.validityPeriodStart) >
-            new Date(filterParams.validAfter)
+          (footprint: {
+            validityPeriodStart: string;
+            pcf: { referencePeriodEnd: string };
+          }) => {
+            // Use validity period if available, otherwise fall back to reference period
+            const hasValidityPeriod =
+              footprint.validityPeriodStart &&
+              isValidDate(new Date(footprint.validityPeriodStart));
+
+            if (hasValidityPeriod) {
+              return (
+                new Date(footprint.validityPeriodStart) >
+                new Date(filterParams.validAfter)
+              );
+            } else if (footprint.pcf.referencePeriodEnd) {
+              return (
+                new Date(footprint.pcf.referencePeriodEnd) >
+                new Date(filterParams.validAfter)
+              );
+            }
+            return false;
+          }
         );
       },
-      conditionErrorMessage: `One or more footprints do not match the condition: 'validityPeriodStart > ${filterParams.validAfter}'`,
+      conditionErrorMessage: `One or more footprints do not match the condition: 'validityPeriodStart > ${filterParams.validAfter}' or fallback reference period logic`,
       testKey: "TESTCASE#25",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
@@ -514,12 +579,31 @@ export const generateV3TestCases = ({
       schema: simpleResponseSchema,
       condition: ({ data }) => {
         return data.every(
-          (footprint: { validityPeriodEnd: string }) =>
-            new Date(footprint.validityPeriodEnd) <
-            new Date(filterParams.validBefore)
+          (footprint: {
+            validityPeriodEnd: string;
+            pcf: { referencePeriodEnd: string };
+          }) => {
+            // Use validity period if available, otherwise fall back to reference period
+            const hasValidityPeriod =
+              footprint.validityPeriodEnd &&
+              isValidDate(new Date(footprint.validityPeriodEnd));
+
+            if (hasValidityPeriod) {
+              return (
+                new Date(footprint.validityPeriodEnd) <
+                new Date(filterParams.validBefore)
+              );
+            } else if (footprint.pcf.referencePeriodEnd) {
+              const refEnd = new Date(footprint.pcf.referencePeriodEnd);
+              const refEndPlus3Years = new Date(refEnd);
+              refEndPlus3Years.setFullYear(refEndPlus3Years.getFullYear() + 3);
+              return refEndPlus3Years < new Date(filterParams.validBefore);
+            }
+            return false;
+          }
         );
       },
-      conditionErrorMessage: `One or more footprints do not match the condition: 'validityPeriodEnd < ${filterParams.validBefore}'`,
+      conditionErrorMessage: `One or more footprints do not match the condition: 'validityPeriodEnd < ${filterParams.validBefore}' or fallback reference period logic`,
       testKey: "TESTCASE#26",
       mandatoryVersion: ["V3.0"],
       documentationUrl:

@@ -1,8 +1,11 @@
-# PACT API V3 Test Cases - Expected Results
+# PACT Tech Specs V3 Test Cases - Expected Results
 
-This document outlines the test cases used to validate PACT API V3 implementations, their expected responses, and example payloads.
+This document outlines the test cases used to validate PACT Tech Specs V3 implementations, their expected responses, and example payloads.
+
+To achieve conformance status for a given version of the Technical Specifications, a solution must pass all Mandatory test cases for that version.
 
 ## Test Case #1: Obtain auth token with valid credentials
+_Mandatory: V3.0_
 
 This test verifies the ability to obtain an authentication token using valid credentials.
 
@@ -32,6 +35,7 @@ Example valid response body:
 ```
 
 ## Test Case #2: Obtain auth token with invalid credentials
+_Mandatory: V3.0_
 
 This test verifies the system correctly rejects authentication attempts with invalid credentials.
 
@@ -60,6 +64,7 @@ Example response body:
 ```
 
 ## Test Case #3: Get PCF using GetFootprint
+_Mandatory: V3.0_
 
 This test verifies the ability to retrieve a specific Product Carbon Footprint (PCF) by its ID.
 
@@ -114,6 +119,7 @@ Example valid response body:
 ```
 
 ## Test Case #4: Get all PCFs using ListFootprints
+_Mandatory: V3.0_
 
 This test verifies the ability to retrieve a list of all Product Carbon Footprints.
 
@@ -197,6 +203,7 @@ Example valid response body:
 ```
 
 ## Test Case #5: Pagination link implementation of Action ListFootprints
+_Mandatory: V3.0_
 
 This test verifies the pagination functionality for the ListFootprints API.
 
@@ -250,6 +257,7 @@ Link: <{API_BASE_URL}/3/footprints?offset=1&limit=10>; rel="first", <{API_BASE_U
 ```
 
 ## Test Case #6: Attempt ListFootPrints with Invalid Token
+_Mandatory: V3.0_
 
 This test verifies the API correctly rejects requests with invalid authentication tokens.
 
@@ -277,6 +285,7 @@ Example response body:
 ```
 
 ## Test Case #7: Attempt GetFootprint with Invalid Token
+_Mandatory: V3.0_
 
 This test verifies the API correctly rejects specific footprint requests with invalid authentication tokens.
 
@@ -304,6 +313,7 @@ Example response body:
 ```
 
 ## Test Case #8: Attempt GetFootprint with Non-Existent PfId
+_Mandatory: V3.0_
 
 This test verifies the API correctly responds when requesting a non-existent footprint ID.
 
@@ -331,6 +341,7 @@ Example response body:
 ```
 
 ## Test Case #9: Attempt Authentication through HTTP (non-HTTPS)
+_Mandatory: V3.0_
 
 This test verifies that authentication is rejected when attempted over non-secure HTTP.
 
@@ -350,6 +361,7 @@ Content-Type: application/x-www-form-urlencoded
 Expected behavior: Connection should be rejected or response should not include authentication tokens
 
 ## Test Case #10: Attempt ListFootprints through HTTP (non-HTTPS)
+_Mandatory: V3.0_
 
 This test verifies that API calls are rejected when attempted over non-secure HTTP.
 
@@ -368,6 +380,7 @@ authorization: Bearer [BearerToken]
 Expected behavior: Connection should be rejected or response should not include data property
 
 ## Test Case #11: Attempt GetFootprint through HTTP (non-HTTPS)
+_Mandatory: V3.0_
 
 This test verifies that specific footprint requests are rejected when attempted over non-secure HTTP.
 
@@ -386,6 +399,7 @@ authorization: Bearer [BearerToken]
 Expected behavior: Connection should be rejected or response should not include data property
 
 ## Test Case #12: Receive Asynchronous PCF Request
+_Mandatory: V3.0_
 
 This test verifies the ability to receive asynchronous PCF requests in CloudEvents format.
 
@@ -431,6 +445,7 @@ Example response body:
 ```
 
 ## Test Case #13: Respond to PCF Request Fulfilled Event
+_Mandatory: V3.0_
 
 This test verifies the ability to respond with appropriate status when receiving event notifications that fulfill a previously created PCF request.
 
@@ -505,6 +520,7 @@ Example response body:
 ```
 
 ## Test Case #14: Respond to PCF Request Rejected Event
+_Mandatory: V3.0_
 
 This test verifies the ability to respond with appropriate status when receiving event notifications that reject a previously created PCF request.
 
@@ -551,6 +567,7 @@ Example response body:
 ```
 
 ## Test Case #15: Receive Notification of PCF Update (Published Event)
+_Mandatory: None_
 
 This test verifies the ability to receive notifications of PCF updates in CloudEvents format.
 
@@ -593,6 +610,7 @@ Example response body:
 ```
 
 ## Test Case #16: Attempt Action Events with Invalid Token
+_Mandatory: V3.0_
 
 This test verifies the API correctly rejects event requests with invalid authentication tokens.
 
@@ -635,6 +653,7 @@ Example response body:
 ```
 
 ## Test Case #17: Attempt Action Events through HTTP (non-HTTPS)
+_Mandatory: V3.0_
 
 This test verifies that event endpoints are rejected when attempted over non-secure HTTP.
 
@@ -671,6 +690,7 @@ Request body:
 Expected behavior: Connection should be rejected or response should not include data property
 
 ## Test Case #18: OpenId Connect-based Authentication Flow
+_Mandatory: None_
 
 This test verifies the OpenID Connect authentication flow with valid credentials.
 
@@ -701,6 +721,7 @@ Example valid response body:
 ```
 
 ## Test Case #19: OpenId connect-based authentication flow with incorrect credentials
+_Mandatory: None_
 
 This test verifies the OpenID Connect authentication flow correctly rejects invalid credentials.
 
@@ -729,6 +750,7 @@ Example response body:
 ```
 
 ## Test Case #20: V3 Filtering Functionality: Get Filtered List of Footprints by "productId" parameter
+_Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the productId parameter.
 
@@ -774,6 +796,7 @@ Example valid response body:
 ```
 
 ## Test Case #21: V3 Filtering Functionality: Get Filtered List of Footprints by "companyId" parameter
+_Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the companyId parameter.
 
@@ -816,6 +839,7 @@ Example valid response body:
 ```
 
 ## Test Case #22: V3 Filtering Functionality: Get Filtered List of Footprints by "geography" parameter
+_Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the geography parameter.
 
@@ -868,6 +892,7 @@ Example valid response body:
 ```
 
 ## Test Case #23: V3 Filtering Functionality: Get Filtered List of Footprints by "classification" parameter
+_Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the classification parameter.
 
@@ -913,6 +938,7 @@ Example valid response body:
 ```
 
 ## Test Case #24: V3 Filtering Functionality: Get Filtered List of Footprints by "validOn" parameter
+_Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the validOn parameter.
 
@@ -955,6 +981,7 @@ Example valid response body:
 ```
 
 ## Test Case #25: V3 Filtering Functionality: Get Filtered List of Footprints by "validAfter" parameter
+_Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the validAfter parameter.
 
@@ -997,6 +1024,7 @@ Example valid response body:
 ```
 
 ## Test Case #26: V3 Filtering Functionality: Get Filtered List of Footprints by "validBefore" parameter
+_Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the validBefore parameter.
 
@@ -1039,6 +1067,7 @@ Example valid response body:
 ```
 
 ## Test Case #27: V3 Filtering Functionality: Get Filtered List of Footprints by "status" parameter
+_Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the status parameter.
 
@@ -1081,6 +1110,7 @@ Example valid response body:
 ```
 
 ## Test Case #28: V3 Filtering Functionality: Get Filtered List of Footprints by both "status" and "productId" parameters
+_Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using multiple parameters.
 

@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { randomUUID } from "crypto";
-import { ApiVersion, TestResult } from "../types/types";
+import { ApiVersion, TestResult, TestResultStatus } from "../types/types";
 import { getAccessToken, getOidAuthUrl } from "../utils/authUtils";
 import { generateV2TestCases } from "../test-cases/v2-test-cases";
 import {
@@ -144,7 +144,7 @@ export const handler = async (
       ...results,
       {
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: "PENDING",
+        status: TestResultStatus.PENDING,
         success: false,
         mandatory: version === "V2.3" || version === "V3.0",
         testKey: "TESTCASE#13",
@@ -154,7 +154,7 @@ export const handler = async (
       },
       {
         name: "Test Case 14: Handle Rejected PCF Request",
-        status: "PENDING",
+        status: TestResultStatus.PENDING,
         success: false,
         mandatory: version === "V2.3" || version === "V3.0",
         testKey: "TESTCASE#14",

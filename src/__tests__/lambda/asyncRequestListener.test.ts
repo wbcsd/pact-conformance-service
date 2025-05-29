@@ -3,6 +3,7 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 
 import * as dbUtils from "../../utils/dbUtils";
 import { mockFootprints, mockFootprintsV3 } from "../mocks/footprints";
+import { TestResultStatus } from "../../types/types";
 
 // Mock the DB utils
 jest.mock("../../utils/dbUtils");
@@ -82,7 +83,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: "SUCCESS",
+        status: TestResultStatus.SUCCESS,
         success: true,
         mandatory: true,
         testKey: "TESTCASE#13",
@@ -139,7 +140,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: "SUCCESS",
+        status: TestResultStatus.SUCCESS,
         success: true,
         mandatory: true,
         testKey: "TESTCASE#13",
@@ -217,7 +218,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: "FAILURE",
+        status: TestResultStatus.FAILURE,
         success: false,
         mandatory: true,
         testKey: "TESTCASE#13",
@@ -270,7 +271,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: "FAILURE",
+        status: TestResultStatus.FAILURE,
         success: false,
         mandatory: true,
         testKey: "TESTCASE#13",
