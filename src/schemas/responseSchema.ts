@@ -20,6 +20,7 @@ import {
   v3_0_ResponseSchema,
   v3_0_productFootprintSchema,
   v3_0_EventFulfilledSchema,
+  V3_0_SingleFootprintResponseSchema,
 } from "./v3_0_schema";
 
 // Simple response schemas for general use
@@ -69,4 +70,5 @@ export {
   v3_0_ResponseSchema,
   v3_0_productFootprintSchema,
   v3_0_EventFulfilledSchema,
+  V3_0_SingleFootprintResponseSchema,
 };

@@ -9,7 +9,10 @@ import {
   getCorrectAuthHeaders,
   getIncorrectAuthHeaders,
 } from "../utils/authUtils";
-import { v3_0_ResponseSchema } from "../schemas/v3_0_schema";
+import {
+  v3_0_ResponseSchema,
+  V3_0_SingleFootprintResponseSchema,
+} from "../schemas/v3_0_schema";
 
 interface Footprint {
   id: string;
@@ -157,7 +160,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints/${filterParams.id}`,
       expectedStatusCodes: [200],
-      schema: simpleSingleFootprintResponseSchema,
+      schema: V3_0_SingleFootprintResponseSchema,
       condition: ({ data }) => {
         return data.id === filterParams.id;
       },
