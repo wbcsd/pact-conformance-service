@@ -3,16 +3,13 @@ import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
 import {
   simpleResponseSchema,
-  simpleSingleFootprintResponseSchema,
+  v3_0_ResponseSchema,
+  V3_0_SingleFootprintResponseSchema,
 } from "../schemas/responseSchema";
 import {
   getCorrectAuthHeaders,
   getIncorrectAuthHeaders,
 } from "../utils/authUtils";
-import {
-  v3_0_ResponseSchema,
-  V3_0_SingleFootprintResponseSchema,
-} from "../schemas/v3_0_schema";
 
 interface Footprint {
   id: string;

@@ -3,11 +3,14 @@ import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
 import {
   v2_0_ResponseSchema,
+  v2_0_SingleFootprintResponseSchema,
   v2_1_ResponseSchema,
+  v2_1_SingleFootprintResponseSchema,
   v2_2_ResponseSchema,
+  v2_2_SingleFootprintResponseSchema,
   v2_3_ResponseSchema,
+  v2_3_SingleFootprintResponseSchema,
   simpleResponseSchema,
-  simpleSingleFootprintResponseSchema,
 } from "../schemas/responseSchema";
 import {
   getCorrectAuthHeaders,
@@ -53,6 +56,21 @@ export const generateV2TestCases = ({
     }
   })();
 
+  const singleFootprintResponseSchema = (() => {
+    switch (version) {
+      case "V2.0":
+        return v2_0_SingleFootprintResponseSchema;
+      case "V2.1":
+        return v2_1_SingleFootprintResponseSchema;
+      case "V2.2":
+        return v2_2_SingleFootprintResponseSchema;
+      case "V2.3":
+        return v2_3_SingleFootprintResponseSchema;
+      default:
+        return v2_3_SingleFootprintResponseSchema; // Default to latest if unknown
+    }
+  })();
+
   return [
     {
       name: "Test Case 1: Obtain auth token with valid credentials",
@@ -83,7 +101,7 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: `/2/footprints/${footprints.data[0].id}`,
       expectedStatusCodes: [200],
-      schema: simpleSingleFootprintResponseSchema,
+      schema: singleFootprintResponseSchema,
       condition: ({ data }) => {
         return data.id === footprints.data[0].id;
       },
