@@ -402,7 +402,6 @@ export const generateV3TestCases = ({
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       testKey: "TESTCASE#18",
       requestData: "grant_type=client_credentials",
-      mandatoryVersion: ["V3.0"],
       documentationUrl:
         "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-18-openid-connect-based-authentication-flow",
     },
@@ -414,7 +413,6 @@ export const generateV3TestCases = ({
       headers: getIncorrectAuthHeaders(baseUrl),
       testKey: "TESTCASE#19",
       requestData: "grant_type=client_credentials",
-      mandatoryVersion: ["V3.0"],
       documentationUrl:
         "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-19-openid-connect-based-authentication-flow-with-incorrect-credentials",
     },
