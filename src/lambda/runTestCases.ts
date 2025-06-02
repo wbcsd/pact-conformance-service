@@ -149,8 +149,8 @@ export const handler = async (
         mandatory: version === "V2.3" || version === "V3.0",
         testKey: "TESTCASE#13",
         documentationUrl: version.startsWith("V2")
-          ? "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v2-test-cases-expected-results.md#test-case-13-respond-to-pcf-request-fulfilled-event"
-          : "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-13-respond-to-pcf-request-fulfilled-event",
+          ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event"
+          : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
       },
       {
         name: "Test Case 14: Handle Rejected PCF Request",
@@ -159,8 +159,8 @@ export const handler = async (
         mandatory: version === "V2.3" || version === "V3.0",
         testKey: "TESTCASE#14",
         documentationUrl: version.startsWith("V2")
-          ? "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v2-test-cases-expected-results.md#test-case-14-respond-to-pcf-request-rejected-event"
-          : "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-14-respond-to-pcf-request-rejected-event",
+          ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event"
+          : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
       },
     ];
 

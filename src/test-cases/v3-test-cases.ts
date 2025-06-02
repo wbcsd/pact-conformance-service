@@ -3,13 +3,13 @@ import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
 import {
   simpleResponseSchema,
-  simpleSingleFootprintResponseSchema,
+  v3_0_ResponseSchema,
+  V3_0_SingleFootprintResponseSchema,
 } from "../schemas/responseSchema";
 import {
   getCorrectAuthHeaders,
   getIncorrectAuthHeaders,
 } from "../utils/authUtils";
-import { v3_0_ResponseSchema } from "../schemas/v3_0_schema";
 
 interface Footprint {
   id: string;
@@ -138,7 +138,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#1",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-1-obtain-auth-token-with-valid-credentials",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-1-obtain-auth-token-with-valid-credentials",
     },
     {
       name: "Test Case 2: Obtain auth token with invalid credentials",
@@ -150,14 +150,14 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#2",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-2-obtain-auth-token-with-invalid-credentials",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-2-obtain-auth-token-with-invalid-credentials",
     },
     {
       name: "Test Case 3: Get PCF using GetFootprint",
       method: "GET",
       endpoint: `/3/footprints/${filterParams.id}`,
       expectedStatusCodes: [200],
-      schema: simpleSingleFootprintResponseSchema,
+      schema: V3_0_SingleFootprintResponseSchema,
       condition: ({ data }) => {
         return data.id === filterParams.id;
       },
@@ -165,7 +165,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#3",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-3-get-pcf-using-getfootprint",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-3-get-pcf-using-getfootprint",
     },
     {
       name: "Test Case 4: Get all PCFs using ListFootprints",
@@ -180,7 +180,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#4",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-4-get-all-pcfs-using-listfootprints",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-4-get-all-pcfs-using-listfootprints",
     },
     {
       name: "Test Case 5: Pagination link implementation of Action ListFootprints",
@@ -191,7 +191,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#5",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-5-pagination-link-implementation-of-action-listfootprints",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-5-pagination-link-implementation-of-action-listfootprints",
     },
     {
       name: "Test Case 6: Attempt ListFootPrints with Invalid Token",
@@ -208,7 +208,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#6",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-6-attempt-listfootprints-with-invalid-token",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-6-attempt-listfootprints-with-invalid-token",
     },
     {
       name: "Test Case 7: Attempt GetFootprint with Invalid Token",
@@ -225,7 +225,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#7",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-7-attempt-getfootprint-with-invalid-token",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-7-attempt-getfootprint-with-invalid-token",
     },
     {
       name: "Test Case 8: Attempt GetFootprint with Non-Existent PfId",
@@ -239,7 +239,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#8",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-8-attempt-getfootprint-with-non-existent-pfid",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-8-attempt-getfootprint-with-non-existent-pfid",
     },
     {
       name: "Test Case 9: Attempt Authentication through HTTP (non-HTTPS)",
@@ -251,7 +251,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#9",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-9-attempt-authentication-through-http-non-https",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
       requestData: "grant_type=client_credentials",
       condition: (response) => {
         return !response.data && !response.access_token;
@@ -266,7 +266,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#10",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-10-attempt-listfootprints-through-http-non-https",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-10-attempt-listfootprints-through-http-non-https",
       condition: (response) => {
         return !response.data;
       },
@@ -281,7 +281,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#11",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-11-attempt-getfootprint-through-http-non-https",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-11-attempt-getfootprint-through-http-non-https",
       condition: (response) => {
         return !response.data;
       },
@@ -311,7 +311,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#12",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-12-receive-asynchronous-pcf-request",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-12-receive-asynchronous-pcf-request",
     },
     // Test Case 13 is about receiving the PCF data from the webhook endpoint as a data recipient, this request will be triggered by the previous test.
     // It will be tested in the listener lambda
@@ -336,7 +336,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#15",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-15-receive-notification-of-pcf-update-published-event",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-15-receive-notification-of-pcf-update-published-event",
     },
     {
       name: "Test Case 16: Attempt Action Events with Invalid Token",
@@ -363,7 +363,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#16",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-16-attempt-action-events-with-invalid-token",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-16-attempt-action-events-with-invalid-token",
     },
     {
       name: "Test Case 17: Attempt Action Events through HTTP (non-HTTPS)",
@@ -388,7 +388,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#17",
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-17-attempt-action-events-through-http-non-https",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-17-attempt-action-events-through-http-non-https",
       condition: (response) => {
         return !response.data;
       },
@@ -402,9 +402,8 @@ export const generateV3TestCases = ({
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       testKey: "TESTCASE#18",
       requestData: "grant_type=client_credentials",
-      mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-18-openid-connect-based-authentication-flow",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-18-openid-connect-based-authentication-flow",
     },
     {
       name: "Test Case 19: OpenId connect-based authentication flow with incorrect credentials",
@@ -414,9 +413,8 @@ export const generateV3TestCases = ({
       headers: getIncorrectAuthHeaders(baseUrl),
       testKey: "TESTCASE#19",
       requestData: "grant_type=client_credentials",
-      mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-19-openid-connect-based-authentication-flow-with-incorrect-credentials",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-19-openid-connect-based-authentication-flow-with-incorrect-credentials",
     },
     {
       name: `Test Case 20: V3 Filtering Functionality: Get Filtered List of Footprints by "productId" parameter`,
@@ -433,7 +431,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#20",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-20-v3-filtering-functionality-get-filtered-list-of-footprints-by-productid-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-20-v3-filtering-functionality-get-filtered-list-of-footprints-by-productid-parameter",
     },
     {
       name: `Test Case 21: V3 Filtering Functionality: Get Filtered List of Footprints by "companyId" parameter`,
@@ -450,7 +448,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#21",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-21-v3-filtering-functionality-get-filtered-list-of-footprints-by-companyid-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-21-v3-filtering-functionality-get-filtered-list-of-footprints-by-companyid-parameter",
     },
     {
       name: `Test Case 22: V3 Filtering Functionality: Get Filtered List of Footprints by "geography" parameter`,
@@ -468,7 +466,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#22",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-22-v3-filtering-functionality-get-filtered-list-of-footprints-by-geography-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-22-v3-filtering-functionality-get-filtered-list-of-footprints-by-geography-parameter",
     },
     {
       name: `Test Case 23: V3 Filtering Functionality: Get Filtered List of Footprints by "classification" parameter`,
@@ -477,6 +475,10 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
       condition: ({ data }) => {
+        if (filterParams.classification === "") {
+          return data.length === footprints.data.length; // If no classification is provided, all footprints are valid
+        }
+
         return data.every((footprint: { productClassifications: string[] }) =>
           footprint.productClassifications.includes(filterParams.classification)
         );
@@ -485,7 +487,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#23",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-23-v3-filtering-functionality-get-filtered-list-of-footprints-by-classification-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-23-v3-filtering-functionality-get-filtered-list-of-footprints-by-classification-parameter",
     },
     {
       name: `Test Case 24: V3 Filtering Functionality: Get Filtered List of Footprints by "validOn" parameter`,
@@ -531,7 +533,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#24",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-24-v3-filtering-functionality-get-filtered-list-of-footprints-by-validon-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-24-v3-filtering-functionality-get-filtered-list-of-footprints-by-validon-parameter",
     },
     {
       name: `Test Case 25: V3 Filtering Functionality: Get Filtered List of Footprints by "validAfter" parameter`,
@@ -569,7 +571,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#25",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-25-v3-filtering-functionality-get-filtered-list-of-footprints-by-validafter-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-25-v3-filtering-functionality-get-filtered-list-of-footprints-by-validafter-parameter",
     },
     {
       name: `Test Case 26: V3 Filtering Functionality: Get Filtered List of Footprints by "validBefore" parameter`,
@@ -607,7 +609,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#26",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-26-v3-filtering-functionality-get-filtered-list-of-footprints-by-validbefore-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-26-v3-filtering-functionality-get-filtered-list-of-footprints-by-validbefore-parameter",
     },
     {
       name: `Test Case 27: V3 Filtering Functionality: Get Filtered List of Footprints by "status" parameter`,
@@ -625,7 +627,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#27",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-27-v3-filtering-functionality-get-filtered-list-of-footprints-by-status-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-27-v3-filtering-functionality-get-filtered-list-of-footprints-by-status-parameter",
     },
     {
       name: `Test Case 28: V3 Filtering Functionality: Get Filtered List of Footprints by both "status" and "productId" parameters`,
@@ -644,27 +646,26 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#28",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-28-v3-filtering-functionality-get-filtered-list-of-footprints-by-both-status-and-productid-parameters",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-28-v3-filtering-functionality-get-filtered-list-of-footprints-by-both-status-and-productid-parameters",
     },
     {
-      name: "Test Case 29: V3 Filtering Functionality: Get Filtered List of Footprints by multiple filter parameters using OR logic (positive test case)",
+      name: "Test Case 29: V3 Filtering Functionality: Get Filtered List of Footprints by multiple filter parameters using OR logic",
       method: "GET",
-      endpoint: `/3/footprints?status=${
-        filterParams.status
-      }&status=${randomString(8)}&status=${randomString(8)}`,
+      endpoint: `/3/footprints?companyId=${
+        filterParams.companyId
+      }&companyId=${randomString(8)}&companyId=${randomString(8)}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
       condition: ({ data }) => {
-        return data.every(
-          (footprint: { status: string }) =>
-            footprint.status === filterParams.status
+        return data.every((footprint: { companyIds: string[] }) =>
+          footprint.companyIds.includes(filterParams.companyId)
         );
       },
-      conditionErrorMessage: `One or more footprints do not match the status filter in OR logic test: ${filterParams.status}`,
+      conditionErrorMessage: `One or more footprints do not match the companyId filter in OR logic test: ${filterParams.companyId}`,
       testKey: "TESTCASE#29",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md#test-case-29-v3-filtering-functionality-get-filtered-list-of-footprints-by-multiple-filter-parameters-using-or-logic-positive-test-case",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-29-v3-filtering-functionality-get-filtered-list-of-footprints-by-multiple-filter-parameters-using-or-logic-positive-test-case",
     },
   ];
 };

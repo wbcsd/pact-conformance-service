@@ -429,7 +429,7 @@ describe("runTestCases Lambda handler with nock", () => {
     persistentNock(mockBaseUrl)
       .get(
         new RegExp(
-          `^/3/footprints\\?status=${mockFootprintsV3.data[0].status}&status=[^&]+&status=[^&]+$`
+          `^/3/footprints\\?companyId=${mockFootprintsV3.data[0].companyIds[0]}&companyId=[^&]+&companyId=[^&]+$`
         )
       )
       .reply(200, mockFootprintsV3);
