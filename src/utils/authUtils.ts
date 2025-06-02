@@ -53,6 +53,7 @@ export const getAccessToken = async (
   baseUrl: string,
   clientId: string,
   clientSecret: string,
+  authRequestData: string,
   customAuthUrl?: string
 ): Promise<string> => {
   const url = customAuthUrl || `${baseUrl}/auth/token`;
@@ -68,7 +69,7 @@ export const getAccessToken = async (
       "Content-Type": "application/x-www-form-urlencoded",
       Authorization: `Basic ${encodedCredentials}`,
     },
-    body: "grant_type=client_credentials",
+    body: authRequestData,
   });
 
   if (!response.ok) {

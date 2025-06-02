@@ -83,10 +83,21 @@ export const handler = async (
 
     const oidAuthUrl = await getOidAuthUrl(authBaseUrl);
 
+    // Add scope, audience and resource to the auth request body
+    // Make sure to url encode things, otherwise it will not work
+    // Only include scope, audience and resource if they are provided
+    const authRequestData = new URLSearchParams({
+      grant_type: "client_credentials",
+      ...(scope && { scope }),
+      ...(audience && { audience }),
+      ...(resource && { resource })
+    }).toString();
+
     const accessToken = await getAccessToken(
       authBaseUrl,
       clientId,
       clientSecret,
+      authRequestData,
       oidAuthUrl
     );
 
@@ -103,11 +114,6 @@ export const handler = async (
       version,
     });
 
-    let authOptions: Record<string, string> = {}
-    if (scope) authOptions.scope = scope;
-    if (audience) authOptions.audience = audience;
-    if (resource) authOptions.resource = resource;
-
     const testRunParams = {
       testRunId,
       footprints,
@@ -117,7 +123,7 @@ export const handler = async (
       oidAuthUrl,
       clientId,
       clientSecret,
-      authOptions,
+      authRequestData,
       version,
       webhookUrl: WEBHOOK_URL,
     };

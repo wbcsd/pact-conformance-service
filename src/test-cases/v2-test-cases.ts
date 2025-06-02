@@ -26,7 +26,7 @@ export const generateV2TestCases = ({
   oidAuthUrl,
   clientId,
   clientSecret,
-  authOptions,
+  authRequestData,
   version,
   webhookUrl,
 }: {
@@ -38,7 +38,7 @@ export const generateV2TestCases = ({
   oidAuthUrl: string | null | undefined;
   clientId: string;
   clientSecret: string;
-  authOptions: Record<string, string>;
+  authRequestData: string;
   version: ApiVersion;
   webhookUrl: string;
 }): TestCase[] => {
@@ -72,9 +72,6 @@ export const generateV2TestCases = ({
         return v2_3_SingleFootprintResponseSchema; // Default to latest if unknown
     }
   })();
-  
-  authOptions["grant_type"] = "client_credentials";
-  const authRequestData = new URLSearchParams(authOptions).toString();
   
   return [
     {
