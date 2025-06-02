@@ -649,20 +649,19 @@ export const generateV3TestCases = ({
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-28-v3-filtering-functionality-get-filtered-list-of-footprints-by-both-status-and-productid-parameters",
     },
     {
-      name: "Test Case 29: V3 Filtering Functionality: Get Filtered List of Footprints by multiple filter parameters using OR logic (positive test case)",
+      name: "Test Case 29: V3 Filtering Functionality: Get Filtered List of Footprints by multiple filter parameters using OR logic",
       method: "GET",
-      endpoint: `/3/footprints?status=${
-        filterParams.status
-      }&status=${randomString(8)}&status=${randomString(8)}`,
+      endpoint: `/3/footprints?companyId=${
+        filterParams.companyId
+      }&companyId=${randomString(8)}&companyId=${randomString(8)}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
       condition: ({ data }) => {
-        return data.every(
-          (footprint: { status: string }) =>
-            footprint.status === filterParams.status
+        return data.every((footprint: { companyIds: string[] }) =>
+          footprint.companyIds.includes(filterParams.companyId)
         );
       },
-      conditionErrorMessage: `One or more footprints do not match the status filter in OR logic test: ${filterParams.status}`,
+      conditionErrorMessage: `One or more footprints do not match the companyId filter in OR logic test: ${filterParams.companyId}`,
       testKey: "TESTCASE#29",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
