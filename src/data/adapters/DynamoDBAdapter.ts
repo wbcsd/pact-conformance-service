@@ -1,6 +1,6 @@
 import { TestData, TestResult } from "../../types/types";
 import * as AWS from "aws-sdk";
-import { Database, TestRunDetails } from "../interfaces/Database";
+import { Database, SaveTestRunDetails, TestRunDetails, TestRunWithResults } from "../interfaces/Database";
 
 export const SK_TYPES = {
   DETAILS: "TESTRUN#DETAILS",
@@ -20,7 +20,7 @@ export class DynamoDBAdapter implements Database {
     }
   }
 
-  async saveTestRun(details: TestRunDetails): Promise<void> {
+  async saveTestRun(details: SaveTestRunDetails): Promise<void> {
     const timestamp = new Date().toISOString();
 
     const params = {
@@ -101,7 +101,7 @@ export class DynamoDBAdapter implements Database {
     console.log(`All ${testResults.length} test cases saved successfully`);
   }
 
-  async getTestResults(testRunId: string) {
+  async getTestResults(testRunId: string): Promise<TestRunWithResults | null> {
     const params = {
       TableName: this.tableName,
       KeyConditionExpression: "testId = :testId",
@@ -127,7 +127,12 @@ export class DynamoDBAdapter implements Database {
 
     return {
       testRunId,
+      companyName: testDetails?.companyName,
+      adminEmail: testDetails?.adminEmail,
+      adminName: testDetails?.adminName,
       timestamp: testDetails?.timestamp,
+      techSpecVersion: testDetails?.techSpecVersion,
+      status: testDetails?.status,
       results: testResults,
     };
   }
@@ -172,15 +177,19 @@ export class DynamoDBAdapter implements Database {
     return result.Item.data;
   }
 
-  async getRecentTestRunsByEmail(adminEmail: string, limit: number = 10): Promise<any[]> {
+  async getRecentTestRuns(adminEmail?: string, limit?: number): Promise<TestRunDetails[]> {
     const params: AWS.DynamoDB.DocumentClient.ScanInput = {
       TableName: this.tableName,
-      FilterExpression: "adminEmail = :adminEmail AND SK = :sk",
+      FilterExpression: "SK = :sk",
       ExpressionAttributeValues: {
-        ":adminEmail": adminEmail,
         ":sk": SK_TYPES.DETAILS,
       },
     };
+    if (adminEmail) {
+      params.FilterExpression += " AND adminEmail = :adminEmail";
+      params.ExpressionAttributeValues![':adminEmail'] = adminEmail;
+    }
+    console.log(`Fetching recent test runs with params: ${JSON.stringify(params)}`);
 
     let testRuns: AWS.DynamoDB.DocumentClient.ItemList = [];
     let lastEvaluatedKey;
@@ -203,6 +212,6 @@ export class DynamoDBAdapter implements Database {
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
-    return testRuns.slice(0, limit);
+    return testRuns.slice(0, limit || 1000) as TestRunDetails[]
   }
 }

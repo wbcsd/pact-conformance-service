@@ -1,6 +1,6 @@
 import { Pool, PoolClient } from 'pg';
 import { TestData, TestResult } from "../../types/types";
-import { Database, TestRunDetails } from "../interfaces/Database";
+import { Database, TestRunDetails, TestRunWithResults, SaveTestRunDetails } from "../interfaces/Database";
 
 export class PostgresAdapter implements Database {
   private pool: Pool;
@@ -9,7 +9,7 @@ export class PostgresAdapter implements Database {
     this.pool = new Pool({
       connectionString: connectionString || process.env.POSTGRES_CONNECTION_STRING,
     });
-    
+
     // Initialize schema if necessary
     this.initializeSchema();
   }
@@ -64,7 +64,7 @@ export class PostgresAdapter implements Database {
     }
   }
 
-  async saveTestRun(details: TestRunDetails): Promise<void> {
+  async saveTestRun(details: SaveTestRunDetails): Promise<void> {
     const timestamp = new Date().toISOString();
     
     const query = `
@@ -159,7 +159,7 @@ export class PostgresAdapter implements Database {
     console.log(`All ${testResults.length} test cases saved successfully`);
   }
 
-  async getTestResults(testRunId: string) {    
+  async getTestResults(testRunId: string): Promise<TestRunWithResults | null> {    
     const client = await this.pool.connect();
     
     try {
@@ -172,16 +172,21 @@ export class PostgresAdapter implements Database {
       
       // Get test run details
       const detailsQuery = `
-        SELECT timestamp FROM test_runs 
+        SELECT * FROM test_runs 
         WHERE test_id = $1
       `;
       const detailsData = await client.query(detailsQuery, [testRunId]);
+      const details = detailsData.rows.length > 0 ? detailsData.rows[0] : null;
       
       const results = resultsData.rows.map((row: any) => row.result);
       
       return {
-        testRunId,
-        timestamp: detailsData.rows.length > 0 ? detailsData.rows[0].timestamp : undefined,
+        testRunId: details.test_id,
+        timestamp: details.timestamp,
+        companyName: details.company_name,
+        adminEmail: details.admin_email,
+        adminName: details.admin_name,
+        techSpecVersion: details.tech_spec_version,
         results,
       };
     } finally {
@@ -231,32 +236,34 @@ export class PostgresAdapter implements Database {
     }
   }
 
-  async getRecentTestRunsByEmail(adminEmail: string, limit: number = 10): Promise<any[]> {
-    const query = `
+  async getRecentTestRuns(adminEmail?: string, limit?: number): Promise<TestRunDetails[]> {
+    const params: any[] = [];
+    let query = `
       SELECT * FROM test_runs
-      WHERE admin_email = $1
-      ORDER BY timestamp DESC
-      LIMIT $2
     `;
-    
+    if (adminEmail) {
+      query += ` WHERE admin_email = $1`;
+      params.push(adminEmail);
+    }
+    query += ` ORDER BY timestamp DESC LIMIT $${params.length + 1}`;
+    params.push(limit || 1000);
+
     try {
-      const result = await this.pool.query(query, [adminEmail, limit]);
-      return result.rows.map((row:any) => ({
+      const result = await this.pool.query(query, params);
+      return result.rows.map((row: any) => ({
         testId: row.test_id,
-        SK: "TESTRUN#DETAILS", // For compatibility with DynamoDB format
         timestamp: row.timestamp,
         companyName: row.company_name,
-        companyIdentifier: row.company_identifier,
         adminEmail: row.admin_email,
         adminName: row.admin_name,
-        techSpecVersion: row.tech_spec_version
-      }));
+        techSpecVersion: row.tech_spec_version,
+      } as TestRunDetails));
     } catch (error) {
       console.error("Error retrieving recent test runs:", error);
       throw error;
     }
   }
-  
+
   async close(): Promise<void> {
     await this.pool.end();
   }

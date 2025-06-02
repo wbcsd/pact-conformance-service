@@ -15,7 +15,7 @@ export const handler = async (
     const database = DatabaseFactory.create(dbType);
 
     // Get recent test runs for the specified email
-    const testRuns = await database.getRecentTestRunsByEmail(
+    const testRuns = await database.getRecentTestRuns(
       adminEmail,
       MAX_TEST_RUNS_TO_ENRICH
     );
@@ -30,20 +30,21 @@ export const handler = async (
         let status = TestRunStatus.PASS;
 
         // If there are no test results, mark as FAIL as no tests were run
-        if (testResults.results.length === 0) {
+        if (!testResults || testResults.results.length === 0) {
           status = TestRunStatus.FAIL;
-        }
+        } else {
 
-        // If there are mandatory tests and any of them failed, mark as FAIL
-        const mandatoryTests = testResults.results.filter(
-          (result) => result.mandatory
-        );
-        if (mandatoryTests.length > 0) {
-          const failedMandatoryTests = mandatoryTests.filter(
-            (result) => !result.success
+          // If there are mandatory tests and any of them failed, mark as FAIL
+          const mandatoryTests = testResults.results.filter(
+            (result) => result.mandatory
           );
-          if (failedMandatoryTests.length > 0) {
-            status = TestRunStatus.FAIL;
+          if (mandatoryTests.length > 0) {
+            const failedMandatoryTests = mandatoryTests.filter(
+              (result) => !result.success
+            );
+            if (failedMandatoryTests.length > 0) {
+              status = TestRunStatus.FAIL;
+            }
           }
         }
 

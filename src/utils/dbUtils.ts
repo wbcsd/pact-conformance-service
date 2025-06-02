@@ -1,15 +1,15 @@
+import config from "../config";
 import { TestData, TestResult } from "../types/types";
-import { Database, TestRunDetails } from "../data/interfaces/Database";
+import { Database, SaveTestRunDetails } from "../data/interfaces/Database";
 import { DatabaseFactory, DatabaseType } from "../data/factory";
 
 // Re-exporting the SK_TYPES for backward compatibility
 export { SK_TYPES } from "../data/adapters/DynamoDBAdapter";
 
 // Create and export the database instance
-const dbType = (process.env.DATABASE_TYPE || 'dynamodb') as DatabaseType;
-const db: Database = DatabaseFactory.create(dbType);
+const db: Database = DatabaseFactory.create(config.databaseType as DatabaseType);
 
-export const saveTestRun = async (details: TestRunDetails): Promise<void> => {
+export const saveTestRun = async (details: SaveTestRunDetails): Promise<void> => {
   return db.saveTestRun(details);
 };
 
