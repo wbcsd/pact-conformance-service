@@ -11,18 +11,6 @@ export const handler = async (
   try {
     const adminEmail = event.queryStringParameters?.adminEmail;
 
-    if (!adminEmail) {
-      return {
-        statusCode: 400,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: "Missing required query parameter: adminEmail",
-        }),
-      };
-    }
-
     const dbType = (process.env.DATABASE_TYPE || 'dynamodb') as DatabaseType;
     const database = DatabaseFactory.create(dbType);
 
