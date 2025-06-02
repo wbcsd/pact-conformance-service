@@ -33,6 +33,9 @@ export const handler = async (
     adminEmail,
     adminName,
     customAuthBaseUrl,
+    scope,
+    audience,
+    resource
   }: {
     baseUrl: string;
     clientId: string;
@@ -42,6 +45,9 @@ export const handler = async (
     adminEmail: string;
     adminName: string;
     customAuthBaseUrl?: string;
+    scope?: string;
+    audience?: string;
+    resource?: string;
   } = JSON.parse(event.body || "{}");
 
   if (
@@ -97,6 +103,11 @@ export const handler = async (
       version,
     });
 
+    let authOptions: Record<string, string> = {}
+    if (scope) authOptions.scope = scope;
+    if (audience) authOptions.audience = audience;
+    if (resource) authOptions.resource = resource;
+
     const testRunParams = {
       testRunId,
       footprints,
@@ -106,6 +117,7 @@ export const handler = async (
       oidAuthUrl,
       clientId,
       clientSecret,
+      authOptions,
       version,
       webhookUrl: WEBHOOK_URL,
     };
