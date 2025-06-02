@@ -1,0 +1,15 @@
+services:
+  pact-conformance-db:
+    container_name: pact-conformance-db
+    image: postgres:15.2-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - PGPASSWORD=postgres
+      - POSTGRES_DB=pact-conformance-db
+    ports:
+      - 5433:5432
+    networks:
+      - pact-network
+networks:
+  pact-network:
