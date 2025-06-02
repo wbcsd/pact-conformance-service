@@ -194,20 +194,25 @@ export class DynamoDBAdapter implements Database {
     let testRuns: AWS.DynamoDB.DocumentClient.ItemList = [];
     let lastEvaluatedKey;
 
+    // Use pagination to scan DynamoDB to retrieve all items
     do {
+      // Add LastEvaluatedKey to params if available from last scan
       if (lastEvaluatedKey) {
         params.ExclusiveStartKey = lastEvaluatedKey;
       }
 
       const result = await this.docClient.scan(params).promise();
 
+      // Add items from this scan to our collection
       if (result.Items && result.Items.length > 0) {
         testRuns = [...testRuns, ...result.Items];
       }
 
+      // Get the LastEvaluatedKey for next scan if available
       lastEvaluatedKey = result.LastEvaluatedKey;
     } while (lastEvaluatedKey);
 
+    // Sort by timestamp (most recent first)
     testRuns.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );

@@ -3,6 +3,7 @@ import { DatabaseFactory, DatabaseType } from "../data/factory";
 import { TestRunStatus } from "../types/types";
 import { getTestResults } from "../utils/dbUtils";
 
+const MAX_TEST_RUNS_TO_FETCH = 100;
 const MAX_TEST_RUNS_TO_ENRICH = 10;
 
 export const handler = async (
@@ -17,12 +18,13 @@ export const handler = async (
     // Get recent test runs for the specified email
     const testRuns = await database.getRecentTestRuns(
       adminEmail,
-      MAX_TEST_RUNS_TO_ENRICH
+      MAX_TEST_RUNS_TO_FETCH
     );
 
-    // Enrich the test runs with status information
-    const enrichedTestRuns = await Promise.all(
-      testRuns.map(async (testRun) => {
+    // Get only the top MAX_TEST_RUNS_TO_ENRICH most recent test runs to enrich
+    await Promise.all(
+
+      testRuns.slice(0, MAX_TEST_RUNS_TO_ENRICH).map(async (testRun) => {
         // Get test results for this test run
         const testResults = await getTestResults(testRun.testId);
 
@@ -30,6 +32,7 @@ export const handler = async (
         let status = TestRunStatus.PASS;
 
         // If there are no test results, mark as FAIL as no tests were run
+        // a common reason is that we couldn't authenticate with the base api before running the tests
         if (!testResults || testResults.results.length === 0) {
           status = TestRunStatus.FAIL;
         } else {
@@ -47,12 +50,10 @@ export const handler = async (
             }
           }
         }
-
-        return {
-          ...testRun,
-          status,
-        };
+        testRun.status = status;
+        return true
       })
+
     );
 
     return {
@@ -62,8 +63,8 @@ export const handler = async (
       },
       body: JSON.stringify({
         totalCount: testRuns.length,
-        returnedCount: enrichedTestRuns.length,
-        testRuns: enrichedTestRuns,
+        returnedCount: testRuns.length,
+        testRuns: testRuns
       }),
     };
   } catch (error) {
