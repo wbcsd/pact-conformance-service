@@ -26,7 +26,6 @@ export class PostgresAdapter implements Database {
           test_id VARCHAR(255) PRIMARY KEY,
           timestamp TIMESTAMP NOT NULL,
           company_name VARCHAR(255) NOT NULL,
-          company_identifier VARCHAR(255) NOT NULL,
           admin_email VARCHAR(255) NOT NULL,
           admin_name VARCHAR(255) NOT NULL,
           tech_spec_version VARCHAR(50) NOT NULL
@@ -70,23 +69,21 @@ export class PostgresAdapter implements Database {
     
     const query = `
       INSERT INTO test_runs (
-        test_id, timestamp, company_name, company_identifier, 
+        test_id, timestamp, company_name, 
         admin_email, admin_name, tech_spec_version
       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (test_id) DO UPDATE SET
         timestamp = $2,
         company_name = $3,
-        company_identifier = $4,
-        admin_email = $5,
-        admin_name = $6,
-        tech_spec_version = $7
+        admin_email = $4,
+        admin_name = $5,
+        tech_spec_version = $6
     `;
     
     const values = [
       details.testRunId,
       timestamp,
       details.companyName,
-      details.companyIdentifier,
       details.adminEmail,
       details.adminName,
       details.techSpecVersion,

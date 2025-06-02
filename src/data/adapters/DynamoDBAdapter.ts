@@ -30,7 +30,6 @@ export class DynamoDBAdapter implements Database {
         SK: SK_TYPES.DETAILS,
         timestamp,
         companyName: details.companyName,
-        companyIdentifier: details.companyIdentifier,
         adminEmail: details.adminEmail,
         adminName: details.adminName,
         techSpecVersion: details.techSpecVersion,
