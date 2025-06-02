@@ -434,6 +434,61 @@ describe("runTestCases Lambda handler with nock", () => {
       )
       .reply(200, mockFootprintsV3);
 
+    // Mock for Test Cases 30-39: Inverse test cases with bogus parameters (should return empty data)
+    // Test Case 30: Bogus productId
+    persistentNock(mockBaseUrl)
+      .get(/\/3\/footprints\?productId=urn:bogus:product:[^&]+/)
+      .reply(200, { data: [] });
+
+    // Test Case 31: Bogus companyId
+    persistentNock(mockBaseUrl)
+      .get(/\/3\/footprints\?companyId=urn:bogus:company:[^&]+/)
+      .reply(200, { data: [] });
+
+    // Test Case 32: Bogus geography
+    persistentNock(mockBaseUrl)
+      .get("/3/footprints?geography=XX")
+      .reply(200, { data: [] });
+
+    // Test Case 33: Bogus classification
+    persistentNock(mockBaseUrl)
+      .get(/\/3\/footprints\?classification=urn:bogus:classification:[^&]+/)
+      .reply(200, { data: [] });
+
+    // Test Case 34: Bogus validOn (historical date)
+    persistentNock(mockBaseUrl)
+      .get("/3/footprints?validOn=1900-01-01T00:00:00Z")
+      .reply(200, { data: [] });
+
+    // Test Case 35: Bogus validAfter (future date)
+    persistentNock(mockBaseUrl)
+      .get("/3/footprints?validAfter=2099-12-31T23:59:59Z")
+      .reply(200, { data: [] });
+
+    // Test Case 36: Bogus validBefore (historical date)
+    persistentNock(mockBaseUrl)
+      .get("/3/footprints?validBefore=1900-01-01T00:00:00Z")
+      .reply(200, { data: [] });
+
+    // Test Case 37: Bogus status
+    persistentNock(mockBaseUrl)
+      .get(/\/3\/footprints\?status=BogusStatus[^&]+/)
+      .reply(200, { data: [] });
+
+    // Test Case 38: Bogus status and productId
+    persistentNock(mockBaseUrl)
+      .get(
+        /\/3\/footprints\?status=BogusStatus[^&]+&productId=urn:bogus:product:[^&]+/
+      )
+      .reply(200, { data: [] });
+
+    // Test Case 39: Multiple bogus companyId values (OR logic)
+    persistentNock(mockBaseUrl)
+      .get(
+        /\/3\/footprints\?companyId=urn:bogus:company:[^&]+&companyId=urn:bogus:company:[^&]+&companyId=urn:bogus:company:[^&]+/
+      )
+      .reply(200, { data: [] });
+
     // Non https mocks
     persistentNock(mockHttpBaseUrl)
       .get("/3/footprints")
@@ -473,12 +528,14 @@ describe("runTestCases Lambda handler with nock", () => {
       JSON.parse(result.body).results.filter(
         (r: TestResult) => r.success === false
       )
-    ).toHaveLength(2); // Async tests should be pending
+    ).toHaveLength(2); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14)
     expect(
       JSON.parse(result.body).results.find(
         (r: TestResult) => r.success === false && r.mandatory
       )
     ).toHaveProperty("testKey", "TESTCASE#13");
+
+    console.log(nock.pendingMocks());
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);

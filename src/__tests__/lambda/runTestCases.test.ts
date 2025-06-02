@@ -483,13 +483,13 @@ describe("runTestCases Lambda handler V3 specific", () => {
     });
 
     // Verify that runTestCase was called the correct number of times (once for each test case)
-    // There are 26 test cases defined in the handler, plus two placeholders for the async test cases which are skipped
-    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(27);
+    // There are 39 test cases defined in the handler (29 original + 10 new inverse), minus 2 async placeholders which are skipped = 37
+    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(37);
 
     // Verify that saveTestCaseResults was called with the results
     expect(dbUtils.saveTestCaseResults).toHaveBeenCalled();
     const savedResults = (dbUtils.saveTestCaseResults as jest.Mock).mock
       .calls[0][1];
-    expect(savedResults).toHaveLength(29); // 27 test cases + 2 placeholder for the async test cases
+    expect(savedResults).toHaveLength(39); // 37 executed test cases + 2 placeholder for the async test cases
   });
 });

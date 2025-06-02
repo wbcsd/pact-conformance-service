@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
 import {
   simpleResponseSchema,
+  emptyResponseSchema,
   v3_0_ResponseSchema,
   V3_0_SingleFootprintResponseSchema,
 } from "../schemas/responseSchema";
@@ -663,6 +664,164 @@ export const generateV3TestCases = ({
       },
       conditionErrorMessage: `One or more footprints do not match the companyId filter in OR logic test: ${filterParams.companyId}`,
       testKey: "TESTCASE#29",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-29-v3-filtering-functionality-get-filtered-list-of-footprints-by-multiple-filter-parameters-using-or-logic-positive-test-case",
+    },
+    {
+      name: `Test Case 30: V3 Filtering Functionality: Get Empty List of Footprints by bogus "productId" parameter`,
+      method: "GET",
+      endpoint: `/3/footprints?productId=urn:bogus:product:${randomString(16)}`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus productId filter`,
+      testKey: "TESTCASE#30",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-20-v3-filtering-functionality-get-filtered-list-of-footprints-by-productid-parameter",
+    },
+    {
+      name: `Test Case 31: V3 Filtering Functionality: Get Empty List of Footprints by bogus "companyId" parameter`,
+      method: "GET",
+      endpoint: `/3/footprints?companyId=urn:bogus:company:${randomString(16)}`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus companyId filter`,
+      testKey: "TESTCASE#31",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-21-v3-filtering-functionality-get-filtered-list-of-footprints-by-companyid-parameter",
+    },
+    {
+      name: `Test Case 32: V3 Filtering Functionality: Get Empty List of Footprints by bogus "geography" parameter`,
+      method: "GET",
+      endpoint: `/3/footprints?geography=XX`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus geography filter`,
+      testKey: "TESTCASE#32",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-22-v3-filtering-functionality-get-filtered-list-of-footprints-by-geography-parameter",
+    },
+    {
+      name: `Test Case 33: V3 Filtering Functionality: Get Empty List of Footprints by bogus "classification" parameter`,
+      method: "GET",
+      endpoint: `/3/footprints?classification=urn:bogus:classification:${randomString(
+        16
+      )}`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus classification filter`,
+      testKey: "TESTCASE#33",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-23-v3-filtering-functionality-get-filtered-list-of-footprints-by-classification-parameter",
+    },
+    {
+      name: `Test Case 34: V3 Filtering Functionality: Get Empty List of Footprints by bogus "validOn" parameter`,
+      method: "GET",
+      endpoint: `/3/footprints?validOn=1900-01-01T00:00:00Z`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus validOn filter (date in the past)`,
+      testKey: "TESTCASE#34",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-24-v3-filtering-functionality-get-filtered-list-of-footprints-by-validon-parameter",
+    },
+    {
+      name: `Test Case 35: V3 Filtering Functionality: Get Empty List of Footprints by bogus "validAfter" parameter`,
+      method: "GET",
+      endpoint: `/3/footprints?validAfter=2099-12-31T23:59:59Z`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus validAfter filter (date in the future)`,
+      testKey: "TESTCASE#35",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-25-v3-filtering-functionality-get-filtered-list-of-footprints-by-validafter-parameter",
+    },
+    {
+      name: `Test Case 36: V3 Filtering Functionality: Get Empty List of Footprints by bogus "validBefore" parameter`,
+      method: "GET",
+      endpoint: `/3/footprints?validBefore=1900-01-01T00:00:00Z`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus validBefore filter (date in the past)`,
+      testKey: "TESTCASE#36",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-26-v3-filtering-functionality-get-filtered-list-of-footprints-by-validbefore-parameter",
+    },
+    {
+      name: `Test Case 37: V3 Filtering Functionality: Get Empty List of Footprints by bogus "status" parameter`,
+      method: "GET",
+      endpoint: `/3/footprints?status=BogusStatus${randomString(8)}`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus status filter`,
+      testKey: "TESTCASE#37",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-27-v3-filtering-functionality-get-filtered-list-of-footprints-by-status-parameter",
+    },
+    {
+      name: `Test Case 38: V3 Filtering Functionality: Get Empty List of Footprints by both bogus "status" and "productId" parameters`,
+      method: "GET",
+      endpoint: `/3/footprints?status=BogusStatus${randomString(
+        8
+      )}&productId=urn:bogus:product:${randomString(16)}`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus status and productId filters`,
+      testKey: "TESTCASE#38",
+      mandatoryVersion: ["V3.0"],
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-28-v3-filtering-functionality-get-filtered-list-of-footprints-by-both-status-and-productid-parameters",
+    },
+    {
+      name: "Test Case 39: V3 Filtering Functionality: Get Empty List of Footprints by multiple bogus filter parameters using OR logic",
+      method: "GET",
+      endpoint: `/3/footprints?companyId=urn:bogus:company:${randomString(
+        8
+      )}&companyId=urn:bogus:company:${randomString(
+        8
+      )}&companyId=urn:bogus:company:${randomString(8)}`,
+      expectedStatusCodes: [200],
+      schema: emptyResponseSchema,
+      condition: ({ data }) => {
+        return data.length === 0;
+      },
+      conditionErrorMessage: `Expected empty data array for bogus companyId filters in OR logic test`,
+      testKey: "TESTCASE#39",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-29-v3-filtering-functionality-get-filtered-list-of-footprints-by-multiple-filter-parameters-using-or-logic-positive-test-case",
