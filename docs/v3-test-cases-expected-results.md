@@ -343,7 +343,7 @@ Example response body:
 
 ```
 {
-  "code": "NoSuchFootprint",
+  "code": "NotFound",
   "message": "Footprint with ID 'non-existent-id' does not exist"
 }
 ```

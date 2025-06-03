@@ -236,7 +236,7 @@ export const generateV3TestCases = ({
       condition: ({ code }) => {
         return code === "NotFound";
       },
-      conditionErrorMessage: `Expected error code NoSuchFootprint in response.`,
+      conditionErrorMessage: `Expected error code NotFound in response.`,
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#8",
       documentationUrl:
