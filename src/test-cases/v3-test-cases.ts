@@ -681,7 +681,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#30",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-20-v3-filtering-functionality-get-filtered-list-of-footprints-by-productid-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-30-v3-filtering-functionality-get-filtered-list-of-footprints-by-productid-parameter-negative-test-case",
     },
     {
       name: `Test Case 31: V3 Filtering Functionality: Get Filtered List of Footprints by "companyId" parameter (negative test case)`,
@@ -696,7 +696,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#31",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-21-v3-filtering-functionality-get-filtered-list-of-footprints-by-companyid-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-31-v3-filtering-functionality-get-filtered-list-of-footprints-by-companyid-parameter-negative-test-case",
     },
     {
       name: `Test Case 32: V3 Filtering Functionality: Get Filtered List of Footprints by "geography" parameter (negative test case)`,
@@ -711,7 +711,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#32",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-22-v3-filtering-functionality-get-filtered-list-of-footprints-by-geography-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-32-v3-filtering-functionality-get-filtered-list-of-footprints-by-geography-parameter-negative-test-case",
     },
     {
       name: `Test Case 33: V3 Filtering Functionality: Get Filtered List of Footprints by "classification" parameter (negative test case)`,
@@ -728,7 +728,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#33",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-23-v3-filtering-functionality-get-filtered-list-of-footprints-by-classification-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-33-v3-filtering-functionality-get-filtered-list-of-footprints-by-classification-parameter-negative-test-case",
     },
     {
       name: `Test Case 34: V3 Filtering Functionality: Get Filtered List of Footprints by "validOn" parameter (negative test case)`,
@@ -743,7 +743,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#34",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-24-v3-filtering-functionality-get-filtered-list-of-footprints-by-validon-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-34-v3-filtering-functionality-get-filtered-list-of-footprints-by-validon-parameter-negative-test-case",
     },
     {
       name: `Test Case 35: V3 Filtering Functionality: Get Filtered List of Footprints by "validAfter" parameter (negative test case)`,
@@ -758,7 +758,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#35",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-25-v3-filtering-functionality-get-filtered-list-of-footprints-by-validafter-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-35-v3-filtering-functionality-get-filtered-list-of-footprints-by-validafter-parameter-negative-test-case",
     },
     {
       name: `Test Case 36: V3 Filtering Functionality: Get Filtered List of Footprints by "validBefore" parameter (negative test case)`,
@@ -773,7 +773,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#36",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-26-v3-filtering-functionality-get-filtered-list-of-footprints-by-validbefore-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-36-v3-filtering-functionality-get-filtered-list-of-footprints-by-validbefore-parameter-negative-test-case",
     },
     {
       name: `Test Case 37: V3 Filtering Functionality: Get Filtered List of Footprints by "status" parameter (negative test case)`,
@@ -788,7 +788,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#37",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-27-v3-filtering-functionality-get-filtered-list-of-footprints-by-status-parameter",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-37-v3-filtering-functionality-get-filtered-list-of-footprints-by-status-parameter-negative-test-case",
     },
     {
       name: `Test Case 38: V3 Filtering Functionality: Get Filtered List of Footprints by multilpe filter parameters using AND logic (negative test case)`,
@@ -805,7 +805,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#38",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-28-v3-filtering-functionality-get-filtered-list-of-footprints-by-both-status-and-productid-parameters",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-38-v3-filtering-functionality-get-filtered-list-of-footprints-by-multilpe-filter-parameters-using-and-logic-negative-test-case",
     },
     {
       name: "Test Case 39: V3 Filtering Functionality: Get Filtered List of Footprints by multilpe filter parameters using OR logic (negative test case)",
@@ -824,7 +824,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#39",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-29-v3-filtering-functionality-get-filtered-list-of-footprints-by-multiple-filter-parameters-using-or-logic-positive-test-case",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-39-v3-filtering-functionality-get-filtered-list-of-footprints-by-multilpe-filter-parameters-using-or-logic-negative-test-case",
     },
   ];
 };
