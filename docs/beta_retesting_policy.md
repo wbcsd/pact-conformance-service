@@ -15,12 +15,14 @@ Solution Providers are regardless encouraged to periodically retest to later ver
 
 ## Tool Versioning Scheme
 To ensure clarity and transparency when changes are made to the tool, especially changes to the testing suite, PACT will version the tool as follows:
+
 - The tool releases will be numbered according to [semantic versioning](https://semver.org/)
 - Every minor and major release of the PACT Technical Specifications will correspond to a related tool release; the tool however will release much more frequently than PACT Tech Specs
 - Each testing suite (corresponding to a given major/minor version of the Tech Specs) will be indicated as either in "Beta Phase" or "General Release" phase. PACT will determine when to promote a version to "General Release" phase, once the testing suite is stabilized and robust to ensure conformance results are fully reliable and integrous, which will take into consideration issue rate, number of solutions having 100% tests passing, time to conformance, etc.
 
 ## Tool / Tech Specs discrepancy resolution process
 PACT acknowledges that during the use of the tool, the community may encounter questions regarding discrepancies and/or differences of interpretation between the Tech Specs and the tool. This is expected and our goal with the tool is to systematically address and remove these discrepancies, thus driving interoperability robustness. We will use the process defined below to resolve discrepancies / issues as a community,
+
 * During use of the tool, a Solution Provider is expected to share feedback if they encounter any of the following, per their interpretation: 
   * a test case of the tool does not correctly implement the PACT Tech Specs
   * PACT Tech Specs are ambiguous and therefore a discrepancy exists between the tool and PACT Tech Specs
