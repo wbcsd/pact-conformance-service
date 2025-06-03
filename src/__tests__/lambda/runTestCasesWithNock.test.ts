@@ -442,7 +442,7 @@ describe("runTestCases Lambda handler with nock", () => {
 
     // Test Case 31: Bogus companyId
     persistentNock(mockBaseUrl)
-      .get(/\/3\/footprints\?companyId=urn:bogus:company:[^&]+/)
+      .get(/\/3\/footprints\?companyId=urn:bogus:company:[^&]+(?:$)/)
       .reply(200, { data: [] });
 
     // Test Case 32: Bogus geography
@@ -472,7 +472,7 @@ describe("runTestCases Lambda handler with nock", () => {
 
     // Test Case 37: Bogus status
     persistentNock(mockBaseUrl)
-      .get(/\/3\/footprints\?status=BogusStatus[^&]+/)
+      .get(/\/3\/footprints\?status=BogusStatus[^&]+(?:$)/)
       .reply(200, { data: [] });
 
     // Test Case 38: Bogus status and productId
@@ -534,8 +534,6 @@ describe("runTestCases Lambda handler with nock", () => {
         (r: TestResult) => r.success === false && r.mandatory
       )
     ).toHaveProperty("testKey", "TESTCASE#13");
-
-    console.log(nock.pendingMocks());
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);
