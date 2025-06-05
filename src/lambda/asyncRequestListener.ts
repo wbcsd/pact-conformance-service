@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import { APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from "aws-lambda";
 import {
   EventTypes,
   EventTypesV3,
@@ -25,8 +25,8 @@ const TEST_CASE_14_NAME = "Test Case 14: Handle Rejected PCF Request";
 const MANDATORY_VERSIONS = ["V2.2", "V2.3", "V3.0"];
 
 export const handler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
+  event: APIGatewayProxyEventV2
+): Promise<APIGatewayProxyResultV2> => {
   try {
     // Log the entire event for debugging
     console.log("Received event:", JSON.stringify(event, null, 2));
@@ -66,9 +66,16 @@ export const handler = async (
             ? eventFulfilledSchema
             : v3_0_EventFulfilledSchema
         );
-        const isValid = validateEvent(body);
+        const eventIsValid = validateEvent(body);
 
-        if (isValid) {
+        // Validate the request path based on version
+        const expectedPath = testData.version.startsWith("V2")
+          ? "/2/events"
+          : "/3/events";
+        const actualPath = event.requestContext?.http?.path;
+        const isPathValid = actualPath === expectedPath;
+
+        if (eventIsValid && isPathValid) {
           testResult = {
             name: TEST_CASE_13_NAME,
             status: TestResultStatus.SUCCESS,
@@ -80,15 +87,24 @@ export const handler = async (
               : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
           };
         } else {
+          let errorMessage = "";
+          if (!eventIsValid) {
+            errorMessage += `Event validation failed: ${JSON.stringify(
+              validateEvent.errors
+            )}`;
+          }
+          if (!isPathValid) {
+            if (errorMessage) errorMessage += "; ";
+            errorMessage += `Invalid request path: expected ${expectedPath}, but received ${actualPath}`;
+          }
+
           testResult = {
             name: TEST_CASE_13_NAME,
             status: TestResultStatus.FAILURE,
             success: false,
             mandatory: isMandatory,
             testKey: "TESTCASE#13",
-            errorMessage: `Event validation failed: ${JSON.stringify(
-              validateEvent.errors
-            )}`,
+            errorMessage,
             documentationUrl: testData.version.startsWith("V2")
               ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event"
               : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
@@ -124,12 +140,18 @@ export const handler = async (
         const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
         let testResult: TestResult;
 
-        // For rejected events, we just check that the error object has a code and message
-        if (
-          body.data.error &&
-          body.data.error.code &&
-          body.data.error.message
-        ) {
+        // Validate the request path based on version
+        const expectedPath = testData.version.startsWith("V2")
+          ? "/2/events"
+          : "/3/events";
+        const actualPath = event.requestContext?.http?.path;
+        const isPathValid = actualPath === expectedPath;
+
+        // For rejected events, we check that the error object has a code and message, plus path validation
+        const hasValidErrorObject =
+          body.data.error && body.data.error.code && body.data.error.message;
+
+        if (hasValidErrorObject && isPathValid) {
           testResult = {
             name: TEST_CASE_14_NAME,
             status: TestResultStatus.SUCCESS,
@@ -141,14 +163,23 @@ export const handler = async (
               : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
           };
         } else {
+          let errorMessage = "";
+          if (!hasValidErrorObject) {
+            errorMessage +=
+              "Rejected event must contain an error object with a code and message";
+          }
+          if (!isPathValid) {
+            if (errorMessage) errorMessage += "; ";
+            errorMessage += `Invalid request path: expected ${expectedPath}, but received ${actualPath}`;
+          }
+
           testResult = {
             name: TEST_CASE_14_NAME,
             status: TestResultStatus.FAILURE,
             success: false,
             mandatory: isMandatory,
             testKey: "TESTCASE#14",
-            errorMessage:
-              "Rejected event must contain an error object with a code and message",
+            errorMessage,
             documentationUrl: testData.version.startsWith("V2")
               ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event"
               : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
