@@ -9,3 +9,9 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "webhook_url" {
+  description = "The webhook URL for the API events endpoint"
+  type        = string
+  default     = "https://conformance.services.dev.carbon-transparency.org"
+}

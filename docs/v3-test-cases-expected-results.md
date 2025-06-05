@@ -215,7 +215,7 @@ This test verifies the pagination functionality for the ListFootprints API.
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?page=2` or pagination URL from response links
+- Endpoint: `{API_BASE_URL}/3/footprints?offset=2` or pagination URL from response links
 
 Request headers:
 
