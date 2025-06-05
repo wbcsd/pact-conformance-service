@@ -437,9 +437,7 @@ Request body:
   "time": "2023-05-19T10:30:00Z",
   "type": "org.wbcsd.pact.ProductFootprint.RequestCreatedEvent.3",
   "data": {
-    "pf": {
-      "productIds": ["urn:gtin:1234567890123"]
-    },
+    "productId": ["urn:gtin:1234567890123"],
     "comment": "Please send PCF data for this year."
   }
 }
@@ -696,9 +694,7 @@ Request body:
   "time": "2023-05-19T13:30:00Z",
   "type": "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
   "data": {
-    "pf": {
-      "productIds": ["urn:gtin:4712345060507"]
-    },
+    "productId": ["urn:gtin:4712345060507"]
     "comment": "Please send PCF data for this year."
   }
 }
