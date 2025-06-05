@@ -17,8 +17,9 @@ interface Footprint {
   productIds: string[];
   companyIds: string[];
   pcf: {
-    geographyRegionOrSubregion?: string;
     geographyCountry?: string;
+    geographyCountrySubdivision?: string;
+    geographyRegionOrSubregion?: string;
     referencePeriodEnd: string;
   };
   productClassifications: string[];
@@ -86,6 +87,7 @@ const getFilterParameters = (footprints: FootprintsData) => {
     geography:
       firstFootprint.pcf.geographyCountry ||
       firstFootprint.pcf.geographyRegionOrSubregion ||
+      firstFootprint.pcf.geographyCountrySubdivision ||
       "",
     classification: firstFootprint.productClassifications
       ? firstFootprint.productClassifications[0]
@@ -466,11 +468,14 @@ export const generateV3TestCases = ({
           (footprint: {
             pcf: {
               geographyCountry?: string;
-              geographyRegionOrSubRegion?: string;
+              geographyRegionOrSubregion?: string;
+              geographyCountrySubdivision?: string;
             };
           }) =>
             footprint.pcf.geographyCountry === filterParams.geography ||
-            footprint.pcf.geographyRegionOrSubRegion === filterParams.geography
+            footprint.pcf.geographyRegionOrSubregion ===
+              filterParams.geography ||
+            footprint.pcf.geographyCountrySubdivision === filterParams.geography
         );
       },
       conditionErrorMessage: `One or more footprints do not match the condition: 'pcf.geographyCountry = ${filterParams.geography}'`,
