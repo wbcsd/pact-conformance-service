@@ -8,10 +8,10 @@ Mandatory functionality of the PACT Technical Specifications are tested. The too
 - Configure your solution to be able to authenticate the Conformance tool's endpoint and make Action Event requests the tool will accept using the following credentials (see [sourcecode](https://github.com/wbcsd/pact-conformance-test-service/blob/main/src/lambda/authForAsyncListener.ts) for details).
     - clientId: `test_client_id`
     - clientSecret: `test_client_secret`
-- Solution must return 2 or more PCFs via a call to ListFootprints, i.e. solution must have 2 PCFs available and pre-configured to release these PCFs to the ACT tool
+- Solution must return 2 or more PCFs via a call to ListFootprints, i.e. solution must have 2 PCFs available and pre-configured to release these PCFs to the Conformance tool
 
 ### How is Authentication information handled?
-ACT requires users to provide the Solution API URl and `client_id` and `client_secret` to authentication to their solution and run tests. This authentication information is only stored in memory during testing and will never be saved nor transferred.
+The Conformance tool requires users to provide the Solution API URl and `client_id` and `client_secret` to authentication to their solution and run tests. This authentication information is only stored in memory during testing and will never be saved nor transferred.
 
 ### Is there a time duration for the testing suite?
 Yes, the conformance tool expects the test solution responds to each test case after some duration, and if a response is not received by this duration (i.e. timeout duration), the test case fails. The timeout differs between synchronous and asynchronous test cases; for synchronous test cases, the time duration is 2 seconds. For asynchronous test cases, it is 30 seconds.
