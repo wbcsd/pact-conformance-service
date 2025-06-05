@@ -20,6 +20,17 @@ export const handler = async (
     }
 
     const result = await getTestResults(testRunId);
+    if (!result) {
+      return {
+        statusCode: 404,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: `Test run with ID ${testRunId} not found`,
+        }),
+      };
+    }
 
     // Calculate passing percentage
     const mandatoryTests = result.results.filter((test) => test.mandatory);
