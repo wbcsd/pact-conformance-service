@@ -240,7 +240,7 @@ export const generateV2TestCases = ({
       },
       expectedStatusCodes: [200],
       requestData: {
-        specversion: "1.0",
+        specversion: "2.0.0",
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
@@ -266,7 +266,7 @@ export const generateV2TestCases = ({
       expectedStatusCodes: [200],
       requestData: {
         type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
-        specversion: "1.0",
+        specversion: "2.0.0",
         id: randomUUID(),
         source: webhookUrl,
         time: new Date().toISOString(),
@@ -289,7 +289,7 @@ export const generateV2TestCases = ({
       expectedStatusCodes: [400],
       requestData: {
         type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
-        specversion: "1.0",
+        specversion: "2.0.0",
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
@@ -314,7 +314,7 @@ export const generateV2TestCases = ({
       method: "POST",
       customUrl: `${baseUrl.replace("https", "http")}/2/events`,
       requestData: {
-        specversion: "1.0",
+        specversion: "2.0.0",
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
