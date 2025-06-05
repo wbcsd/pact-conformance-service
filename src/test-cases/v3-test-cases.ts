@@ -107,6 +107,7 @@ export const generateV3TestCases = ({
   oidAuthUrl,
   clientId,
   clientSecret,
+  authRequestData,
   version,
   webhookUrl,
 }: {
@@ -118,6 +119,7 @@ export const generateV3TestCases = ({
   oidAuthUrl: string | null | undefined;
   clientId: string;
   clientSecret: string;
+  authRequestData: string;
   version: ApiVersion;
   webhookUrl: string;
 }): TestCase[] => {
@@ -137,7 +139,7 @@ export const generateV3TestCases = ({
       name: "Test Case 1: Obtain auth token with valid credentials",
       method: "POST",
       customUrl: oidAuthUrl || `${authBaseUrl}/auth/token`,
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       expectedStatusCodes: [200],
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       mandatoryVersion: ["V3.0"],
@@ -149,7 +151,7 @@ export const generateV3TestCases = ({
       name: "Test Case 2: Obtain auth token with invalid credentials",
       method: "POST",
       customUrl: oidAuthUrl || `${authBaseUrl}/auth/token`,
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       expectedStatusCodes: [400, 401],
       headers: getIncorrectAuthHeaders(baseUrl),
       mandatoryVersion: ["V3.0"],
@@ -257,7 +259,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#9",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       condition: (response) => {
         return !response.data && !response.access_token;
       },
@@ -406,7 +408,7 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [200],
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       testKey: "TESTCASE#18",
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-18-openid-connect-based-authentication-flow",
     },
@@ -417,7 +419,7 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [400, 401],
       headers: getIncorrectAuthHeaders(baseUrl),
       testKey: "TESTCASE#19",
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-19-openid-connect-based-authentication-flow-with-incorrect-credentials",
     },
