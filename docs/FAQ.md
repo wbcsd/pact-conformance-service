@@ -1,10 +1,13 @@
-# Automated Conformance Testing FAQ
+# Conformance Testing FAQ
 
-### What is tested by the Atomated Conformance Testing tool?
-Mandatory functionality of the PACT Technical Specifications are tested. The tool runs a comprehensive set of test cases, which varies by Technical Specification version. Test cases include both a validation of teh data model schema as well as mandatory API functionality. See the set of test cases [here](docs/ACT_Test_Cases.pdf)
+### What is tested by the Conformance tool?
+Mandatory functionality of the PACT Technical Specifications are tested. The tool runs a comprehensive set of test cases, which varies by Technical Specification version. Test cases include both a validation of the data model schema as well as mandatory API functionality. See [Test Cases V2](https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v2-test-cases-expected-results.md) and [Test Cases V3](https://github.com/wbcsd/pact-conformance-service/blob/main/docs/v3-test-cases-expected-results.md).
 
 ### What solution pre-requisites are required to pass all tests?
-- Solution must implement all mandatory functionality of the PACT Technical Specifications
+- Build a PACT Conformant Solution (or at least partial PACT Conformant Solution) based on [PACT Tech Specs](https://docs.carbon-transparency.org/) (Version 2.X or 3.X)
+- Configure your solution to be able to authenticate the Conformance tool's endpoint and make Action Event requests the tool will accept using the following credentials (see [sourcecode](https://github.com/wbcsd/pact-conformance-test-service/blob/main/src/lambda/authForAsyncListener.ts) for details).
+    - clientId: `test_client_id`
+    - clientSecret: `test_client_secret`
 - Solution must return 2 or more PCFs via a call to ListFootprints, i.e. solution must have 2 PCFs available and pre-configured to release these PCFs to the ACT tool
 
 ### How is Authentication information handled?
