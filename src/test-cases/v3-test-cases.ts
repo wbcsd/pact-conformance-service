@@ -803,7 +803,7 @@ export const generateV3TestCases = ({
     {
       name: `Test Case 38: V3 Filtering Functionality: Get Filtered List of Footprints by multilpe filter parameters using AND logic (negative test case)`,
       method: "GET",
-      endpoint: `/3/footprints?status=BogusStatus${randomString(
+      endpoint: `/3/footprints?companyId=urn:bogus:company:${randomString(
         8
       )}&productId=urn:bogus:product:${randomString(16)}`,
       expectedStatusCodes: [200],
@@ -811,7 +811,7 @@ export const generateV3TestCases = ({
       condition: ({ data }) => {
         return data.length === 0;
       },
-      conditionErrorMessage: `Expected empty data array for bogus status and productId filters`,
+      conditionErrorMessage: `Expected empty data array for bogus companyId and productId filters`,
       testKey: "TESTCASE#38",
       mandatoryVersion: ["V3.0"],
       documentationUrl:
