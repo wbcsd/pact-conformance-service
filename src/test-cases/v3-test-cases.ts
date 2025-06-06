@@ -303,7 +303,7 @@ export const generateV3TestCases = ({
       },
       expectedStatusCodes: [200],
       requestData: {
-        specversion: "3.0.0",
+        specversion: "1.0",
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
@@ -329,7 +329,7 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [200],
       requestData: {
         type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
-        specversion: "3.0.0",
+        specversion: "1.0",
         id: randomUUID(),
         source: webhookUrl,
         time: new Date().toISOString(),
@@ -352,7 +352,7 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [400],
       requestData: {
         type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
-        specversion: "3.0.0",
+        specversion: "1.0",
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
@@ -377,7 +377,7 @@ export const generateV3TestCases = ({
       method: "POST",
       customUrl: `${baseUrl.replace("https", "http")}/3/events`,
       requestData: {
-        specversion: "3.0.0",
+        specversion: "1.0",
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
