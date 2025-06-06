@@ -381,8 +381,7 @@ export const generateV3TestCases = ({
         time: new Date().toISOString(),
         type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
         data: {
-          productId: ["urn:gtin:4712345060507"],
-          comment: "Please send PCF data for this year.",
+          pfIds: ["urn:gtin:4712345060507"],
         },
       },
       headers: {
