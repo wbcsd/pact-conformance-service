@@ -309,9 +309,7 @@ export const generateV3TestCases = ({
         time: new Date().toISOString(),
         type: "org.wbcsd.pact.ProductFootprint.RequestCreatedEvent.3",
         data: {
-          pf: {
-            productIds: filterParams.productIds,
-          },
+          productId: filterParams.productIds,
           comment: "Please send PCF data for this year.",
         },
       },
@@ -383,9 +381,7 @@ export const generateV3TestCases = ({
         time: new Date().toISOString(),
         type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
         data: {
-          pf: {
-            productIds: ["urn:gtin:4712345060507"],
-          },
+          productId: ["urn:gtin:4712345060507"],
           comment: "Please send PCF data for this year.",
         },
       },

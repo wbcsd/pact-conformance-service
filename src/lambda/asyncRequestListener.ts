@@ -111,9 +111,11 @@ export const handler = async (
           };
         }
 
-        const productIds = body.data.pfs.flatMap(
-          (pf: { productIds: string[] }) => pf.productIds
-        );
+        const productIds = testData.version.startsWith("V2")
+          ? body.data.pfs.flatMap(
+              (pf: { productIds: string[] }) => pf.productIds
+            )
+          : body.data.productId;
         const testPassed = testData.productIds.some((id: string) =>
           productIds.includes(id)
         );
