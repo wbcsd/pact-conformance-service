@@ -475,10 +475,10 @@ describe("runTestCases Lambda handler with nock", () => {
       .get(/\/3\/footprints\?status=BogusStatus[^&]+(?:$)/)
       .reply(200, { data: [] });
 
-    // Test Case 38: Bogus status and productId
+    // Test Case 38: Bogus companyId and productId
     persistentNock(mockBaseUrl)
       .get(
-        /\/3\/footprints\?status=BogusStatus[^&]+&productId=urn:bogus:product:[^&]+/
+        /\/3\/footprints\?companyId=urn:bogus:company:[^&]+&productId=urn:bogus:product:[^&]+/
       )
       .reply(200, { data: [] });
 
