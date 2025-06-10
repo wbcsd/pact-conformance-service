@@ -1453,7 +1453,7 @@ This test verifies that the API returns an empty result when filtering with mult
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?status=BogusStatusValue&productId=urn:bogus:product:nonexistent123`
+- Endpoint: `{API_BASE_URL}/3/footprints?companyId=urn:bogus:company:5FIi8zS3&productId=urn:bogus:product:nonexistent123`
 
 Request headers:
 
