@@ -1,3 +1,6 @@
+// Mock environment variable before importing the adapter as it reads the variable during import
+process.env.DYNAMODB_TABLE_NAME = "test-table";
+
 import { handler } from "../../lambda/runTestCases";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import nock from "nock";
