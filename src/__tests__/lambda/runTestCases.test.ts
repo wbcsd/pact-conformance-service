@@ -1,3 +1,6 @@
+// Mock environment variable before importing the adapter as it reads the variable during import
+process.env.DYNAMODB_TABLE_NAME = "test-table";
+
 import { handler } from "../../lambda/runTestCases";
 import * as authUtils from "../../utils/authUtils";
 import * as fetchFootprints from "../../utils/fetchFootprints";

@@ -1,3 +1,6 @@
+// Mock environment variable before importing the adapter as it reads the variable during import
+process.env.DYNAMODB_TABLE_NAME = "test-table";
+
 import { handler } from "../../lambda/asyncRequestListener";
 import {
   APIGatewayProxyEventV2,
@@ -10,9 +13,6 @@ import { TestResultStatus } from "../../types/types";
 
 // Mock the DB utils
 jest.mock("../../utils/dbUtils");
-
-// Mock environment variable
-process.env.DYNAMODB_TABLE_NAME = "test-table";
 
 describe("asyncRequestListener Lambda handler", () => {
   // Prepare the APIGatewayProxyEventV2 mock
