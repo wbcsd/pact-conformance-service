@@ -71,6 +71,13 @@ resource "aws_lambda_function" "auth_for_async_listener" {
   filename         = "../lambdas.zip"
   timeout          = 10
   source_code_hash = filebase64sha256("../lambdas.zip")
+
+  environment {
+    variables = {
+      DATABASE_TYPE       = "dynamodb"
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.run_test_cases_table.name
+    }
+  }
 }
 
 # Permission for API Gateway to invoke authForAsyncListener Lambda
