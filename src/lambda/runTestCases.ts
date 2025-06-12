@@ -33,6 +33,9 @@ export const handler = async (
     adminEmail,
     adminName,
     customAuthBaseUrl,
+    scope,
+    audience,
+    resource
   }: {
     baseUrl: string;
     clientId: string;
@@ -42,6 +45,9 @@ export const handler = async (
     adminEmail: string;
     adminName: string;
     customAuthBaseUrl?: string;
+    scope?: string;
+    audience?: string;
+    resource?: string;
   } = JSON.parse(event.body || "{}");
 
   if (
@@ -77,10 +83,21 @@ export const handler = async (
 
     const oidAuthUrl = await getOidAuthUrl(authBaseUrl);
 
+    // Add scope, audience and resource to the auth request body
+    // Make sure to url encode things, otherwise it will not work
+    // Only include scope, audience and resource if they are provided
+    const authRequestData = new URLSearchParams({
+      grant_type: "client_credentials",
+      ...(scope && { scope }),
+      ...(audience && { audience }),
+      ...(resource && { resource })
+    }).toString();
+
     const accessToken = await getAccessToken(
       authBaseUrl,
       clientId,
       clientSecret,
+      authRequestData,
       oidAuthUrl
     );
 
@@ -106,6 +123,7 @@ export const handler = async (
       oidAuthUrl,
       clientId,
       clientSecret,
+      authRequestData,
       version,
       webhookUrl: WEBHOOK_URL,
     };

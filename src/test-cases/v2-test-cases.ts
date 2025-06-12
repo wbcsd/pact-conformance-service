@@ -26,6 +26,7 @@ export const generateV2TestCases = ({
   oidAuthUrl,
   clientId,
   clientSecret,
+  authRequestData,
   version,
   webhookUrl,
 }: {
@@ -37,6 +38,7 @@ export const generateV2TestCases = ({
   oidAuthUrl: string | null | undefined;
   clientId: string;
   clientSecret: string;
+  authRequestData: string;
   version: ApiVersion;
   webhookUrl: string;
 }): TestCase[] => {
@@ -70,13 +72,13 @@ export const generateV2TestCases = ({
         return v2_3_SingleFootprintResponseSchema; // Default to latest if unknown
     }
   })();
-
+  
   return [
     {
       name: "Test Case 1: Obtain auth token with valid credentials",
       method: "POST",
       customUrl: oidAuthUrl || `${authBaseUrl}/auth/token`,
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       expectedStatusCodes: [200],
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
@@ -88,7 +90,7 @@ export const generateV2TestCases = ({
       name: "Test Case 2: Obtain auth token with invalid credentials",
       method: "POST",
       customUrl: oidAuthUrl || `${authBaseUrl}/auth/token`,
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       expectedStatusCodes: [400, 401],
       headers: getIncorrectAuthHeaders(baseUrl),
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
@@ -196,7 +198,7 @@ export const generateV2TestCases = ({
       testKey: "TESTCASE#9",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       condition: (response) => {
         return !response.data && !response.access_token;
       },
@@ -342,7 +344,7 @@ export const generateV2TestCases = ({
       expectedStatusCodes: [200],
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       testKey: "TESTCASE#18",
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-18-openid-connect-based-authentication-flow",
     },
@@ -353,7 +355,7 @@ export const generateV2TestCases = ({
       expectedStatusCodes: [400, 401],
       headers: getIncorrectAuthHeaders(baseUrl),
       testKey: "TESTCASE#19",
-      requestData: "grant_type=client_credentials",
+      requestData: authRequestData,
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-19-openid-connect-based-authentication-flow-with-incorrect-credentials",
     },
