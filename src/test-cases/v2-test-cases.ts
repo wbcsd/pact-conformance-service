@@ -322,10 +322,7 @@ export const generateV2TestCases = ({
         time: new Date().toISOString(),
         type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
         data: {
-          pf: {
-            productIds: ["urn:gtin:4712345060507"],
-          },
-          comment: "Please send PCF data for this year.",
+          pfIds: ["urn:gtin:4712345060507"],
         },
       },
       headers: {

@@ -5,6 +5,7 @@ This document outlines the test cases used to validate PACT Tech Specs V3 implem
 To achieve conformance status for a given version of the Technical Specifications, a solution must pass all Mandatory test cases for that version.
 
 ## Test Case #1: Obtain auth token with valid credentials
+
 _Mandatory: V3.0_
 
 This test verifies the ability to obtain an authentication token using valid credentials.
@@ -35,6 +36,7 @@ Example valid response body:
 ```
 
 ## Test Case #2: Obtain auth token with invalid credentials
+
 _Mandatory: V3.0_
 
 This test verifies the system correctly rejects authentication attempts with invalid credentials.
@@ -64,6 +66,7 @@ Example response body:
 ```
 
 ## Test Case #3: Get PCF using GetFootprint
+
 _Mandatory: V3.0_
 
 This test verifies the ability to retrieve a specific Product Carbon Footprint (PCF) by its ID.
@@ -119,6 +122,7 @@ Example valid response body:
 ```
 
 ## Test Case #4: Get all PCFs using ListFootprints
+
 _Mandatory: V3.0_
 
 This test verifies the ability to retrieve a list of all Product Carbon Footprints.
@@ -203,6 +207,7 @@ Example valid response body:
 ```
 
 ## Test Case #5: Pagination link implementation of Action ListFootprints
+
 _Mandatory: V3.0_
 
 This test verifies the pagination functionality for the ListFootprints API.
@@ -210,7 +215,7 @@ This test verifies the pagination functionality for the ListFootprints API.
 Request:
 
 - Method: `GET`
-- Endpoint: `{API_BASE_URL}/3/footprints?page=2` or pagination URL from response links
+- Endpoint: `{API_BASE_URL}/3/footprints?offset=2` or pagination URL from response links
 
 Request headers:
 
@@ -257,6 +262,7 @@ Link: <{API_BASE_URL}/3/footprints?offset=1&limit=10>; rel="first", <{API_BASE_U
 ```
 
 ## Test Case #6: Attempt ListFootPrints with Invalid Token
+
 _Mandatory: V3.0_
 
 This test verifies the API correctly rejects requests with invalid authentication tokens.
@@ -285,6 +291,7 @@ Example response body:
 ```
 
 ## Test Case #7: Attempt GetFootprint with Invalid Token
+
 _Mandatory: V3.0_
 
 This test verifies the API correctly rejects specific footprint requests with invalid authentication tokens.
@@ -313,6 +320,7 @@ Example response body:
 ```
 
 ## Test Case #8: Attempt GetFootprint with Non-Existent PfId
+
 _Mandatory: V3.0_
 
 This test verifies the API correctly responds when requesting a non-existent footprint ID.
@@ -335,12 +343,13 @@ Example response body:
 
 ```
 {
-  "code": "NoSuchFootprint",
+  "code": "NotFound",
   "message": "Footprint with ID 'non-existent-id' does not exist"
 }
 ```
 
 ## Test Case #9: Attempt Authentication through HTTP (non-HTTPS)
+
 _Mandatory: V3.0_
 
 This test verifies that authentication is rejected when attempted over non-secure HTTP.
@@ -361,6 +370,7 @@ Content-Type: application/x-www-form-urlencoded
 Expected behavior: Connection should be rejected or response should not include authentication tokens
 
 ## Test Case #10: Attempt ListFootprints through HTTP (non-HTTPS)
+
 _Mandatory: V3.0_
 
 This test verifies that API calls are rejected when attempted over non-secure HTTP.
@@ -380,6 +390,7 @@ authorization: Bearer [BearerToken]
 Expected behavior: Connection should be rejected or response should not include data property
 
 ## Test Case #11: Attempt GetFootprint through HTTP (non-HTTPS)
+
 _Mandatory: V3.0_
 
 This test verifies that specific footprint requests are rejected when attempted over non-secure HTTP.
@@ -399,6 +410,7 @@ authorization: Bearer [BearerToken]
 Expected behavior: Connection should be rejected or response should not include data property
 
 ## Test Case #12: Receive Asynchronous PCF Request
+
 _Mandatory: V3.0_
 
 This test verifies the ability to receive asynchronous PCF requests in CloudEvents format.
@@ -425,9 +437,7 @@ Request body:
   "time": "2023-05-19T10:30:00Z",
   "type": "org.wbcsd.pact.ProductFootprint.RequestCreatedEvent.3",
   "data": {
-    "pf": {
-      "productIds": ["urn:gtin:1234567890123"]
-    },
+    "productId": ["urn:gtin:1234567890123"],
     "comment": "Please send PCF data for this year."
   }
 }
@@ -445,6 +455,7 @@ Example response body:
 ```
 
 ## Test Case #13: Respond to PCF Request Fulfilled Event
+
 _Mandatory: V3.0_
 
 This test verifies the ability to respond with appropriate status when receiving event notifications that fulfill a previously created PCF request.
@@ -520,6 +531,7 @@ Example response body:
 ```
 
 ## Test Case #14: Respond to PCF Request Rejected Event
+
 _Mandatory: V3.0_
 
 This test verifies the ability to respond with appropriate status when receiving event notifications that reject a previously created PCF request.
@@ -567,6 +579,7 @@ Example response body:
 ```
 
 ## Test Case #15: Receive Notification of PCF Update (Published Event)
+
 _Mandatory: None_
 
 This test verifies the ability to receive notifications of PCF updates in CloudEvents format.
@@ -610,6 +623,7 @@ Example response body:
 ```
 
 ## Test Case #16: Attempt Action Events with Invalid Token
+
 _Mandatory: V3.0_
 
 This test verifies the API correctly rejects event requests with invalid authentication tokens.
@@ -653,6 +667,7 @@ Example response body:
 ```
 
 ## Test Case #17: Attempt Action Events through HTTP (non-HTTPS)
+
 _Mandatory: V3.0_
 
 This test verifies that event endpoints are rejected when attempted over non-secure HTTP.
@@ -679,9 +694,7 @@ Request body:
   "time": "2023-05-19T13:30:00Z",
   "type": "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
   "data": {
-    "pf": {
-      "productIds": ["urn:gtin:4712345060507"]
-    },
+    "productId": ["urn:gtin:4712345060507"]
     "comment": "Please send PCF data for this year."
   }
 }
@@ -690,6 +703,7 @@ Request body:
 Expected behavior: Connection should be rejected or response should not include data property
 
 ## Test Case #18: OpenId Connect-based Authentication Flow
+
 _Mandatory: None_
 
 This test verifies the OpenID Connect authentication flow with valid credentials.
@@ -721,6 +735,7 @@ Example valid response body:
 ```
 
 ## Test Case #19: OpenId connect-based authentication flow with incorrect credentials
+
 _Mandatory: None_
 
 This test verifies the OpenID Connect authentication flow correctly rejects invalid credentials.
@@ -750,6 +765,7 @@ Example response body:
 ```
 
 ## Test Case #20: V3 Filtering Functionality: Get Filtered List of Footprints by "productId" parameter
+
 _Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the productId parameter.
@@ -796,6 +812,7 @@ Example valid response body:
 ```
 
 ## Test Case #21: V3 Filtering Functionality: Get Filtered List of Footprints by "companyId" parameter
+
 _Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the companyId parameter.
@@ -839,6 +856,7 @@ Example valid response body:
 ```
 
 ## Test Case #22: V3 Filtering Functionality: Get Filtered List of Footprints by "geography" parameter
+
 _Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the geography parameter.
@@ -892,6 +910,7 @@ Example valid response body:
 ```
 
 ## Test Case #23: V3 Filtering Functionality: Get Filtered List of Footprints by "classification" parameter
+
 _Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the classification parameter.
@@ -938,6 +957,7 @@ Example valid response body:
 ```
 
 ## Test Case #24: V3 Filtering Functionality: Get Filtered List of Footprints by "validOn" parameter
+
 _Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the validOn parameter.
@@ -981,6 +1001,7 @@ Example valid response body:
 ```
 
 ## Test Case #25: V3 Filtering Functionality: Get Filtered List of Footprints by "validAfter" parameter
+
 _Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the validAfter parameter.
@@ -1024,6 +1045,7 @@ Example valid response body:
 ```
 
 ## Test Case #26: V3 Filtering Functionality: Get Filtered List of Footprints by "validBefore" parameter
+
 _Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the validBefore parameter.
@@ -1067,6 +1089,7 @@ Example valid response body:
 ```
 
 ## Test Case #27: V3 Filtering Functionality: Get Filtered List of Footprints by "status" parameter
+
 _Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using the status parameter.
@@ -1110,6 +1133,7 @@ Example valid response body:
 ```
 
 ## Test Case #28: V3 Filtering Functionality: Get Filtered List of Footprints by both "status" and "productId" parameters
+
 _Mandatory: V3.0_
 
 This test verifies the filtering capabilities of the ListFootprints API using multiple parameters.
@@ -1149,5 +1173,329 @@ Example valid response body:
       "productIds": ["urn:gtin:1234567890123"]
     }
   ]
+}
+```
+
+## Test Case #29: V3 Filtering Functionality: Get Filtered List of Footprints by multiple filter parameters using OR logic
+
+_Mandatory: V3.0_
+
+This test verifies the filtering capabilities of the ListFootprints API using multiple companyId parameters with OR logic.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?companyId=urn:uuid:abc12345-6789-4def-0123-456789abcdef&companyId=urn:uuid:other-company&companyId=urn:uuid:another-company`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": [
+    {
+      "id": "b1f8c0d2-7c4e-4e67-9a9c-2e4c12345678",
+      "specVersion": "3.0.0",
+      "version": 1,
+      "created": "2023-01-15T10:15:30Z",
+      "status": "Active",
+      "validityPeriodStart": "2023-01-15T10:15:30Z",
+      "validityPeriodEnd": "2025-12-31T00:00:00Z",
+      "companyName": "Acme Corp",
+      "companyIds": [
+        "urn:uuid:abc12345-6789-4def-0123-456789abcdef"
+      ],
+      "productDescription": "Renewable Diesel, soybean feedstock (bulk - no packaging)",
+      "productIds": ["urn:gtin:1234567890123"]
+    }
+  ]
+}
+```
+
+## Test Case #30: V3 Filtering Functionality: Get Filtered List of Footprints by "productId" parameter (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with a non-existent productId.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?productId=urn:bogus:product:nonexistent123`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
+}
+```
+
+## Test Case #31: V3 Filtering Functionality: Get Filtered List of Footprints by "companyId" parameter (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with a non-existent companyId.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?companyId=urn:bogus:company:nonexistent456`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
+}
+```
+
+## Test Case #32: V3 Filtering Functionality: Get Filtered List of Footprints by "geography" parameter (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with a non-existent geography code.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?geography=XX`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
+}
+```
+
+## Test Case #33: V3 Filtering Functionality: Get Filtered List of Footprints by "classification" parameter (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with a non-existent classification.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?classification=urn:bogus:classification:nonexistent789`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
+}
+```
+
+## Test Case #34: V3 Filtering Functionality: Get Filtered List of Footprints by "validOn" parameter (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with a date that doesn't match any footprint validity periods.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?validOn=1900-01-01T00:00:00Z`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
+}
+```
+
+## Test Case #35: V3 Filtering Functionality: Get Filtered List of Footprints by "validAfter" parameter (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with a future date that excludes all footprints.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?validAfter=2099-12-31T23:59:59Z`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
+}
+```
+
+## Test Case #36: V3 Filtering Functionality: Get Filtered List of Footprints by "validBefore" parameter (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with a past date that excludes all footprints.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?validBefore=1900-01-01T00:00:00Z`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
+}
+```
+
+## Test Case #37: V3 Filtering Functionality: Get Filtered List of Footprints by "status" parameter (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with a non-existent status value.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?status=BogusStatusValue`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
+}
+```
+
+## Test Case #38: V3 Filtering Functionality: Get Filtered List of Footprints by multilpe filter parameters using AND logic (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with multiple non-existent parameters using AND logic.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?companyId=urn:bogus:company:5FIi8zS3&productId=urn:bogus:product:nonexistent123`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
+}
+```
+
+## Test Case #39: V3 Filtering Functionality: Get Filtered List of Footprints by multilpe filter parameters using OR logic (negative test case)
+
+_Mandatory: V3.0_
+
+This test verifies that the API returns an empty result when filtering with multiple non-existent companyId parameters using OR logic.
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?companyId=urn:bogus:company:nonexistent1&companyId=urn:bogus:company:nonexistent2&companyId=urn:bogus:company:nonexistent3`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": []
 }
 ```

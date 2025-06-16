@@ -457,7 +457,6 @@ export const v3_0_EventFulfilledSchema = {
     },
     id: {
       type: "string",
-      format: "uuid",
       description: "Unique identifier for the event",
     },
     source: {

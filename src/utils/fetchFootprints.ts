@@ -92,12 +92,17 @@ export const sendCreateRequestEvent = async (
     source: webhookUrl, // In a real scenario, this would be your service URL
     time: new Date().toISOString(),
     type: eventType,
-    data: {
-      pf: {
-        productIds: productIds,
-      },
-      comment: "Please send PCF data for this year.",
-    },
+    data: version.startsWith("V2")
+      ? {
+          pf: {
+            productIds: productIds,
+          },
+          comment: "Please send PCF data for this year.",
+        }
+      : {
+          productId: productIds,
+          comment: "Please send PCF data for this year.",
+        },
   };
 
   try {

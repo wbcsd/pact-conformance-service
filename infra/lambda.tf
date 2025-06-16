@@ -10,8 +10,9 @@ resource "aws_lambda_function" "run_test_cases" {
 
   environment {
     variables = {
+      DATABASE_TYPE            = "dynamodb"
       DYNAMODB_TABLE_NAME      = aws_dynamodb_table.run_test_cases_table.name
-      WEBHOOK_URL              = "${aws_apigatewayv2_api.http_api.api_endpoint}/2/events"
+      WEBHOOK_URL              = var.webhook_url
       DEFAULT_FETCH_TIMEOUT_MS = "5000"
     }
   }
@@ -46,6 +47,7 @@ resource "aws_lambda_function" "async_request_listener" {
 
   environment {
     variables = {
+      DATABASE_TYPE       = "dynamodb"
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.run_test_cases_table.name
     }
   }
@@ -69,6 +71,13 @@ resource "aws_lambda_function" "auth_for_async_listener" {
   filename         = "../lambdas.zip"
   timeout          = 10
   source_code_hash = filebase64sha256("../lambdas.zip")
+
+  environment {
+    variables = {
+      DATABASE_TYPE       = "dynamodb"
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.run_test_cases_table.name
+    }
+  }
 }
 
 # Permission for API Gateway to invoke authForAsyncListener Lambda
@@ -92,6 +101,7 @@ resource "aws_lambda_function" "get_test_results" {
 
   environment {
     variables = {
+      DATABASE_TYPE       = "dynamodb"
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.run_test_cases_table.name
     }
   }
@@ -118,6 +128,7 @@ resource "aws_lambda_function" "get_recent_test_runs" {
 
   environment {
     variables = {
+      DATABASE_TYPE       = "dynamodb"
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.run_test_cases_table.name
     }
   }

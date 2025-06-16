@@ -46,6 +46,20 @@ export const simpleResponseSchema = {
   required: ["data"],
 };
 
+export const emptyResponseSchema = {
+  type: "object",
+  properties: {
+    data: {
+      type: "array",
+      maxItems: 0,
+      items: {
+        type: "object",
+      },
+    },
+  },
+  required: ["data"],
+};
+
 export const simpleSingleFootprintResponseSchema = {
   type: "object",
   properties: {

@@ -613,7 +613,6 @@ export const eventFulfilledSchema = {
     },
     id: {
       type: "string",
-      format: "uuid",
       description: "Unique identifier for the event",
     },
     source: {
