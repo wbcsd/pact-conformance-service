@@ -11,6 +11,23 @@ resource "aws_dynamodb_table" "run_test_cases_table" {
 
   attribute {
     name = "SK"
-    type = "S" # String type
+    type = "S"
+  }
+
+  attribute {
+    name = "adminEmail"
+    type = "S"
+  }
+
+  attribute {
+    name = "timestamp"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "adminEmail-timestamp-index"
+    hash_key        = "adminEmail"
+    range_key       = "timestamp"
+    projection_type = "ALL"
   }
 }

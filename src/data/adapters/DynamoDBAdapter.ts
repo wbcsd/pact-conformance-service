@@ -1,6 +1,11 @@
 import { TestData, TestResult } from "../../types/types";
 import * as AWS from "aws-sdk";
-import { Database, SaveTestRunDetails, TestRunDetails, TestRunWithResults } from "../interfaces/Database";
+import {
+  Database,
+  SaveTestRunDetails,
+  TestRunDetails,
+  TestRunWithResults,
+} from "../interfaces/Database";
 
 export const SK_TYPES = {
   DETAILS: "TESTRUN#DETAILS",
@@ -14,7 +19,7 @@ export class DynamoDBAdapter implements Database {
   constructor(tableName?: string) {
     this.docClient = new AWS.DynamoDB.DocumentClient();
     this.tableName = tableName || process.env.DYNAMODB_TABLE_NAME || "";
-    
+
     if (!this.tableName) {
       throw new Error("DynamoDB table name is not defined");
     }
@@ -119,11 +124,13 @@ export class DynamoDBAdapter implements Database {
       };
     }
 
-    const testResults: TestResult[] = result.Items
-      .filter((item) => item.SK !== SK_TYPES.DETAILS && item.SK !== SK_TYPES.TEST_DATA)
-      .map((item) => item.result);
+    const testResults: TestResult[] = result.Items.filter(
+      (item) => item.SK !== SK_TYPES.DETAILS && item.SK !== SK_TYPES.TEST_DATA
+    ).map((item) => item.result);
 
-    const testDetails = result.Items.find((item) => item.SK === SK_TYPES.DETAILS);
+    const testDetails = result.Items.find(
+      (item) => item.SK === SK_TYPES.DETAILS
+    );
 
     return {
       testRunId,
@@ -177,8 +184,11 @@ export class DynamoDBAdapter implements Database {
     return result.Item.data;
   }
 
-  async getRecentTestRuns(adminEmail?: string, limit?: number): Promise<TestRunDetails[]> {
-    const params: AWS.DynamoDB.DocumentClient.ScanInput = {
+  async getRecentTestRuns(
+    adminEmail?: string,
+    limit?: number
+  ): Promise<TestRunDetails[]> {
+    const params: AWS.DynamoDB.DocumentClient.QueryInput = {
       TableName: this.tableName,
       FilterExpression: "SK = :sk",
       ExpressionAttributeValues: {
@@ -187,9 +197,13 @@ export class DynamoDBAdapter implements Database {
     };
     if (adminEmail) {
       params.FilterExpression += " AND adminEmail = :adminEmail";
-      params.ExpressionAttributeValues![':adminEmail'] = adminEmail;
+      params.ExpressionAttributeValues![":adminEmail"] = adminEmail;
+      params.IndexName = "adminEmail-timestamp-index";
+      params.ScanIndexForward = false; // Sort by timestamp descending
     }
-    console.log(`Fetching recent test runs with params: ${JSON.stringify(params)}`);
+    console.log(
+      `Fetching recent test runs with params: ${JSON.stringify(params)}`
+    );
 
     let testRuns: AWS.DynamoDB.DocumentClient.ItemList = [];
     let lastEvaluatedKey;
@@ -214,9 +228,10 @@ export class DynamoDBAdapter implements Database {
 
     // Sort by timestamp (most recent first)
     testRuns.sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
-    return testRuns.slice(0, limit || 1000) as TestRunDetails[]
+    return testRuns.slice(0, limit || 1000) as TestRunDetails[];
   }
 }
