@@ -4,7 +4,7 @@ import { TestRunStatus } from "../types/types";
 import { getTestResults } from "../utils/dbUtils";
 
 const MAX_TEST_RUNS_TO_FETCH = 100;
-const MAX_TEST_RUNS_TO_ENRICH = 100;
+const MAX_TEST_RUNS_TO_ENRICH = 10;
 
 export const handler = async (
   event: APIGatewayProxyEvent
