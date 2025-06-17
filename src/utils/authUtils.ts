@@ -78,7 +78,7 @@ export const getAccessToken = async (
     );
 
     throw new Error(
-      `Failed to obtain access token from ${url}. Status: ${response.status}`
+      `Failed to obtain access token from ${url}. Status: ${response.status}. Response: ${await response.text()}` 
     );
   }
 
