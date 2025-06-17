@@ -71,6 +71,7 @@ resource "aws_lambda_function" "auth_for_async_listener" {
   filename         = "../lambdas.zip"
   timeout          = 10
   source_code_hash = filebase64sha256("../lambdas.zip")
+  memory_size      = 1024
 
   environment {
     variables = {
