@@ -1,7 +1,7 @@
 # PACT Conformance Tool
 
 ### About this Project
-PACT publishes  [Technical Specifications for PCF Data Exchange](https://docs.carbon-transparency.org/v2/), which any organization or company can implement. Software solutions that implement the PACT Technical Specifications are known as [PACT Conformant Solutions](https://www.carbon-transparency.org/network). This GitHub repository creates a conformance tool which enables organizations to automatically assess their implementation of the specifications, and become PACT Conformant. The tool is a service of [PACT Network Services](https://www.carbon-transparency.org/pact-network-services).
+PACT publishes  [Technical Specifications for PCF Data Exchange](https://docs.carbon-transparency.org/), which any organization or company can implement. Software solutions that implement the PACT Technical Specifications are known as [PACT Conformant Solutions](https://www.carbon-transparency.org/network). This GitHub repository creates a conformance tool which enables organizations to automatically assess their implementation of the specifications, and become PACT Conformant. The tool is a service of [PACT Network Services](https://www.carbon-transparency.org/pact-network-services).
 
 ### Access the tool
 Use of the tool is free and open to anyone. Sign up and start using the tool at https://services.carbon-transparency.org/
