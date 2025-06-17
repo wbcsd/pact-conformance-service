@@ -71,7 +71,7 @@ export class PostgresAdapter implements Database {
       INSERT INTO test_runs (
         test_id, timestamp, company_name, 
         admin_email, admin_name, tech_spec_version
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ) VALUES ($1, $2, $3, $4, $5, $6)
       ON CONFLICT (test_id) DO UPDATE SET
         timestamp = $2,
         company_name = $3,
