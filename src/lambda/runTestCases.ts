@@ -1,6 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { randomUUID } from "crypto";
-import { ApiVersion, TestResult, TestResultStatus } from "../types/types";
+import {
+  ApiVersion,
+  TestResult,
+  TestResultStatus,
+  TestRunStatus,
+} from "../types/types";
 import { getAccessToken, getOidAuthUrl } from "../utils/authUtils";
 import { generateV2TestCases } from "../test-cases/v2-test-cases";
 import {
@@ -13,6 +18,7 @@ import {
   saveTestCaseResults,
   saveTestData,
   saveTestRun,
+  updateTestRunStatus,
 } from "../utils/dbUtils";
 import { generateV3TestCases } from "../test-cases/v3-test-cases";
 
@@ -184,6 +190,29 @@ export const handler = async (
 
     await saveTestCaseResults(testRunId, resultsWithAsyncPlaceholder);
 
+    // Calculate test run status and passing percentage
+    const mandatoryTests = resultsWithAsyncPlaceholder.filter(
+      (result) => result.mandatory
+    );
+    const failedMandatoryTests = mandatoryTests.filter(
+      (result) => !result.success
+    );
+
+    const passingPercentage =
+      mandatoryTests.length > 0
+        ? Math.round(
+            ((mandatoryTests.length - failedMandatoryTests.length) /
+              mandatoryTests.length) *
+              100
+          )
+        : 0;
+
+    const testRunStatus =
+      failedMandatoryTests.length > 0 ? TestRunStatus.FAIL : TestRunStatus.PASS;
+
+    // Save the test run status and passing percentage to the database
+    await updateTestRunStatus(testRunId, testRunStatus, passingPercentage);
+
     // If any test failed, return an error response.
     const mandatoryFailedTests = resultsWithAsyncPlaceholder.filter(
       (result) => result.mandatory && !result.success
@@ -191,22 +220,6 @@ export const handler = async (
 
     if (mandatoryFailedTests.length > 0) {
       console.error("Some tests failed:", mandatoryFailedTests);
-      // Filter out optional tests for passing percentage calculation
-      const mandatoryTests = resultsWithAsyncPlaceholder.filter(
-        (result) => result.mandatory
-      );
-      const failedMandatoryTests = mandatoryTests.filter(
-        (result) => !result.success
-      );
-
-      const passingPercentage =
-        mandatoryTests.length > 0
-          ? Math.round(
-              ((mandatoryTests.length - failedMandatoryTests.length) /
-                mandatoryTests.length) *
-                100
-            )
-          : 0;
 
       return {
         statusCode: 500,

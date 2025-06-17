@@ -24,10 +24,13 @@ export const handler = async (
     // Get only the top MAX_TEST_RUNS_TO_ENRICH most recent test runs to enrich
     await Promise.all(
       testRuns.slice(0, MAX_TEST_RUNS_TO_ENRICH).map(async (testRun) => {
-        // Get test results for this test run
-        const testResults = await getTestResults(testRun.testId);
+        // If status is already stored in the database, use it
+        if (testRun.status) {
+          return true;
+        }
 
-        // Calculate status based on mandatory tests
+        // Otherwise, calculate status based on mandatory tests (fallback for older test runs)
+        const testResults = await getTestResults(testRun.testId);
         let status = TestRunStatus.PASS;
 
         // If there are no test results, mark as FAIL as no tests were run
