@@ -4,7 +4,7 @@ import { TestRunStatus } from "../types/types";
 import { getTestResults } from "../utils/dbUtils";
 
 const MAX_TEST_RUNS_TO_FETCH = 100;
-const MAX_TEST_RUNS_TO_ENRICH = 10;
+const MAX_TEST_RUNS_TO_ENRICH = 100;
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -12,7 +12,7 @@ export const handler = async (
   try {
     const adminEmail = event.queryStringParameters?.adminEmail;
 
-    const dbType = (process.env.DATABASE_TYPE || 'dynamodb') as DatabaseType;
+    const dbType = (process.env.DATABASE_TYPE || "dynamodb") as DatabaseType;
     const database = DatabaseFactory.create(dbType);
 
     // Get recent test runs for the specified email
@@ -23,7 +23,6 @@ export const handler = async (
 
     // Get only the top MAX_TEST_RUNS_TO_ENRICH most recent test runs to enrich
     await Promise.all(
-
       testRuns.slice(0, MAX_TEST_RUNS_TO_ENRICH).map(async (testRun) => {
         // Get test results for this test run
         const testResults = await getTestResults(testRun.testId);
@@ -36,7 +35,6 @@ export const handler = async (
         if (!testResults || testResults.results.length === 0) {
           status = TestRunStatus.FAIL;
         } else {
-
           // If there are mandatory tests and any of them failed, mark as FAIL
           const mandatoryTests = testResults.results.filter(
             (result) => result.mandatory
@@ -51,9 +49,8 @@ export const handler = async (
           }
         }
         testRun.status = status;
-        return true
+        return true;
       })
-
     );
 
     return {
@@ -64,7 +61,7 @@ export const handler = async (
       body: JSON.stringify({
         totalCount: testRuns.length,
         returnedCount: testRuns.length,
-        testRuns: testRuns
+        testRuns: testRuns,
       }),
     };
   } catch (error) {
@@ -77,7 +74,8 @@ export const handler = async (
       },
       body: JSON.stringify({
         message: "Internal server error",
-        error: process.env.NODE_ENV === "development" ? String(error) : undefined,
+        error:
+          process.env.NODE_ENV === "development" ? String(error) : undefined,
       }),
     };
   }
