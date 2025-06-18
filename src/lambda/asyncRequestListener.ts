@@ -4,6 +4,7 @@ import {
   EventTypesV3,
   TestResult,
   TestResultStatus,
+  TestRunStatus,
 } from "../types/types";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
@@ -12,7 +13,13 @@ import {
   eventFulfilledSchema,
   v3_0_EventFulfilledSchema,
 } from "../schemas/responseSchema";
-import { getTestData, saveTestCaseResult } from "../utils/dbUtils";
+import {
+  getTestData,
+  getTestResults,
+  saveTestCaseResult,
+  updateTestRunStatus,
+} from "../utils/dbUtils";
+import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 
 // Initialize Ajv validator
 const ajv = new Ajv({ allErrors: true });
@@ -129,6 +136,22 @@ export const handler = async (
         }
 
         await saveTestCaseResult(body.data.requestEventId, testResult, true);
+
+        // Load updated test results and recalculate test run status
+        const existingTestRun = await getTestResults(body.data.requestEventId);
+        if (existingTestRun?.results) {
+          const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
+            existingTestRun.results
+          );
+          await updateTestRunStatus(
+            body.data.requestEventId,
+            testRunStatus,
+            passingPercentage
+          );
+          console.log(
+            `Updated test run status: ${testRunStatus}, passing percentage: ${passingPercentage}%`
+          );
+        }
       } else if (
         body.type === EventTypes.REJECTED ||
         body.type === EventTypesV3.REJECTED
@@ -188,6 +211,24 @@ export const handler = async (
         }
 
         await saveTestCaseResult(body.data.requestEventId, testResult, true);
+
+        // Load updated test results and recalculate test run status
+        const existingTestRunForRejected = await getTestResults(
+          body.data.requestEventId
+        );
+        if (existingTestRunForRejected?.results) {
+          const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
+            existingTestRunForRejected.results
+          );
+          await updateTestRunStatus(
+            body.data.requestEventId,
+            testRunStatus,
+            passingPercentage
+          );
+          console.log(
+            `Updated test run status: ${testRunStatus}, passing percentage: ${passingPercentage}%`
+          );
+        }
       }
     } else {
       console.error("No request body received");

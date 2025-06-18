@@ -50,6 +50,39 @@ export class DynamoDBAdapter implements Database {
     }
   }
 
+  async updateTestRunStatus(
+    testRunId: string,
+    status: string,
+    passingPercentage: number
+  ): Promise<void> {
+    const params = {
+      TableName: this.tableName,
+      Key: {
+        testId: testRunId,
+        SK: SK_TYPES.DETAILS,
+      },
+      UpdateExpression:
+        "SET #status = :status, passingPercentage = :passingPercentage",
+      ExpressionAttributeNames: {
+        "#status": "status",
+      },
+      ExpressionAttributeValues: {
+        ":status": status,
+        ":passingPercentage": passingPercentage,
+      },
+    };
+
+    try {
+      await this.docClient.update(params).promise();
+      console.log(
+        `Test run ${testRunId} status updated to ${status} with ${passingPercentage}% passing`
+      );
+    } catch (error) {
+      console.error("Error updating test run status:", error);
+      throw error;
+    }
+  }
+
   async saveTestCaseResult(
     testRunId: string,
     testResult: TestResult,
@@ -140,6 +173,7 @@ export class DynamoDBAdapter implements Database {
       timestamp: testDetails?.timestamp,
       techSpecVersion: testDetails?.techSpecVersion,
       status: testDetails?.status,
+      passingPercentage: testDetails?.passingPercentage,
       results: testResults,
     };
   }

@@ -7,10 +7,22 @@ import { DatabaseFactory, DatabaseType } from "../data/factory";
 export { SK_TYPES } from "../data/adapters/DynamoDBAdapter";
 
 // Create and export the database instance
-const db: Database = DatabaseFactory.create(config.databaseType as DatabaseType);
+const db: Database = DatabaseFactory.create(
+  config.databaseType as DatabaseType
+);
 
-export const saveTestRun = async (details: SaveTestRunDetails): Promise<void> => {
+export const saveTestRun = async (
+  details: SaveTestRunDetails
+): Promise<void> => {
   return db.saveTestRun(details);
+};
+
+export const updateTestRunStatus = async (
+  testRunId: string,
+  status: string,
+  passingPercentage: number
+): Promise<void> => {
+  return db.updateTestRunStatus(testRunId, status, passingPercentage);
 };
 
 export const saveTestCaseResult = async (
