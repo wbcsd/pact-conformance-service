@@ -1,4 +1,4 @@
-import { TestData, TestResult } from "../../types/types";
+import { TestData, TestResult, TestRunStatus } from "../../types/types";
 
 // TODO: combine wuth TestRunDetails after fixing testId naming
 export interface SaveTestRunDetails {
@@ -7,6 +7,7 @@ export interface SaveTestRunDetails {
   adminEmail: string;
   adminName: string;
   techSpecVersion: string;
+  status: TestRunStatus;
 }
 
 // TODO: Rename testId to testRunId

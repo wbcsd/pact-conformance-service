@@ -85,6 +85,7 @@ export const handler = async (
       adminEmail,
       adminName,
       techSpecVersion: version,
+      status: TestRunStatus.FAIL,
     });
 
     const authBaseUrl = customAuthBaseUrl || baseUrl;

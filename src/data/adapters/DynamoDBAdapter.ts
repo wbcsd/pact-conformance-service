@@ -38,6 +38,7 @@ export class DynamoDBAdapter implements Database {
         adminEmail: details.adminEmail,
         adminName: details.adminName,
         techSpecVersion: details.techSpecVersion,
+        status: details.status,
       },
     };
 

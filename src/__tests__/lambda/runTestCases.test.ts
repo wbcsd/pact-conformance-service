@@ -353,13 +353,15 @@ describe("runTestCases Lambda handler V2 specific", () => {
     expect(body.testRunId).toBe("test-uuid-1234");
 
     // Verify that saveTestRun was called correctly
-    expect(dbUtils.saveTestRun).toHaveBeenCalledWith({
-      testRunId: "test-uuid-1234",
-      companyName: "Test Company",
-      adminEmail: "admin@test.com",
-      adminName: "Admin Test",
-      techSpecVersion: "V2.2",
-    });
+    expect(dbUtils.saveTestRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        testRunId: "test-uuid-1234",
+        companyName: "Test Company",
+        adminEmail: "admin@test.com",
+        adminName: "Admin Test",
+        techSpecVersion: "V2.2",
+      })
+    );
 
     // Verify that saveTestData was called correctly
     expect(dbUtils.saveTestData).toHaveBeenCalledWith("test-uuid-1234", {
@@ -471,13 +473,15 @@ describe("runTestCases Lambda handler V3 specific", () => {
     ).toBe(true);
 
     // Verify that saveTestRun was called correctly
-    expect(dbUtils.saveTestRun).toHaveBeenCalledWith({
-      testRunId: "test-uuid-1234",
-      companyName: "Test Company",
-      adminEmail: "admin@test.com",
-      adminName: "Admin Test",
-      techSpecVersion: "V3.0",
-    });
+    expect(dbUtils.saveTestRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        testRunId: "test-uuid-1234",
+        companyName: "Test Company",
+        adminEmail: "admin@test.com",
+        adminName: "Admin Test",
+        techSpecVersion: "V3.0",
+      })
+    );
 
     // Verify that saveTestData was called correctly
     expect(dbUtils.saveTestData).toHaveBeenCalledWith("test-uuid-1234", {
