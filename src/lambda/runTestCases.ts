@@ -15,6 +15,7 @@ import {
 } from "../utils/fetchFootprints";
 import { runTestCase } from "../utils/runTestCase";
 import {
+  getTestResults,
   saveTestCaseResults,
   saveTestData,
   saveTestRun,
@@ -23,6 +24,30 @@ import {
 import { generateV3TestCases } from "../test-cases/v3-test-cases";
 
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
+
+/**
+ * Recalculates test run status and passing percentage from test results
+ */
+const calculateTestRunMetrics = (testResults: TestResult[]) => {
+  const mandatoryTests = testResults.filter((result) => result.mandatory);
+  const failedMandatoryTests = mandatoryTests.filter(
+    (result) => !result.success
+  );
+
+  const passingPercentage =
+    mandatoryTests.length > 0
+      ? Math.round(
+          ((mandatoryTests.length - failedMandatoryTests.length) /
+            mandatoryTests.length) *
+            100
+        )
+      : 0;
+
+  const testRunStatus =
+    failedMandatoryTests.length > 0 ? TestRunStatus.FAIL : TestRunStatus.PASS;
+
+  return { testRunStatus, passingPercentage, failedMandatoryTests };
+};
 
 /**
  * Lambda handler that runs the test scenarios.
@@ -41,7 +66,7 @@ export const handler = async (
     customAuthBaseUrl,
     scope,
     audience,
-    resource
+    resource,
   }: {
     baseUrl: string;
     clientId: string;
@@ -96,7 +121,7 @@ export const handler = async (
       grant_type: "client_credentials",
       ...(scope && { scope }),
       ...(audience && { audience }),
-      ...(resource && { resource })
+      ...(resource && { resource }),
     }).toString();
 
     const accessToken = await getAccessToken(
@@ -190,42 +215,27 @@ export const handler = async (
 
     await saveTestCaseResults(testRunId, resultsWithAsyncPlaceholder);
 
-    // Calculate test run status and passing percentage
-    const mandatoryTests = resultsWithAsyncPlaceholder.filter(
-      (result) => result.mandatory
-    );
-    const failedMandatoryTests = mandatoryTests.filter(
-      (result) => !result.success
-    );
+    // Load existing test results from database to get the most up-to-date state
+    const existingTestRun = await getTestResults(testRunId);
+    const finalTestResults =
+      existingTestRun?.results || resultsWithAsyncPlaceholder;
 
-    const passingPercentage =
-      mandatoryTests.length > 0
-        ? Math.round(
-            ((mandatoryTests.length - failedMandatoryTests.length) /
-              mandatoryTests.length) *
-              100
-          )
-        : 0;
-
-    const testRunStatus =
-      failedMandatoryTests.length > 0 ? TestRunStatus.FAIL : TestRunStatus.PASS;
+    // Calculate test run status and passing percentage from loaded results
+    const { testRunStatus, passingPercentage, failedMandatoryTests } =
+      calculateTestRunMetrics(finalTestResults);
 
     // Save the test run status and passing percentage to the database
     await updateTestRunStatus(testRunId, testRunStatus, passingPercentage);
 
     // If any test failed, return an error response.
-    const mandatoryFailedTests = resultsWithAsyncPlaceholder.filter(
-      (result) => result.mandatory && !result.success
-    );
-
-    if (mandatoryFailedTests.length > 0) {
-      console.error("Some tests failed:", mandatoryFailedTests);
+    if (failedMandatoryTests.length > 0) {
+      console.error("Some tests failed:", failedMandatoryTests);
 
       return {
         statusCode: 500,
         body: JSON.stringify({
           message: "One or more tests failed",
-          results: resultsWithAsyncPlaceholder,
+          results: finalTestResults,
           passingPercentage,
           testRunId,
         }),
@@ -237,8 +247,8 @@ export const handler = async (
       statusCode: 200,
       body: JSON.stringify({
         message: "All tests passed successfully",
-        results: resultsWithAsyncPlaceholder,
-        passingPercentage: 100,
+        results: finalTestResults,
+        passingPercentage,
         testRunId,
       }),
     };

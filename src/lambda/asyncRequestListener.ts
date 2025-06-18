@@ -4,6 +4,7 @@ import {
   EventTypesV3,
   TestResult,
   TestResultStatus,
+  TestRunStatus,
 } from "../types/types";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
@@ -12,7 +13,12 @@ import {
   eventFulfilledSchema,
   v3_0_EventFulfilledSchema,
 } from "../schemas/responseSchema";
-import { getTestData, saveTestCaseResult } from "../utils/dbUtils";
+import {
+  getTestData,
+  getTestResults,
+  saveTestCaseResult,
+  updateTestRunStatus,
+} from "../utils/dbUtils";
 
 // Initialize Ajv validator
 const ajv = new Ajv({ allErrors: true });
@@ -23,6 +29,30 @@ const TEST_CASE_13_NAME = "Test Case 13: Respond to Asynchronous PCF Request";
 const TEST_CASE_14_NAME = "Test Case 14: Handle Rejected PCF Request";
 
 const MANDATORY_VERSIONS = ["V2.2", "V2.3", "V3.0"];
+
+/**
+ * Recalculates test run status and passing percentage from test results
+ */
+const calculateTestRunMetrics = (testResults: TestResult[]) => {
+  const mandatoryTests = testResults.filter((result) => result.mandatory);
+  const failedMandatoryTests = mandatoryTests.filter(
+    (result) => !result.success
+  );
+
+  const passingPercentage =
+    mandatoryTests.length > 0
+      ? Math.round(
+          ((mandatoryTests.length - failedMandatoryTests.length) /
+            mandatoryTests.length) *
+            100
+        )
+      : 0;
+
+  const testRunStatus =
+    failedMandatoryTests.length > 0 ? TestRunStatus.FAIL : TestRunStatus.PASS;
+
+  return { testRunStatus, passingPercentage };
+};
 
 export const handler = async (
   event: APIGatewayProxyEventV2
@@ -129,6 +159,22 @@ export const handler = async (
         }
 
         await saveTestCaseResult(body.data.requestEventId, testResult, true);
+
+        // Load updated test results and recalculate test run status
+        const existingTestRun = await getTestResults(body.data.requestEventId);
+        if (existingTestRun?.results) {
+          const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
+            existingTestRun.results
+          );
+          await updateTestRunStatus(
+            body.data.requestEventId,
+            testRunStatus,
+            passingPercentage
+          );
+          console.log(
+            `Updated test run status: ${testRunStatus}, passing percentage: ${passingPercentage}%`
+          );
+        }
       } else if (
         body.type === EventTypes.REJECTED ||
         body.type === EventTypesV3.REJECTED
@@ -188,6 +234,24 @@ export const handler = async (
         }
 
         await saveTestCaseResult(body.data.requestEventId, testResult, true);
+
+        // Load updated test results and recalculate test run status
+        const existingTestRunForRejected = await getTestResults(
+          body.data.requestEventId
+        );
+        if (existingTestRunForRejected?.results) {
+          const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
+            existingTestRunForRejected.results
+          );
+          await updateTestRunStatus(
+            body.data.requestEventId,
+            testRunStatus,
+            passingPercentage
+          );
+          console.log(
+            `Updated test run status: ${testRunStatus}, passing percentage: ${passingPercentage}%`
+          );
+        }
       }
     } else {
       console.error("No request body received");
