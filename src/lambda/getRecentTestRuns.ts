@@ -22,7 +22,7 @@ export const handler = async (
     );
 
     // Get only the top MAX_TEST_RUNS_TO_ENRICH most recent test runs to enrich
-    await Promise.all(
+    /* await Promise.all(
       testRuns.slice(0, MAX_TEST_RUNS_TO_ENRICH).map(async (testRun) => {
         // If status is already stored in the database, use it
         if (testRun.status) {
@@ -54,7 +54,7 @@ export const handler = async (
         testRun.status = status;
         return true;
       })
-    );
+    ); */
 
     return {
       statusCode: 200,
