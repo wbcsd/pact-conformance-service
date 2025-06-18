@@ -266,15 +266,6 @@ export class DynamoDBAdapter implements Database {
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
-    return testRuns.slice(0, limit || 1000).map((item: any) => ({
-      testId: item.testId,
-      timestamp: item.timestamp,
-      companyName: item.companyName,
-      adminEmail: item.adminEmail,
-      adminName: item.adminName,
-      techSpecVersion: item.techSpecVersion,
-      status: item.status,
-      passingPercentage: item.passingPercentage,
-    })) as TestRunDetails[];
+    return testRuns.slice(0, limit || 1000) as TestRunDetails[];
   }
 }
