@@ -22,32 +22,9 @@ import {
   updateTestRunStatus,
 } from "../utils/dbUtils";
 import { generateV3TestCases } from "../test-cases/v3-test-cases";
+import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
-
-/**
- * Recalculates test run status and passing percentage from test results
- */
-const calculateTestRunMetrics = (testResults: TestResult[]) => {
-  const mandatoryTests = testResults.filter((result) => result.mandatory);
-  const failedMandatoryTests = mandatoryTests.filter(
-    (result) => !result.success
-  );
-
-  const passingPercentage =
-    mandatoryTests.length > 0
-      ? Math.round(
-          ((mandatoryTests.length - failedMandatoryTests.length) /
-            mandatoryTests.length) *
-            100
-        )
-      : 0;
-
-  const testRunStatus =
-    failedMandatoryTests.length > 0 ? TestRunStatus.FAIL : TestRunStatus.PASS;
-
-  return { testRunStatus, passingPercentage, failedMandatoryTests };
-};
 
 /**
  * Lambda handler that runs the test scenarios.

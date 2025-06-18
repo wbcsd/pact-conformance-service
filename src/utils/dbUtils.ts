@@ -1,5 +1,5 @@
 import config from "../config";
-import { TestData, TestResult, TestRunStatus } from "../types/types";
+import { TestData, TestResult } from "../types/types";
 import { Database, SaveTestRunDetails } from "../data/interfaces/Database";
 import { DatabaseFactory, DatabaseType } from "../data/factory";
 

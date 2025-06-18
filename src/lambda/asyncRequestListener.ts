@@ -19,6 +19,7 @@ import {
   saveTestCaseResult,
   updateTestRunStatus,
 } from "../utils/dbUtils";
+import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 
 // Initialize Ajv validator
 const ajv = new Ajv({ allErrors: true });
@@ -29,30 +30,6 @@ const TEST_CASE_13_NAME = "Test Case 13: Respond to Asynchronous PCF Request";
 const TEST_CASE_14_NAME = "Test Case 14: Handle Rejected PCF Request";
 
 const MANDATORY_VERSIONS = ["V2.2", "V2.3", "V3.0"];
-
-/**
- * Recalculates test run status and passing percentage from test results
- */
-const calculateTestRunMetrics = (testResults: TestResult[]) => {
-  const mandatoryTests = testResults.filter((result) => result.mandatory);
-  const failedMandatoryTests = mandatoryTests.filter(
-    (result) => !result.success
-  );
-
-  const passingPercentage =
-    mandatoryTests.length > 0
-      ? Math.round(
-          ((mandatoryTests.length - failedMandatoryTests.length) /
-            mandatoryTests.length) *
-            100
-        )
-      : 0;
-
-  const testRunStatus =
-    failedMandatoryTests.length > 0 ? TestRunStatus.FAIL : TestRunStatus.PASS;
-
-  return { testRunStatus, passingPercentage };
-};
 
 export const handler = async (
   event: APIGatewayProxyEventV2
