@@ -3,3 +3,4 @@ export { handler as asyncRequestListenerHandler } from "./lambda/asyncRequestLis
 export { handler as getTestResultsHandler } from "./lambda/getTestResults";
 export { handler as authForAsyncListenerHandler } from "./lambda/authForAsyncListener";
 export { handler as getRecentTestRunsHandler } from "./lambda/getRecentTestRuns";
+export { handler as backfillTestRunStatusHandler } from "./lambda/backfillTestRunStatus";

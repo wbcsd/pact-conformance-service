@@ -142,3 +142,22 @@ resource "aws_lambda_permission" "get_recent_test_runs_invoke" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.http_api.execution_arn}/*/*"
 }
+
+# BackfillTestRunStatus Lambda Function (manually triggered)
+resource "aws_lambda_function" "backfill_test_run_status" {
+  function_name    = "${var.environment}_backfillTestRunStatus"
+  role             = aws_iam_role.lambda_exec_role.arn
+  handler          = "dist/index.backfillTestRunStatusHandler"
+  runtime          = "nodejs22.x"
+  filename         = "../lambdas.zip"
+  timeout          = 300 # 5 minutes timeout for backfill operation
+  source_code_hash = filebase64sha256("../lambdas.zip")
+  memory_size      = 512
+
+  environment {
+    variables = {
+      DATABASE_TYPE       = "dynamodb"
+      DYNAMODB_TABLE_NAME = aws_dynamodb_table.run_test_cases_table.name
+    }
+  }
+}
