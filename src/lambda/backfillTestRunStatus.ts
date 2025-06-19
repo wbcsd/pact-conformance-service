@@ -5,7 +5,7 @@ import {
 } from "aws-lambda";
 import * as AWS from "aws-sdk";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
-import { TestResult } from "../types/types";
+import { TestResult, TestRunStatus } from "../types/types";
 
 // DynamoDB constants
 const SK_TYPES = {
@@ -129,8 +129,30 @@ export const handler = async (
                   `Updated test run ${item.testId}: status=${testRunStatus}, passingPercentage=${passingPercentage}%`
                 );
               } else {
+                // Update the test run status to fail when no test results are found
+                const updateParams: AWS.DynamoDB.DocumentClient.UpdateItemInput =
+                  {
+                    TableName: tableName,
+                    Key: {
+                      testId: item.testId,
+                      SK: SK_TYPES.DETAILS,
+                    },
+                    UpdateExpression:
+                      "SET #status = :status, passingPercentage = :passingPercentage",
+                    ExpressionAttributeNames: {
+                      "#status": "status",
+                    },
+                    ExpressionAttributeValues: {
+                      ":status": TestRunStatus.FAIL,
+                      ":passingPercentage": 0,
+                    },
+                  };
+
+                await docClient.update(updateParams).promise();
+                updatedCount++;
+
                 console.log(
-                  `Test run ${item.testId} has no test results, skipping`
+                  `Test run ${item.testId} has no test results, updated status to fail`
                 );
               }
             }
