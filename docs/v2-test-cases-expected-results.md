@@ -528,7 +528,7 @@ Example response body:
 ```
 
 ## Test Case #15: Receive Notification of PCF Update (Published Event)
-_Mandatory: None_
+_Mandatory: V2.2, V2.3_
 
 This test verifies the ability to receive notifications of PCF updates in CloudEvents format.
 
