@@ -8,6 +8,7 @@ Mandatory functionality of the PACT Technical Specifications are tested. The too
 - Configure your solution to be able to authenticate the Conformance tool's endpoint and make Action Event requests the tool will accept using the following credentials (see [sourcecode](https://github.com/wbcsd/pact-conformance-test-service/blob/main/src/lambda/authForAsyncListener.ts) for details).
     - clientId: `test_client_id`
     - clientSecret: `test_client_secret`
+    - URL: https://conformance.services.carbon-transparency.org
 - Solution must return 2 or more PCFs via a call to ListFootprints, i.e. solution must have 2 PCFs available and pre-configured to release these PCFs to the Conformance tool
 
 ### How is Authentication information handled?
