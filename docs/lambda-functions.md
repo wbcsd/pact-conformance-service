@@ -1,26 +1,9 @@
-# PACT Conformance Service - Lambda Functions Onboarding Guide
-
+# PACT Conformance Service - Lambda Functions
 ## Overview
 
 The PACT API Test Service is a serverless application that provides conformance testing for PACT (Partnership for Carbon Transparency) API implementations. The service runs test cases against external API endpoints to validate conformance with PACT specifications across different versions (V2.0-V2.3 and V3.0).
 
-## Lambda Functions Architecture
-
-### Why Serverless with AWS Lambda?
-
-This service leverages AWS Lambda functions for several key reasons:
-
-1. **Concurrency Model**: Lambda functions can handle multiple concurrent test runs without resource conflicts. Each test execution runs in its own isolated environment.
-
-2. **Cost Efficiency**: Lambda's pay-per-execution model is ideal for test scenarios that run on-demand rather than continuously.
-
-3. **Scalability**: Automatic scaling handles varying loads from multiple test requests without manual infrastructure management.
-
-4. **Stateless Operations**: Each lambda function is stateless, making the system resilient and easier to debug.
-
-5. **Event-Driven Architecture**: Perfect for handling webhooks and asynchronous callbacks from external systems being tested.
-
-### Lambda Functions Setup
+## Lambda Functions Setup
 
 The service consists of 5 main Lambda functions deployed using Terraform:
 
@@ -180,63 +163,13 @@ The service uses DynamoDB with the following key patterns:
 - **Test Data**: Metadata for async test correlation
 - **Recent Test Runs**: Indexed by admin email for efficient querying
 
-## Future Improvements
-
-### Migration to ECS for Data Retrieval Functions
-
-The current Lambda-based architecture works well for the test execution and webhook handling, but the data retrieval functions (`getTestResults` and `getRecentTestRuns`) could benefit from migration to Amazon ECS:
-
-#### Benefits of ECS Migration:
-
-1. **Persistent Connections**: ECS containers can maintain database connection pools, reducing connection overhead for frequent queries.
-
-2. **Caching Layer**: ECS services can implement Redis or in-memory caching for frequently accessed test results, reducing database load and improving response times.
-
-3. **Advanced Query Capabilities**: ECS containers can implement more sophisticated querying, filtering, and pagination without Lambda timeout constraints.
-
-4. **Cost Optimization**: For high-frequency data access patterns, ECS provides more predictable costs compared to Lambda's per-invocation model.
-
-5. **Enhanced Monitoring**: ECS provides more granular metrics and easier integration with APM tools for performance monitoring.
-
-#### Implementation Strategy:
-
-1. **Phase 1**: Migrate `getRecentTestRuns` to ECS with Redis caching
-2. **Phase 2**: Migrate `getTestResults` with advanced filtering capabilities
-3. **Phase 3**: Implement GraphQL API for flexible data querying
-4. **Phase 4**: Add real-time updates via WebSockets for dashboard applications
-
-#### Architecture Considerations:
-
-- **Load Balancing**: Application Load Balancer for ECS services
-- **Service Discovery**: AWS Cloud Map for service-to-service communication
-- **Database**: Consider Aurora Serverless for better connection pooling
-- **Caching**: ElastiCache Redis cluster for session and query caching
-- **Security**: VPC endpoints and security groups for secure communication
-
-The test execution and webhook functions should remain on Lambda due to their event-driven nature and the benefits of Lambda's concurrency model for isolated test runs.
 
 ## Local Development and Testing
 
-### Local Testing Limitations
 
-Due to the serverless nature of this application, **local testing of the complete system is not recommended**. Running the Lambda functions locally would require a cumbersome LocalStack setup that involves:
+### Test Suite
 
-- Setting up LocalStack with DynamoDB, API Gateway, and Lambda emulation
-- Configuring complex networking between services
-- Managing environment variables and AWS credentials
-- Dealing with subtle differences between LocalStack and actual AWS services
-- Maintaining compatibility across different LocalStack versions
-
-This setup complexity often leads to:
-
-- **Time-consuming configuration** that doesn't add significant value
-- **Inconsistent behavior** between local and deployed environments
-- **Debugging challenges** due to LocalStack limitations
-- **Maintenance overhead** for keeping local setup in sync
-
-### Recommended Testing Approach
-
-Instead of local testing, we strongly recommend using the comprehensive test suite:
+Using the comprehensive test suite:
 
 #### Unit Tests
 

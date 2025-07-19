@@ -442,7 +442,7 @@ npm test -- --verbose  # Run tests with detailed output
 
 Once you have the development environment set up:
 
-1. **Read the onboarding documentation**: Review `docs/onboarding.md` for architecture overview
+1. **Read lambda functions documentation**: Review `docs/lambda-functions.md` for an overview
 2. **Explore the codebase**: Start with `src/lambda/runTestCases.ts` for the main workflow
 3. **Run the test suite**: Ensure all tests pass in your environment
 4. **Try local development**: Start the Express server and test endpoints
