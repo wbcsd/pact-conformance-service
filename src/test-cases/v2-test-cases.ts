@@ -284,8 +284,31 @@ export const generateV2TestCases = ({
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-15-receive-notification-of-pcf-update-published-event",
     },
+   {
+      name: "Test Case 16: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request",
+      method: "POST",
+      endpoint: `/2/events`,
+      expectedStatusCodes: [400],
+      requestData: {
+        type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+        specversion: "1.0",
+        id: randomUUID(),
+        source: webhookUrl,
+        time: new Date().toISOString(),
+        data: {
+          pfIds: ["urn:gtin:4712345060507"],
+        },
+      },
+      headers: {
+        "Content-Type": "application/cloudevents+json; charset=UTF-8",
+      },
+      mandatoryVersion: ["V2.2", "V2.3"],
+      testKey: "TESTCASE#15",
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-15-receive-notification-of-pcf-update-published-event",
+    },
     {
-      name: "Test Case 16: Attempt Action Events with Invalid Token",
+      name: "Test Case 17: Attempt Action Events with Invalid Token",
       method: "POST",
       endpoint: `/2/events`,
       expectedStatusCodes: [400],
@@ -312,7 +335,7 @@ export const generateV2TestCases = ({
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-16-attempt-action-events-with-invalid-token",
     },
     {
-      name: "Test Case 17: Attempt Action Events through HTTP (non-HTTPS)",
+      name: "Test Case 18: Attempt Action Events through HTTP (non-HTTPS)",
       method: "POST",
       customUrl: `${baseUrl.replace("https", "http")}/2/events`,
       requestData: {
@@ -338,7 +361,7 @@ export const generateV2TestCases = ({
       conditionErrorMessage: "Expected response to not include data property",
     },
     {
-      name: "Test Case 18: OpenId Connect-based Authentication Flow",
+      name: "Test Case 19: OpenId Connect-based Authentication Flow",
       method: "POST",
       customUrl: oidAuthUrl || undefined,
       expectedStatusCodes: [200],
