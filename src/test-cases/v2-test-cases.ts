@@ -377,8 +377,8 @@ export const generateV2TestCases = ({
       testKey: "TESTCASE#20",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-20-get-filtered-list-of-footprints",
-    },
-{
+    },  
+    {
       name: "Test Case 21: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request",
       method: "POST",
       endpoint: `/2/events`,
@@ -397,7 +397,7 @@ export const generateV2TestCases = ({
         "Content-Type": "application/cloudevents+json; charset=UTF-8",
       },
       mandatoryVersion: ["V2.2", "V2.3"],
-      testKey: "TESTCASE#15",
+      testKey: "TESTCASE#21",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-15-receive-notification-of-pcf-update-published-event",
     },    
