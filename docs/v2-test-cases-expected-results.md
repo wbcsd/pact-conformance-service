@@ -288,7 +288,7 @@ host: api.example.com
 authorization: Bearer [BearerToken]
 ```
 
-Expected http status code: `404`
+Expected http status codes: `400, 404`
 
 Example response body:
 
