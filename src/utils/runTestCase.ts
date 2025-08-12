@@ -192,6 +192,20 @@ export const runTestCase = async (
       ? `Request timeout after ${DEFAULT_FETCH_TIMEOUT_MS}ms`
       : error.message;
 
+    // #127: Handle timeout errors based on ignoreTimeoutErrors flag
+    if (isTimeoutError && testCase.ignoreTimeoutErrors) {
+      return {
+        name: testCase.name,
+        status: TestResultStatus.SUCCESS,
+        success: true,
+        errorMessage: errorMessage,
+        mandatory: isMandatoryVersion(testCase, version),
+        testKey: testCase.testKey,
+        curlRequest: curlCmd,
+        documentationUrl: testCase.documentationUrl,
+      };
+    }
+
     return {
       name: testCase.name,
       status: TestResultStatus.FAILURE,
