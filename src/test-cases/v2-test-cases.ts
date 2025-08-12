@@ -399,7 +399,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.2", "V2.3"],
       testKey: "TESTCASE#21",
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-15-receive-notification-of-pcf-update-published-event",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-21-failed-to-receive-notification-of-pcf-update-published-event-malformed-request",
     },    
   ];
 };
