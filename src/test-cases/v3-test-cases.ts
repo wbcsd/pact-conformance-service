@@ -844,7 +844,7 @@ export const generateV3TestCases = ({
       endpoint: `/3/events`,
       expectedStatusCodes: [400],
       requestData: {
-        type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+        type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
         specversion: "1.0",
         id: randomUUID(),
         source: webhookUrl,
