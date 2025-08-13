@@ -50,6 +50,7 @@ app.get('/getRecentTestRuns', wrapper(getRecentTestRunsHandler));
 
 // Call back listeners
 app.post('/2/events', wrapper(asyncRequestListenerHandler));
+app.post('/3/events', wrapper(asyncRequestListenerHandler));
 app.post('/auth/token', wrapper(authForAsyncListenerHandler));
 
 
