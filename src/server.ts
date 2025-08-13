@@ -33,7 +33,10 @@ const wrapper = (func: any) => {
             const result: APIGatewayProxyResult = await func(event);
 
             // Send the response back to the client
-            res.status(result.statusCode).send(JSON.parse(result.body));
+            if (result.body)
+                res.status(result.statusCode).send(JSON.parse(result.body));
+            else
+                res.status(result.statusCode).send();
         } catch (error) {
             console.error('Error:', error);
             res.status(500).send({ message: 'Internal Server Error' });
