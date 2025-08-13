@@ -26,6 +26,7 @@ const wrapper = (func: any) => {
                 body: JSON.stringify(req.body),
                 headers: req.headers as { [key: string]: string },
                 httpMethod: req.method,
+                requestContext: { http: { path: req.url, httpMethod: req.method } } as any,
                 queryStringParameters: req.query as { [key: string]: string }
             } as APIGatewayProxyEvent;
 
