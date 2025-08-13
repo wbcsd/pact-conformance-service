@@ -26,6 +26,7 @@ const wrapper = (func: any) => {
                 body: JSON.stringify(req.body),
                 headers: req.headers as { [key: string]: string },
                 httpMethod: req.method,
+                requestContext: { http: { path: req.url, httpMethod: req.method } } as any,
                 queryStringParameters: req.query as { [key: string]: string }
             } as APIGatewayProxyEvent;
 
@@ -33,7 +34,10 @@ const wrapper = (func: any) => {
             const result: APIGatewayProxyResult = await func(event);
 
             // Send the response back to the client
-            res.status(result.statusCode).send(JSON.parse(result.body));
+            if (result.body)
+                res.status(result.statusCode).send(JSON.parse(result.body));
+            else
+                res.status(result.statusCode).send();
         } catch (error) {
             console.error('Error:', error);
             res.status(500).send({ message: 'Internal Server Error' });
@@ -50,6 +54,7 @@ app.get('/getRecentTestRuns', wrapper(getRecentTestRunsHandler));
 
 // Call back listeners
 app.post('/2/events', wrapper(asyncRequestListenerHandler));
+app.post('/3/events', wrapper(asyncRequestListenerHandler));
 app.post('/auth/token', wrapper(authForAsyncListenerHandler));
 
 

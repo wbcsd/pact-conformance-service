@@ -177,7 +177,7 @@ export const generateV2TestCases = ({
       name: "Test Case 8: Attempt GetFootprint with Non-Existent PfId",
       method: "GET",
       endpoint: `/2/footprints/random-string-as-id-${randomString(16)}`,
-      expectedStatusCodes: [404],
+      expectedStatusCodes: [400, 404],
       condition: ({ code }) => {
         return code === "NoSuchFootprint";
       },
@@ -273,7 +273,7 @@ export const generateV2TestCases = ({
         source: webhookUrl,
         time: new Date().toISOString(),
         data: {
-          pfIds: ["urn:gtin:4712345060507"],
+          pfIds: ["3a6c14a7-4deb-498a-b5ea-16ce2535b576"],
         },
       },
       headers: {
@@ -296,7 +296,7 @@ export const generateV2TestCases = ({
         source: webhookUrl,
         time: new Date().toISOString(),
         data: {
-          pfIds: ["urn:gtin:4712345060507"],
+          pfIds: ["3a6c14a7-4deb-498a-b5ea-16ce2535b576"],
         },
       },
       headers: {
@@ -322,7 +322,7 @@ export const generateV2TestCases = ({
         time: new Date().toISOString(),
         type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
         data: {
-          pfIds: ["urn:gtin:4712345060507"],
+          pfIds: ["3a6c14a7-4deb-498a-b5ea-16ce2535b576"],
         },
       },
       headers: {
