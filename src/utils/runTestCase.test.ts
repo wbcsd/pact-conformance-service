@@ -15,13 +15,23 @@ const makeHeaders = (obj: Record<string, string> = {}) => ({
 
 const mockFetchOk = (
   status = 200,
-  body = "",
+  body = "{}",
   headers: Record<string, string> = {}
 ) => {
   (global.fetch as jest.Mock).mockResolvedValue({
+    ok: true,
     status,
     text: jest.fn().mockResolvedValue(body as never),
     headers: makeHeaders(headers),
+  } as never);
+};
+
+const mockFetchErrorJson = (status: number, body: any) => {
+  (global.fetch as jest.Mock).mockResolvedValue({
+    status,
+    ok: false,
+    text: jest.fn().mockResolvedValue(JSON.stringify(body) as never),
+    headers: makeHeaders({ "Content-Type": "application/json" }),
   } as never);
 };
 
@@ -276,7 +286,7 @@ describe("runTestCase", () => {
     expect(res.apiResponse).toBe(JSON.stringify({ id: 1 }));
   });
 
-  it("timeout error returns SUCCESS when ignoreTimeoutErrors is true", async () => {
+  it("timeout error returns SUCCESS when expectHttpError is true", async () => {
     mockFetchReject({ name: "AbortError", message: "aborted" });
 
     const res = await runTestCase(
@@ -286,7 +296,7 @@ describe("runTestCase", () => {
         method: "GET",
         endpoint: "/slow",
         expectedStatusCodes: [200],
-        ignoreTimeoutErrors: true,
+        expectHttpError: true,
         testKey: "T-9",
         mandatoryVersion: ["v2"], // not current version -> false
       } as any,
@@ -297,7 +307,7 @@ describe("runTestCase", () => {
     expect(res.success).toBe(true);
     expect(res.status).toBe(TestResultStatus.SUCCESS);
     // default timeout is 5000ms unless env overrides at module-load time
-    expect(res.errorMessage).toBe("Request timeout after 5000ms");
+    expect(res.errorMessage).not.toBeDefined();
     expect(res.mandatory).toBe(false);
   });
 
@@ -368,5 +378,48 @@ describe("runTestCase", () => {
     expect((options as Response).body).toBe(JSON.stringify(payload));
     expect(res.curlRequest).toContain(` -d '${JSON.stringify(payload)}'`);
     expect(res.curlRequest).toContain(" -H 'X-Trace: on'");
+  });
+
+  it("should fail for 200 when expectHttpError is true", async () => {
+    mockFetchOk(200, JSON.stringify({ id: 1 }));
+
+    const res = await runTestCase(
+      BASE_URL,
+      {
+        name: "expectHttpError-success",
+        method: "GET",
+        endpoint: "/success",
+        expectHttpError: true,
+        expectedStatusCodes: [200],
+        testKey: "T-13",
+      } as any,
+      ACCESS_TOKEN,
+      VERSION as any
+    );
+
+    expect(res.success).toBe(false);
+    expect(res.status).toBe(TestResultStatus.FAILURE);
+  });
+
+  it("should succeed for 500 when expectHttpError is true", async () => {
+    mockFetchErrorJson(500);
+
+    const res = await runTestCase(
+      BASE_URL,
+      {
+        name: "expectHttpError-failure",
+        method: "GET",
+        endpoint: "/error",
+        expectedStatusCodes: [200],
+        expectHttpError: true,
+        testKey: "T-14",
+      } as any,
+      ACCESS_TOKEN,
+      VERSION as any
+    );
+
+    expect(res.success).toBe(true);
+    expect(res.status).toBe(TestResultStatus.SUCCESS);
+    expect(res.errorMessage).not.toBeDefined();
   });
 });
