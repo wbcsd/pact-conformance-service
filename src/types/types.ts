@@ -41,6 +41,7 @@ export interface TestCase {
   mandatoryVersion?: ApiVersion[];
   testKey: string;
   documentationUrl?: string;
+  expectHttpError?: boolean;
 }
 export interface TestResult {
   name: string;

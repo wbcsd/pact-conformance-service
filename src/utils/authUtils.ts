@@ -62,6 +62,8 @@ export const getAccessToken = async (
     `${clientId}:${clientSecret}`
   ).toString("base64");
 
+  console.log(`Requesting access token from ${url} with clientId: ${clientId}`);
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -78,7 +80,9 @@ export const getAccessToken = async (
     );
 
     throw new Error(
-      `Failed to obtain access token from ${url}. Status: ${response.status}. Response: ${await response.text()}` 
+      `Failed to obtain access token from ${url}. Status: ${
+        response.status
+      }. Response: ${await response.text()}`
     );
   }
 
