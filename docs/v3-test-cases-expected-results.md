@@ -1499,3 +1499,61 @@ Example valid response body:
   "data": []
 }
 ```
+
+## Test Case #40: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request
+_Mandatory: V3.0_
+
+This test verifies that a malformed request can't be sent (pfId can't be an URN, but a UUID) 
+
+Request:
+
+- Method: `GET`
+- Endpoint: `{API_BASE_URL}/3/footprints?$filter=created ge '2023-01-15T10:15:30Z'`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `400`
+
+Example valid response body:
+
+```
+{
+  "data": [
+    {
+      "id": "b1f8c0d2-7c4e-4e67-9a9c-2e4c12345678",
+      "specVersion": "2.0.0",
+      "version": 1,
+      "created": "2023-01-15T10:15:30Z",
+      "status": "Active",
+      "validityPeriodStart": "2023-01-15T10:15:30Z",
+      "validityPeriodEnd": "2025-12-31T00:00:00Z",
+      "companyName": "Acme Corp",
+      "companyIds": [
+        "urn:uuid:abc12345-6789-4def-0123-456789abcdef"
+      ],
+      "productDescription": "Renewable Diesel, soybean feedstock (bulk - no packaging)",
+      "productIds": ["urn:gtin:1234567890123"]
+    },
+    {
+      "id": "c2e9d1f3-8d5f-5f78-0b0d-3f5e23456789",
+      "specVersion": "2.0.0",
+      "version": 1,
+      "created": "2023-01-16T14:30:45Z",
+      "status": "Active",
+      "validityPeriodStart": "2023-01-16T14:30:45Z",
+      "validityPeriodEnd": "2025-12-31T00:00:00Z",
+      "companyName": "Acme Corp",
+      "companyIds": [
+        "urn:uuid:abc12345-6789-4def-0123-456789abcdef"
+      ],
+      "productDescription": "Bio-Ethanol (bulk - no packaging)",
+      "productIds": ["urn:gtin:1234567890456"]
+    }
+  ]
+}
+```

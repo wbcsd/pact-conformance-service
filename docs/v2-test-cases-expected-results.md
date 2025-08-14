@@ -382,7 +382,7 @@ Request body:
   "id": "test-run-id-12345",
   "source": "https://webhook.example.com",
   "time": "2023-05-19T10:30:00Z",
-  "type": "org.wbcsd.PACT.ProductFootprintRequest.Created.v1",
+  "type": "org.wbcsd.pathfinder.ProductFootprintRequest.Created.v1",
   "data": {
     "pf": {
       "productIds": ["urn:gtin:1234567890123"]
@@ -424,7 +424,7 @@ Request body:
 
 ```
 {
-  "type": "org.wbcsd.PACT.ProductFootprintRequest.Fulfilled.v1",
+  "type": "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
   "specversion": "1.0",
   "id": "505e5d-4f9b-4b3b-9c05bc35-68f8",
   "source": "https://webhook.example.com",
@@ -501,7 +501,7 @@ Request body:
 
 ```
 {
-  "type": "org.wbcsd.PACT.ProductFootprintRequest.Rejected.v1",
+  "type": "org.wbcsd.pathfinder.ProductFootprintRequest.Rejected.v1",
   "specversion": "1.0",
   "id": "505e5d-4f9b-4b3b-9c05bc35-68f8",
   "source": "https://webhook.example.com",
@@ -547,8 +547,8 @@ authorization: Bearer [BearerToken]
 Request body:
 
 ```
-{
-  "type": "org.wbcsd.PACT.ProductFootprint.Published.v1",
+{          
+  "type": "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
   "specversion": "1.0",
   "id": "123e4567-e89b-12d3-a456-426614174000",
   "source": "https://webhook.example.com",
@@ -591,7 +591,7 @@ Request body:
 
 ```
 {
-  "type": "org.wbcsd.PACT.ProductFootprint.Published.v1",
+  "type": "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
   "specversion": "1.0",
   "id": "test-run-id-12345",
   "source": "https://webhook.example.com",
@@ -638,7 +638,7 @@ Request body:
   "id": "test-run-id-12345",
   "source": "https://webhook.example.com",
   "time": "2023-05-19T13:30:00Z",
-  "type": "org.wbcsd.PACT.ProductFootprint.Published.v1",
+  "type": "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
   "data": {
     "pf": {
       "productIds": ["urn:gtin:4712345060507"]
@@ -728,6 +728,64 @@ authorization: Bearer [BearerToken]
 ```
 
 Expected http status code: `200`
+
+Example valid response body:
+
+```
+{
+  "data": [
+    {
+      "id": "b1f8c0d2-7c4e-4e67-9a9c-2e4c12345678",
+      "specVersion": "2.0.0",
+      "version": 1,
+      "created": "2023-01-15T10:15:30Z",
+      "status": "Active",
+      "validityPeriodStart": "2023-01-15T10:15:30Z",
+      "validityPeriodEnd": "2025-12-31T00:00:00Z",
+      "companyName": "Acme Corp",
+      "companyIds": [
+        "urn:uuid:abc12345-6789-4def-0123-456789abcdef"
+      ],
+      "productDescription": "Renewable Diesel, soybean feedstock (bulk - no packaging)",
+      "productIds": ["urn:gtin:1234567890123"]
+    },
+    {
+      "id": "c2e9d1f3-8d5f-5f78-0b0d-3f5e23456789",
+      "specVersion": "2.0.0",
+      "version": 1,
+      "created": "2023-01-16T14:30:45Z",
+      "status": "Active",
+      "validityPeriodStart": "2023-01-16T14:30:45Z",
+      "validityPeriodEnd": "2025-12-31T00:00:00Z",
+      "companyName": "Acme Corp",
+      "companyIds": [
+        "urn:uuid:abc12345-6789-4def-0123-456789abcdef"
+      ],
+      "productDescription": "Bio-Ethanol (bulk - no packaging)",
+      "productIds": ["urn:gtin:1234567890456"]
+    }
+  ]
+}
+```
+
+## Test Case #21: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request
+_Mandatory: V2.2, V2.3_
+
+This test verifies that a malformed request can't be sent (pfId can't be an URN, but a UUID) 
+
+Request:
+
+- Method: `POST`
+- Endpoint: `{API_BASE_URL}/2/footprints?$filter=created ge '2023-01-15T10:15:30Z'`
+
+Request headers:
+
+```
+host: api.example.com
+authorization: Bearer [BearerToken]
+```
+
+Expected http status code: `400`
 
 Example valid response body:
 

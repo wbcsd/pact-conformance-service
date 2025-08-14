@@ -377,6 +377,29 @@ export const generateV2TestCases = ({
       testKey: "TESTCASE#20",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-20-get-filtered-list-of-footprints",
-    },
+    },  
+    {
+      name: "Test Case 21: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request",
+      method: "POST",
+      endpoint: `/2/events`,
+      expectedStatusCodes: [400],
+      requestData: {
+        type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+        specversion: "1.0",
+        id: randomUUID(),
+        source: webhookUrl,
+        time: new Date().toISOString(),
+        data: {
+          pfIds: ["urn:gtin:4712345060507"],
+        },
+      },
+      headers: {
+        "Content-Type": "application/cloudevents+json; charset=UTF-8",
+      },
+      mandatoryVersion: ["V2.2", "V2.3"],
+      testKey: "TESTCASE#21",
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-21-failed-to-receive-notification-of-pcf-update-published-event-malformed-request",
+    },    
   ];
 };
