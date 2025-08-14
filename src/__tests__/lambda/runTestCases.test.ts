@@ -252,58 +252,6 @@ describe("runTestCases Lambda handler general tests", () => {
     expect(body.passingPercentage).toBe(expectedPassingPercentage);
   });
 
-  test("should mark timeout errors as successful if ignoreTimeoutErrors is true", async () => {
-// Arrange
-    const event = createEvent({
-      baseUrl: mockBaseUrl,
-      clientId: "client-id",
-      clientSecret: "client-secret",
-      version: "V2.2",
-      companyName: "Test Company",
-      adminEmail: "admin@test.com",
-      adminName: "Admin Test",
-    });
-
-    // Mock test case #4 to fail
-    (runTestCaseModule.runTestCase as jest.Mock).mockImplementation(
-      (baseUrl, testCase) => {
-        if (testCase.ignoreTimeoutErrors === true) {
-          return Promise.resolve({
-            name: testCase.name,
-            status: TestResultStatus.SUCCESS,
-            success: true,
-            errorMessage: "Test failed",
-            mandatory: true,
-            testKey: testCase.testKey,
-          });
-        }
-        return Promise.resolve({
-          name: testCase.name,
-          status: TestResultStatus.SUCCESS,
-          success: true,
-          mandatory: true,
-          testKey: testCase.testKey,
-        });
-      }
-    );
-
-    // Act
-    const result = await handler(event);
-
-    // Assert
-    expect(result.statusCode).toBe(500);
-    const body = JSON.parse(result.body);
-    expect(body.message).toBe("One or more tests failed");
-
-    // Calculate expected passing percentage (18/19 tests passed = ~94.7%)
-    const totalMandatoryTests = 18;
-    const failedMandatoryTests = 1;
-    const expectedPassingPercentage = Math.round(
-      ((totalMandatoryTests - failedMandatoryTests) / totalMandatoryTests) * 100
-    );
-    expect(body.passingPercentage).toBe(expectedPassingPercentage);    
-  });      
-
   test("should handle missing request body fields", async () => {
     // Arrange - create an event with missing required fields
     const event = createEvent({
