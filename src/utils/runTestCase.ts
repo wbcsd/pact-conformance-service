@@ -103,6 +103,21 @@ export const runTestCase = async (
       signal: AbortSignal.timeout(DEFAULT_FETCH_TIMEOUT_MS),
     });
 
+    if (testCase.expectHttpError === true) {
+      // If we expect an HTTP error, we consider the test successful if the response is not OK
+      return {
+        name: testCase.name,
+        status: response.ok
+          ? TestResultStatus.FAILURE
+          : TestResultStatus.SUCCESS,
+        success: !response.ok,
+        mandatory: isMandatoryVersion(testCase, version),
+        testKey: testCase.testKey,
+        curlRequest: curlCmd,
+        documentationUrl: testCase.documentationUrl,
+      };
+    }
+
     if (
       testCase.expectedStatusCodes &&
       !testCase.expectedStatusCodes.includes(response.status)
@@ -192,25 +207,20 @@ export const runTestCase = async (
       ? `Request timeout after ${DEFAULT_FETCH_TIMEOUT_MS}ms`
       : error.message;
 
-    // #127: Handle timeout errors based on ignoreTimeoutErrors flag
-    if (isTimeoutError && testCase.ignoreTimeoutErrors) {
-      return {
-        name: testCase.name,
-        status: TestResultStatus.SUCCESS,
-        success: true,
-        errorMessage: errorMessage,
-        mandatory: isMandatoryVersion(testCase, version),
-        testKey: testCase.testKey,
-        curlRequest: curlCmd,
-        documentationUrl: testCase.documentationUrl,
-      };
-    }
+    console.log(testCase.expectHttpError, error);
 
     return {
       name: testCase.name,
-      status: TestResultStatus.FAILURE,
-      success: false,
-      errorMessage: errorMessage,
+      // If we expect an HTTP error, we consider the test successful if the request fails
+      status:
+        testCase.expectHttpError === true
+          ? TestResultStatus.SUCCESS
+          : TestResultStatus.FAILURE,
+      success: testCase.expectHttpError === true,
+      // If we expect an HTTP error, we don't return an error message
+      ...(testCase.expectHttpError === true
+        ? {}
+        : { errorMessage: errorMessage }),
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: curlCmd,
