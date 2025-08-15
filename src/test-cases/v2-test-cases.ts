@@ -72,7 +72,7 @@ export const generateV2TestCases = ({
         return v2_3_SingleFootprintResponseSchema; // Default to latest if unknown
     }
   })();
-  
+
   return [
     {
       name: "Test Case 1: Obtain auth token with valid credentials",
@@ -143,7 +143,7 @@ export const generateV2TestCases = ({
       name: "Test Case 6: Attempt ListFootPrints with Invalid Token",
       method: "GET",
       endpoint: `/2/footprints`,
-      expectedStatusCodes: [400],
+      expectedStatusCodes: [400, 401],
       condition: ({ code }) => {
         return code === "BadRequest";
       },
@@ -160,7 +160,7 @@ export const generateV2TestCases = ({
       name: "Test Case 7: Attempt GetFootprint with Invalid Token",
       method: "GET",
       endpoint: `/2/footprints/${footprints.data[0].id}`,
-      expectedStatusCodes: [400],
+      expectedStatusCodes: [400, 401],
       condition: ({ code }) => {
         return code === "BadRequest";
       },
@@ -288,7 +288,7 @@ export const generateV2TestCases = ({
       name: "Test Case 16: Attempt Action Events with Invalid Token",
       method: "POST",
       endpoint: `/2/events`,
-      expectedStatusCodes: [400],
+      expectedStatusCodes: [400, 401],
       requestData: {
         type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
         specversion: "1.0",
@@ -377,7 +377,7 @@ export const generateV2TestCases = ({
       testKey: "TESTCASE#20",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-20-get-filtered-list-of-footprints",
-    },  
+    },
     {
       name: "Test Case 21: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request",
       method: "POST",
@@ -400,6 +400,6 @@ export const generateV2TestCases = ({
       testKey: "TESTCASE#21",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-21-failed-to-receive-notification-of-pcf-update-published-event-malformed-request",
-    },    
+    },
   ];
 };

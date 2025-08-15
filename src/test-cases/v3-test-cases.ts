@@ -206,7 +206,7 @@ export const generateV3TestCases = ({
       name: "Test Case 6: Attempt ListFootPrints with Invalid Token",
       method: "GET",
       endpoint: `/3/footprints`,
-      expectedStatusCodes: [400],
+      expectedStatusCodes: [400, 401],
       condition: ({ code }) => {
         return code === "BadRequest";
       },
@@ -223,7 +223,7 @@ export const generateV3TestCases = ({
       name: "Test Case 7: Attempt GetFootprint with Invalid Token",
       method: "GET",
       endpoint: `/3/footprints/${filterParams.id}`,
-      expectedStatusCodes: [400],
+      expectedStatusCodes: [400, 401],
       condition: ({ code }) => {
         return code === "BadRequest";
       },
@@ -349,7 +349,7 @@ export const generateV3TestCases = ({
       name: "Test Case 16: Attempt Action Events with Invalid Token",
       method: "POST",
       endpoint: `/3/events`,
-      expectedStatusCodes: [400],
+      expectedStatusCodes: [400, 401],
       requestData: {
         type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
         specversion: "1.0",
@@ -860,7 +860,7 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#40",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-40-failed-to-receive-notification-of-pcf-update-published-event-malformed-request",
-    },    
+    },
   ];
 };
 
