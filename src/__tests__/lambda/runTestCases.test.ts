@@ -24,6 +24,11 @@ jest.mock("../../utils/fetchFootprints");
 jest.mock("../../utils/dbUtils");
 jest.mock("../../utils/runTestCase");
 
+beforeAll(() => {
+  // Mock the console.log to avoid cluttering test output
+  jest.spyOn(console, "log").mockImplementation(() => {});
+});
+
 describe("runTestCases Lambda handler general tests", () => {
   const mockAccessToken = "mock-access-token";
   const mockOidAuthUrl = "https://auth.example.com/token";
@@ -135,7 +140,7 @@ describe("runTestCases Lambda handler general tests", () => {
     expect(body.message).toBe("One or more tests failed");
 
     // Calculate expected passing percentage (18/19 tests passed = ~94.7%)
-    const totalMandatoryTests = 18;
+    const totalMandatoryTests = 19;
     const failedMandatoryTests = 1;
     const expectedPassingPercentage = Math.round(
       ((totalMandatoryTests - failedMandatoryTests) / totalMandatoryTests) * 100
@@ -238,7 +243,7 @@ describe("runTestCases Lambda handler general tests", () => {
     // For V2.0, tests 12, 14, 15, 16 are optional
     // 1 mandatory test failed (test #4)
     // The optional test failure (#12) shouldn't affect the passing percentage
-    const mandatoryTests = 19 - 4; // Total tests - optional tests
+    const mandatoryTests = 20 - 4; // Total tests - optional tests
     const failedMandatoryTests = 1; // Test #4
     const expectedPassingPercentage = Math.round(
       ((mandatoryTests - failedMandatoryTests) / mandatoryTests) * 100
@@ -371,13 +376,13 @@ describe("runTestCases Lambda handler V2 specific", () => {
 
     // Verify that runTestCase was called the correct number of times (once for each test case)
     // There are 18 test cases defined in the handler, plus one placeholder for TESTCASE#13 which is skipped
-    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(18);
+    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(19);
 
     // Verify that saveTestCaseResults was called with the results
     expect(dbUtils.saveTestCaseResults).toHaveBeenCalled();
     const savedResults = (dbUtils.saveTestCaseResults as jest.Mock).mock
       .calls[0][1];
-    expect(savedResults).toHaveLength(20); // 18 test cases + 2 placeholders for the async test cases
+    expect(savedResults).toHaveLength(21); // 18 test cases + 2 placeholders for the async test cases
   });
 });
 
@@ -491,12 +496,12 @@ describe("runTestCases Lambda handler V3 specific", () => {
 
     // Verify that runTestCase was called the correct number of times (once for each test case)
     // There are 39 test cases defined in the handler (29 original + 10 new inverse), minus 2 async placeholders which are skipped = 37
-    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(37);
+    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(38);
 
     // Verify that saveTestCaseResults was called with the results
     expect(dbUtils.saveTestCaseResults).toHaveBeenCalled();
     const savedResults = (dbUtils.saveTestCaseResults as jest.Mock).mock
       .calls[0][1];
-    expect(savedResults).toHaveLength(39); // 37 executed test cases + 2 placeholder for the async test cases
+    expect(savedResults).toHaveLength(40); // 37 executed test cases + 2 placeholder for the async test cases
   });
 });
