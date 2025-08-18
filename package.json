@@ -8,7 +8,8 @@
     "dev": "ts-node-dev ./src/server.ts",
     "dev:run": "ts-node-dev --respawn --transpile-only src/",
     "test": "jest --maxWorkers=1",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "export:dynamo": "ts-node ./scripts/export-dynamo-to-postgres.ts"
   },
   "keywords": [],
   "author": "",
