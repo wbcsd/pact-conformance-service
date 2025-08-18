@@ -279,7 +279,7 @@ host: api.example.com
 authorization: Bearer invalid-access-token
 ```
 
-Expected http status code: `400`
+Expected http status codes: `400`, `401`
 
 Example response body:
 
@@ -308,7 +308,7 @@ host: api.example.com
 authorization: Bearer invalid-access-token
 ```
 
-Expected http status code: `400`
+Expected http status codes: `400`, `401`
 
 Example response body:
 
@@ -655,7 +655,7 @@ Request body:
 }
 ```
 
-Expected http status code: `400`
+Expected http status codes: `400`, `401`
 
 Example response body:
 
@@ -1501,9 +1501,10 @@ Example valid response body:
 ```
 
 ## Test Case #40: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request
+
 _Mandatory: V3.0_
 
-This test verifies that a malformed request can't be sent (pfId can't be an URN, but a UUID) 
+This test verifies that a malformed request can't be sent (pfId can't be an URN, but a UUID)
 
 Request:
 
