@@ -1500,7 +1500,7 @@ Example valid response body:
 }
 ```
 
-## Test Case #40: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request
+## Test Case #40: Failed to Receive Notification of PCF Update (Published Event) Malformed Request
 
 _Mandatory: V3.0_
 
