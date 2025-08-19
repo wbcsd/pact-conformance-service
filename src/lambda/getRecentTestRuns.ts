@@ -3,8 +3,9 @@ import { DatabaseFactory, DatabaseType } from "../data/factory";
 import { TestRunStatus } from "../types/types";
 import { getTestResults } from "../utils/dbUtils";
 
-const MAX_TEST_RUNS_TO_FETCH = 100;
-const MAX_TEST_RUNS_TO_ENRICH = 10;
+const MAX_TEST_RUNS_TO_FETCH = process.env.MAX_TEST_RUNS_TO_FETCH
+  ? parseInt(process.env.MAX_TEST_RUNS_TO_FETCH)
+  : 100;
 
 export const handler = async (
   event: APIGatewayProxyEvent
