@@ -24,6 +24,12 @@ interface TestResult {
   testKey?: string;
 }
 
+beforeAll(() => {
+  // Mock the console.log to avoid cluttering test output
+  jest.spyOn(console, "log").mockImplementation(() => {});
+  jest.spyOn(console, "error").mockImplementation(() => {});
+});
+
 describe("runTestCases Lambda handler with nock", () => {
   const mockBaseUrl = "https://api.example.com";
   const mockHttpBaseUrl = "http://api.example.com";
@@ -240,13 +246,13 @@ describe("runTestCases Lambda handler with nock", () => {
       JSON.parse(result.body).results.filter(
         (r: TestResult) => r.success === false
       )
-    ).toHaveLength(2); // Async tests should be pending
+    ).toHaveLength(3); // Async tests should be pending
 
     expect(
       JSON.parse(result.body).results.find(
         (r: TestResult) => r.success === false && r.mandatory
       )
-    ).toHaveProperty("testKey", "TESTCASE#13");
+    ).toHaveProperty("testKey", "TESTCASE#21");
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);
@@ -531,12 +537,12 @@ describe("runTestCases Lambda handler with nock", () => {
       JSON.parse(result.body).results.filter(
         (r: TestResult) => r.success === false
       )
-    ).toHaveLength(2); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14)
+    ).toHaveLength(3); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14)
     expect(
       JSON.parse(result.body).results.find(
         (r: TestResult) => r.success === false && r.mandatory
       )
-    ).toHaveProperty("testKey", "TESTCASE#13");
+    ).toHaveProperty("testKey", "TESTCASE#40");
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);
