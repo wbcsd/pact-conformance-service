@@ -27,6 +27,7 @@ jest.mock("../../utils/runTestCase");
 beforeAll(() => {
   // Mock the console.log to avoid cluttering test output
   jest.spyOn(console, "log").mockImplementation(() => {});
+  jest.spyOn(console, "error").mockImplementation(() => {});
 });
 
 describe("runTestCases Lambda handler general tests", () => {
