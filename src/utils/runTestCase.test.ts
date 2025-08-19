@@ -26,11 +26,11 @@ const mockFetchOk = (
   } as never);
 };
 
-const mockFetchErrorJson = (status: number, body: any) => {
+const mockFetchErrorJson = (status: number, body = "{}") => {
   (global.fetch as jest.Mock).mockResolvedValue({
     status,
     ok: false,
-    text: jest.fn().mockResolvedValue(JSON.stringify(body) as never),
+    text: jest.fn().mockResolvedValue(body as never),
     headers: makeHeaders({ "Content-Type": "application/json" }),
   } as never);
 };
