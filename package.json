@@ -40,7 +40,8 @@
     "aws-sdk": "^2.1692.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "pino-http": "^10.5.0"
   },
   "jest": {
     "preset": "ts-jest",

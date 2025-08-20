@@ -7,6 +7,7 @@ import {
   TestResult,
   TestResultStatus,
 } from "../types/types";
+import logger from "./logger";
 
 // Setup timeout for the fetch request
 const DEFAULT_FETCH_TIMEOUT_MS = parseInt(
@@ -141,7 +142,7 @@ export const runTestCase = async (
     let responseData;
     responseData = rawResponse.length > 0 ? JSON.parse(rawResponse) : "";
 
-    console.log(`Test response data from ${url}`, responseData);
+    logger.info(`Test response data from ${url}`, responseData);
 
     // Validate the response JSON using AJV if a schema is provided.
     if (testCase.schema) {
@@ -151,7 +152,10 @@ export const runTestCase = async (
       const validate = ajv.compile(testCase.schema);
       const valid = validate(responseData);
       if (!valid) {
-        console.log("Schema validation failed:", validate.errors);
+        logger.info(
+          "Schema validation failed:",
+          validate.errors?.map((e) => e.message).join(", ") as any
+        );
         return {
           name: testCase.name,
           success: false,
@@ -168,7 +172,7 @@ export const runTestCase = async (
       }
     }
 
-    console.log("Schema validation passed");
+    logger.info("Schema validation passed");
 
     // Run condition if provided
     if (typeof testCase.condition === "function") {
@@ -207,7 +211,7 @@ export const runTestCase = async (
       ? `Request timeout after ${DEFAULT_FETCH_TIMEOUT_MS}ms`
       : error.message;
 
-    console.log(testCase.expectHttpError, error);
+    logger.info(testCase.expectHttpError, error);
 
     return {
       name: testCase.name,
