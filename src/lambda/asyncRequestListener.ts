@@ -20,6 +20,7 @@ import {
   updateTestRunStatus,
 } from "../utils/dbUtils";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
+import logger from "../utils/logger";
 
 // Initialize Ajv validator
 const ajv = new Ajv({ allErrors: true });
@@ -36,17 +37,17 @@ export const handler = async (
 ): Promise<APIGatewayProxyResultV2> => {
   try {
     // Log the entire event for debugging
-    console.log("Received event:", JSON.stringify(event, null, 2));
+    console.info("Received event:", JSON.stringify(event, null, 2));
 
     // Parse and log the request body
     if (event.body) {
       const body = JSON.parse(event.body);
-      console.log("Request body:", JSON.stringify(body, null, 2));
+      console.info("Request body:", JSON.stringify(body, null, 2));
 
       const testData = await getTestData(body.data.requestEventId);
 
       if (!testData) {
-        console.error(
+        logger.error(
           `Test data not found for requestEventId: ${body.data.requestEventId}`
         );
         return {
@@ -148,7 +149,7 @@ export const handler = async (
             testRunStatus,
             passingPercentage
           );
-          console.log(
+          console.info(
             `Updated test run status: ${testRunStatus}, passing percentage: ${passingPercentage}%`
           );
         }
@@ -156,7 +157,7 @@ export const handler = async (
         body.type === EventTypes.REJECTED ||
         body.type === EventTypesV3.REJECTED
       ) {
-        console.log(
+        console.info(
           "Processing rejected event:",
           JSON.stringify(body, null, 2)
         );
@@ -225,13 +226,13 @@ export const handler = async (
             testRunStatus,
             passingPercentage
           );
-          console.log(
+          console.info(
             `Updated test run status: ${testRunStatus}, passing percentage: ${passingPercentage}%`
           );
         }
       }
     } else {
-      console.error("No request body received");
+      logger.error("No request body received");
     }
 
     return {
@@ -242,7 +243,7 @@ export const handler = async (
       body: "",
     };
   } catch (error) {
-    console.error("Error processing request:", error);
+    logger.error("Error processing request:", error);
 
     return {
       statusCode: 400,

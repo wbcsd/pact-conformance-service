@@ -6,6 +6,7 @@ import {
   TestRunWithResults,
   SaveTestRunDetails,
 } from "../interfaces/Database";
+import logger from "../../utils/logger";
 
 export class PostgresAdapter implements Database {
   private pool: Pool;
@@ -72,7 +73,7 @@ export class PostgresAdapter implements Database {
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");
-      console.error("Error initializing schema:", error);
+      logger.error("Error initializing schema:", error);
       throw error;
     } finally {
       client.release();
@@ -106,9 +107,9 @@ export class PostgresAdapter implements Database {
 
     try {
       await this.pool.query(query, values);
-      console.log(`Test run ${details.testRunId} saved successfully`);
+      logger.info(`Test run ${details.testRunId} saved successfully`);
     } catch (error) {
-      console.error("Error saving test run:", error);
+      logger.error("Error saving test run:", error);
       throw error;
     }
   }
@@ -131,12 +132,12 @@ export class PostgresAdapter implements Database {
       if (result.rowCount === 0) {
         console.warn(`No test run found with ID ${testRunId} to update`);
       } else {
-        console.log(
+        logger.info(
           `Test run ${testRunId} status updated to ${status} with ${passingPercentage}% passing`
         );
       }
     } catch (error) {
-      console.error("Error updating test run status:", error);
+      logger.error("Error updating test run status:", error);
       throw error;
     }
   }
@@ -177,7 +178,7 @@ export class PostgresAdapter implements Database {
         JSON.stringify(testResult),
       ]);
     } catch (error) {
-      console.error(`Error saving test case: ${testResult.name}`, error);
+      logger.error(`Error saving test case: ${testResult.name}`, error);
       throw error;
     } finally {
       client.release();
@@ -188,18 +189,21 @@ export class PostgresAdapter implements Database {
     testRunId: string,
     testResults: TestResult[]
   ): Promise<void> {
-    console.log(`Saving ${testResults.length} test cases...`);
+    logger.info(`Saving ${testResults.length} test cases...`);
 
     for (const testResult of testResults) {
       try {
         await this.saveTestCaseResult(testRunId, testResult, false);
       } catch (error) {
-        console.error(`Failed to save test case ${testResult.name}:`, error);
+        logger.error(
+          `Failed to save test case ${testResult.name}:`,
+          error as any
+        );
         throw error;
       }
     }
 
-    console.log(`All ${testResults.length} test cases saved successfully`);
+    logger.info(`All ${testResults.length} test cases saved successfully`);
   }
 
   async getTestResults(testRunId: string): Promise<TestRunWithResults | null> {
@@ -256,9 +260,9 @@ export class PostgresAdapter implements Database {
         timestamp,
         JSON.stringify(testData),
       ]);
-      console.log("Test data saved successfully");
+      logger.info("Test data saved successfully");
     } catch (error) {
-      console.error("Error saving test data:", error);
+      logger.error("Error saving test data:", error);
       throw error;
     }
   }
@@ -276,7 +280,7 @@ export class PostgresAdapter implements Database {
       }
       return result.rows[0].data;
     } catch (error) {
-      console.error("Error retrieving test data:", error);
+      logger.error("Error retrieving test data:", error);
       throw error;
     }
   }
@@ -312,7 +316,7 @@ export class PostgresAdapter implements Database {
           } as TestRunDetails)
       );
     } catch (error) {
-      console.error("Error retrieving recent test runs:", error);
+      logger.error("Error retrieving recent test runs:", error);
       throw error;
     }
   }

@@ -6,6 +6,7 @@ import {
 import * as AWS from "aws-sdk";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import { TestResult, TestRunStatus } from "../types/types";
+import logger from "../utils/logger";
 
 // DynamoDB constants
 const SK_TYPES = {
@@ -36,7 +37,7 @@ export const handler = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
-  console.log("Starting backfill process for test run statuses");
+  logger.info("Starting backfill process for test run statuses");
 
   const docClient = new AWS.DynamoDB.DocumentClient();
   const tableName = process.env.DYNAMODB_TABLE_NAME;
@@ -77,7 +78,7 @@ export const handler = async (
 
           // Check if status is missing or undefined
           if (!item.status) {
-            console.log(`Processing test run ${item.testId} - missing status`);
+            logger.info(`Processing test run ${item.testId} - missing status`);
 
             // Get all test results for this test run
             const queryParams: AWS.DynamoDB.DocumentClient.QueryInput = {
@@ -125,7 +126,7 @@ export const handler = async (
                 await docClient.update(updateParams).promise();
                 updatedCount++;
 
-                console.log(
+                logger.info(
                   `Updated test run ${item.testId}: status=${testRunStatus}, passingPercentage=${passingPercentage}%`
                 );
               } else {
@@ -151,13 +152,13 @@ export const handler = async (
                 await docClient.update(updateParams).promise();
                 updatedCount++;
 
-                console.log(
+                logger.info(
                   `Test run ${item.testId} has no test results, updated status to fail`
                 );
               }
             }
           } else {
-            console.log(
+            logger.info(
               `Test run ${item.testId} already has status: ${item.status}`
             );
           }
@@ -168,7 +169,7 @@ export const handler = async (
     } while (lastEvaluatedKey);
 
     const message = `Backfill completed. Processed ${processedCount} test runs, updated ${updatedCount} records.`;
-    console.log(message);
+    logger.info(message);
 
     return {
       statusCode: 200,
@@ -179,7 +180,7 @@ export const handler = async (
       }),
     };
   } catch (error) {
-    console.error("Error during backfill process:", error);
+    logger.error("Error during backfill process:", error);
 
     return {
       statusCode: 500,

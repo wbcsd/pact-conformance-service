@@ -320,6 +320,7 @@ The project uses GitHub Actions for CI/CD with automated deployments to both dev
 **Workflow**: `.github/workflows/deploy-dev.yml`
 
 The development pipeline:
+
 1. **Setup**: Checks out code and sets up Node.js 20
 2. **Dependencies**: Installs packages with `npm ci`
 3. **Testing**: Runs the complete test suite (`npm test`)
@@ -327,7 +328,8 @@ The development pipeline:
 5. **Package**: Creates `lambdas.zip` with compiled code and dependencies
 6. **Deploy**: Uses Terraform to deploy infrastructure and Lambda functions
 
-**Environment**: 
+**Environment**:
+
 - **Region**: `eu-north-1` (Stockholm)
 - **Backend**: S3 state storage with DynamoDB locking
 - **Webhook URL**: `https://conformance.services.dev.carbon-transparency.org`
@@ -339,6 +341,7 @@ The development pipeline:
 **Workflow**: `.github/workflows/deploy-prod.yml`
 
 The production pipeline follows the same steps as development but:
+
 - **No automatic testing** (assumes tests passed in dev)
 - **Manual approval** required via GitHub UI
 - **Production configuration** with prod webhook URL
@@ -363,6 +366,7 @@ For local development and testing:
 ```
 
 This script:
+
 1. Compiles TypeScript to JavaScript
 2. Creates `lambdas.zip` with compiled code and dependencies
 3. Applies Terraform configuration to AWS
@@ -385,11 +389,13 @@ This script:
 ### Deployment Flow
 
 #### Development
+
 ```
 Push to main → GitHub Actions → Tests → Build → Deploy to Dev
 ```
 
-#### Production  
+#### Production
+
 ```
 Manual Trigger → GitHub Actions → Build → Deploy to Prod
 ```
@@ -397,6 +403,7 @@ Manual Trigger → GitHub Actions → Build → Deploy to Prod
 ### Infrastructure Components
 
 Both environments deploy:
+
 - **Lambda Functions**: All 5 functions with appropriate memory/timeout settings
 - **API Gateway**: HTTP API with route configurations
 - **DynamoDB**: Test results and metadata storage

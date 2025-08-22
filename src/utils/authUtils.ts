@@ -1,3 +1,5 @@
+import logger from "./logger";
+
 // See https://docs.carbon-transparency.org/v2/#authresponsebody
 export interface TokenResponse {
   access_token: string;
@@ -62,7 +64,7 @@ export const getAccessToken = async (
     `${clientId}:${clientSecret}`
   ).toString("base64");
 
-  console.log(`Requesting access token from ${url} with clientId: ${clientId}`);
+  logger.info(`Requesting access token from ${url} with clientId: ${clientId}`);
 
   const response = await fetch(url, {
     method: "POST",
@@ -75,7 +77,7 @@ export const getAccessToken = async (
   });
 
   if (!response.ok) {
-    console.error(
+    logger.error(
       `Failed to obtain access token from ${url}. Status: ${response.status}`
     );
 

@@ -23,6 +23,7 @@ import {
 } from "../utils/dbUtils";
 import { generateV3TestCases } from "../test-cases/v3-test-cases";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
+import logger from "../utils/logger";
 
 const WEBHOOK_URL = process.env.WEBHOOK_URL || "";
 
@@ -67,7 +68,7 @@ export const handler = async (
     !adminEmail ||
     !adminName
   ) {
-    console.error("Missing required parameters");
+    logger.error("Missing required parameters");
     return {
       statusCode: 400,
       body: JSON.stringify({
@@ -145,12 +146,12 @@ export const handler = async (
 
     // Run each test case sequentially.
     for (const testCase of testCases) {
-      console.log(`Running test case: ${testCase.name}`);
+      logger.info(`Running test case: ${testCase.name}`);
       const result = await runTestCase(baseUrl, testCase, accessToken, version);
       if (result.success) {
-        console.log(`Test case "${testCase.name}" passed.`);
+        logger.info(`Test case "${testCase.name}" passed.`);
       } else {
-        console.error(
+        logger.error(
           `Test case "${testCase.name}" failed: ${result.errorMessage}`
         );
       }
@@ -207,7 +208,7 @@ export const handler = async (
 
     // If any test failed, return an error response.
     if (failedMandatoryTests.length > 0) {
-      console.error("Some tests failed:", failedMandatoryTests);
+      logger.error("Some tests failed:", failedMandatoryTests);
 
       return {
         statusCode: 500,
@@ -220,7 +221,7 @@ export const handler = async (
       };
     }
 
-    console.log("All tests passed successfully.");
+    logger.info("All tests passed successfully.");
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -231,7 +232,7 @@ export const handler = async (
       }),
     };
   } catch (error: any) {
-    console.error("Error in Lambda function:", error);
+    logger.error("Error in Lambda function:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({
