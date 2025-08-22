@@ -180,7 +180,7 @@ export const handler = async (
       }),
     };
   } catch (error) {
-    logger.error("Error during backfill process:", error as any);
+    logger.error("Error during backfill process:", error);
 
     return {
       statusCode: 500,

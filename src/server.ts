@@ -1,6 +1,5 @@
 import express from "express";
-import pino from "pino-http";
-import logger from "./utils/logger";
+import logger, { loggerMiddleware } from "./utils/logger";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import config from "./config";
 import {
@@ -19,21 +18,7 @@ const port = config.port;
 app.use(express.json());
 
 // Pino logging middleware
-app.use(
-  pino({
-    logger,
-    name: process.env.SERVICE_NAME,
-    // Log debug information for anything lower than production
-    level: process.env.NODE_ENV === "prod" ? "info" : "debug",
-    transport: {
-      target: "pino-pretty",
-      options: {
-        colorize: true,
-        translateTime: "SYS:standard",
-      },
-    },
-  })
-);
+app.use(loggerMiddleware);
 
 // Wrapper for AWS Lambda event to Express request
 const wrapper = (func: any) => {

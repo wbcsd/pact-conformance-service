@@ -73,7 +73,7 @@ export class PostgresAdapter implements Database {
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");
-      logger.error("Error initializing schema:", error as any);
+      logger.error("Error initializing schema:", error);
       throw error;
     } finally {
       client.release();
@@ -109,7 +109,7 @@ export class PostgresAdapter implements Database {
       await this.pool.query(query, values);
       logger.info(`Test run ${details.testRunId} saved successfully`);
     } catch (error) {
-      logger.error("Error saving test run:", error as any);
+      logger.error("Error saving test run:", error);
       throw error;
     }
   }
@@ -137,7 +137,7 @@ export class PostgresAdapter implements Database {
         );
       }
     } catch (error) {
-      logger.error("Error updating test run status:", error as any);
+      logger.error("Error updating test run status:", error);
       throw error;
     }
   }
@@ -178,7 +178,7 @@ export class PostgresAdapter implements Database {
         JSON.stringify(testResult),
       ]);
     } catch (error) {
-      logger.error(`Error saving test case: ${testResult.name}`, error as any);
+      logger.error(`Error saving test case: ${testResult.name}`, error);
       throw error;
     } finally {
       client.release();
@@ -262,7 +262,7 @@ export class PostgresAdapter implements Database {
       ]);
       logger.info("Test data saved successfully");
     } catch (error) {
-      logger.error("Error saving test data:", error as any);
+      logger.error("Error saving test data:", error);
       throw error;
     }
   }
@@ -280,7 +280,7 @@ export class PostgresAdapter implements Database {
       }
       return result.rows[0].data;
     } catch (error) {
-      logger.error("Error retrieving test data:", error as any);
+      logger.error("Error retrieving test data:", error);
       throw error;
     }
   }
@@ -316,7 +316,7 @@ export class PostgresAdapter implements Database {
           } as TestRunDetails)
       );
     } catch (error) {
-      logger.error("Error retrieving recent test runs:", error as any);
+      logger.error("Error retrieving recent test runs:", error);
       throw error;
     }
   }

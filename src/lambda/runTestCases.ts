@@ -208,10 +208,7 @@ export const handler = async (
 
     // If any test failed, return an error response.
     if (failedMandatoryTests.length > 0) {
-      logger.error(
-        "Some tests failed:",
-        failedMandatoryTests.map((t) => t.name).join(", ") as any
-      );
+      logger.error("Some tests failed:", failedMandatoryTests);
 
       return {
         statusCode: 500,

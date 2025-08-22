@@ -243,7 +243,7 @@ export const handler = async (
       body: "",
     };
   } catch (error) {
-    logger.error("Error processing request:", error as any);
+    logger.error("Error processing request:", error);
 
     return {
       statusCode: 400,

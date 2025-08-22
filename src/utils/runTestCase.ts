@@ -211,7 +211,7 @@ export const runTestCase = async (
       ? `Request timeout after ${DEFAULT_FETCH_TIMEOUT_MS}ms`
       : error.message;
 
-    logger.info(testCase.expectHttpError, error);
+    logger.info((testCase.expectHttpError ?? "").toString(), error);
 
     return {
       name: testCase.name,
