@@ -85,16 +85,14 @@ export class TestRunController {
 
       if (!testRunId) {
         res.status(400).json({
-          error: 'Test run ID is required'
+          error: 'Missing parameter: testRunId'
         });
         return;
       }
 
-      logger.info('Getting test results', { testRunId });
+      const result = await getTestResults(testRunId);
 
-      const testRunWithResults = await getTestResults(testRunId);
-
-      if (!testRunWithResults) {
+      if (!result) {
         logger.warn('Test run not found', { testRunId });
         res.status(404).json({
           error: 'Test run not found',
@@ -103,12 +101,38 @@ export class TestRunController {
         return;
       }
 
-      logger.info('Successfully retrieved test results', { 
-        testRunId,
-        resultCount: testRunWithResults.results?.length || 0
-      });
+      // Calculate passing percentage
+      const mandatoryTests = result.results.filter((test) => test.mandatory);
+      const failedMandatoryTests = mandatoryTests.filter((test) => !test.success);
 
-      res.status(200).json(testRunWithResults);
+      const passingPercentage =
+        mandatoryTests.length > 0
+          ? Math.round(
+              ((mandatoryTests.length - failedMandatoryTests.length) /
+                mandatoryTests.length) *
+                100
+            )
+          : 0;
+
+      // Calculate non-mandatory passing percentage
+      const nonMandatoryTests = result.results.filter((test) => !test.mandatory);
+      const failedNonMandatoryTests = nonMandatoryTests.filter(
+        (test) => !test.success
+      );
+      const nonMandatoryPassingPercentage =
+        nonMandatoryTests.length > 0
+          ? Math.round(
+              ((nonMandatoryTests.length - failedNonMandatoryTests.length) /
+                nonMandatoryTests.length) *
+                100
+            )
+          : 0;
+
+      res.status(200).json({ 
+        ...result, 
+        passingPercentage, 
+        nonMandatoryPassingPercentage 
+      });
 
     } catch (error) {
       logger.error('Error getting test results:', error);
