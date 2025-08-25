@@ -35,6 +35,10 @@ export const saveTestCaseResults = async (
   return db.saveTestCaseResults(testRunId, testResults);
 };
 
+export const getRecentTestRuns = async (adminEmail: string, limit?: number) => {
+  return db.getRecentTestRuns(adminEmail, limit);
+};
+
 export const getTestResults = async (testRunId: string) => {
   return db.getTestResults(testRunId);
 };

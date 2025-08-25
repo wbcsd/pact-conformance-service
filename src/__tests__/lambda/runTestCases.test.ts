@@ -1,14 +1,12 @@
-// Mock environment variable before importing the adapter as it reads the variable during import
-process.env.DYNAMODB_TABLE_NAME = "test-table";
-
-import { handler } from "../../lambda/runTestCases";
 import * as authUtils from "../../utils/authUtils";
 import * as fetchFootprints from "../../utils/fetchFootprints";
 import * as runTestCaseModule from "../../utils/runTestCase";
 import * as dbUtils from "../../utils/dbUtils";
 import { APIGatewayProxyEvent } from "aws-lambda";
+import { testRunController, TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
 import { mockFootprintsV3 } from "../mocks/footprints";
 import { TestResultStatus } from "../../types/types";
+import { Request, Response } from "express";
 
 // Mock the environment variables
 process.env.WEBHOOK_URL = "https://webhook.test.url";
@@ -31,6 +29,8 @@ beforeAll(() => {
 });
 
 describe("runTestCases Lambda handler general tests", () => {
+
+  let controller: TestRunController;
   const mockAccessToken = "mock-access-token";
   const mockOidAuthUrl = "https://auth.example.com/token";
   const mockBaseUrl = "https://api.example.com";
@@ -46,29 +46,27 @@ describe("runTestCases Lambda handler general tests", () => {
   const mockPaginationLinks = {
     next: "https://api.example.com/2/footprints?offset=2&limit=1",
   };
-
-  // Prepare the APIGatewayProxyEvent mock
-  const createEvent = (body: any): APIGatewayProxyEvent => {
-    return {
-      body: JSON.stringify(body),
-      headers: {},
-      multiValueHeaders: {},
-      httpMethod: "POST",
-      isBase64Encoded: false,
-      path: "/test",
-      pathParameters: null,
-      queryStringParameters: null,
-      multiValueQueryStringParameters: null,
-      stageVariables: null,
-      requestContext: {} as any,
-      resource: "",
-    };
-  };
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
 
   // Setup before each test
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
+    
+    // Setup mock request and response
+    mockRequest = {
+      query: {},
+      params: {},
+      body: {}
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+    };
+
+    controller = new TestRunController();
 
     // Mock the auth utils functions
     (authUtils.getOidAuthUrl as jest.Mock).mockResolvedValue(mockOidAuthUrl);
@@ -98,8 +96,9 @@ describe("runTestCases Lambda handler general tests", () => {
   });
 
   test("should return 500 status when some tests fail", async () => {
+    
     // Arrange
-    const event = createEvent({
+    const requestBody = {
       baseUrl: mockBaseUrl,
       clientId: "client-id",
       clientSecret: "client-secret",
@@ -107,7 +106,7 @@ describe("runTestCases Lambda handler general tests", () => {
       companyName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
-    });
+    };
 
     // Mock test case #4 to fail
     (runTestCaseModule.runTestCase as jest.Mock).mockImplementation(
@@ -133,12 +132,14 @@ describe("runTestCases Lambda handler general tests", () => {
     );
 
     // Act
-    const result = await handler(event);
-
+    mockRequest.body = requestBody;
+    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
+    
     // Assert
-    expect(result.statusCode).toBe(500);
-    const body = JSON.parse(result.body);
-    expect(body.message).toBe("One or more tests failed");
+    expect(mockResponse.status).toHaveBeenCalledWith(500);
+    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      message: "One or more tests failed"
+    }));
 
     // Calculate expected passing percentage (18/19 tests passed = ~94.7%)
     const totalMandatoryTests = 19;
@@ -146,20 +147,13 @@ describe("runTestCases Lambda handler general tests", () => {
     const expectedPassingPercentage = Math.round(
       ((totalMandatoryTests - failedMandatoryTests) / totalMandatoryTests) * 100
     );
-    expect(body.passingPercentage).toBe(expectedPassingPercentage);
+    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      passingPercentage: expectedPassingPercentage
+    }));
   });
 
   test("should handle API errors correctly", async () => {
     // Arrange
-    const event = createEvent({
-      baseUrl: mockBaseUrl,
-      clientId: "client-id",
-      clientSecret: "client-secret",
-      version: "V2.3",
-      companyName: "Test Company",
-      adminEmail: "admin@test.com",
-      adminName: "Admin Test",
-    });
 
     // Mock getAccessToken to throw an error
     (authUtils.getAccessToken as jest.Mock).mockRejectedValue(
@@ -167,26 +161,26 @@ describe("runTestCases Lambda handler general tests", () => {
     );
 
     // Act
-    const result = await handler(event);
+    mockRequest.body = {
+      baseUrl: mockBaseUrl,
+      clientId: "client-id",
+      clientSecret: "client-secret",
+      version: "V2.3",
+      companyName: "Test Company",
+      adminEmail: "admin@test.com",
+      adminName: "Admin Test",
+    };
+    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // Assert
-    expect(result.statusCode).toBe(500);
-    const body = JSON.parse(result.body);
-    expect(body.message).toBe("Error occurred in Lambda test runner");
-    expect(body.error).toBe("Auth failed");
+    expect(mockResponse.status).toHaveBeenCalledWith(500);
+    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      error: "Auth failed"
+    }));
   });
 
   test("should filter out optional tests for passing percentage calculation", async () => {
     // Arrange
-    const event = createEvent({
-      baseUrl: mockBaseUrl,
-      clientId: "client-id",
-      clientSecret: "client-secret",
-      version: "V2.0", // Using older version where some tests are optional
-      companyName: "Test Company",
-      adminEmail: "admin@test.com",
-      adminName: "Admin Test",
-    });
 
     // Mock runTestCase to make some tests mandatory and some optional
     // and have some of each fail
@@ -235,11 +229,19 @@ describe("runTestCases Lambda handler general tests", () => {
     );
 
     // Act
-    const result = await handler(event);
+    mockRequest.body = {
+      baseUrl: mockBaseUrl,
+      clientId: "client-id",
+      clientSecret: "client-secret",
+      version: "V2.0", // Using older version where some tests are optional
+      companyName: "Test Company",
+      adminEmail: "admin@test.com",
+      adminName: "Admin Test",
+    };
+    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // Assert
-    expect(result.statusCode).toBe(500);
-    const body = JSON.parse(result.body);
+    expect(mockResponse.status).toHaveBeenCalledWith(500);
 
     // For V2.0, tests 12, 14, 15, 16 are optional
     // 1 mandatory test failed (test #4)
@@ -250,22 +252,24 @@ describe("runTestCases Lambda handler general tests", () => {
       ((mandatoryTests - failedMandatoryTests) / mandatoryTests) * 100
     );
 
-    expect(body.passingPercentage).toBe(expectedPassingPercentage);
+    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      passingPercentage: expectedPassingPercentage
+    }));
   });
 
   test("should handle missing request body fields", async () => {
-    // Arrange - create an event with missing required fields
-    const event = createEvent({
-      // Missing required fields like baseUrl, clientId, etc.
-    });
+    // Arrange - missing required fields
 
     // Act
-    const result = await handler(event);
+    mockRequest.body = {
+    };
+    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // Assert
-    expect(result.statusCode).toBe(400);
-    const body = JSON.parse(result.body);
-    expect(body.message).toBe("Missing required parameters");
+    expect(mockResponse.status).toHaveBeenCalledWith(400);
+    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      message: "Missing required parameters"
+    }));
   });
 });
 
@@ -285,29 +289,28 @@ describe("runTestCases Lambda handler V2 specific", () => {
   const mockPaginationLinks = {
     next: "https://api.example.com/2/footprints?offset=2&limit=1",
   };
-
-  // Prepare the APIGatewayProxyEvent mock
-  const createEvent = (body: any): APIGatewayProxyEvent => {
-    return {
-      body: JSON.stringify(body),
-      headers: {},
-      multiValueHeaders: {},
-      httpMethod: "POST",
-      isBase64Encoded: false,
-      path: "/test",
-      pathParameters: null,
-      queryStringParameters: null,
-      multiValueQueryStringParameters: null,
-      stageVariables: null,
-      requestContext: {} as any,
-      resource: "",
-    };
-  };
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let controller: TestRunController;
 
   // Setup before each test
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
+
+    // Setup mock request and response
+    mockRequest = {
+      query: {},
+      params: {},
+      body: {}
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+    };
+
+    controller = new TestRunController();
 
     // Mock the auth utils functions
     (authUtils.getOidAuthUrl as jest.Mock).mockResolvedValue(mockOidAuthUrl);
@@ -338,25 +341,26 @@ describe("runTestCases Lambda handler V2 specific", () => {
 
   test("should execute all test cases and return success when all tests pass", async () => {
     // Arrange
-    const event = createEvent({
+
+    // Act
+    mockRequest.body = {
       baseUrl: mockBaseUrl,
       clientId: "client-id",
       clientSecret: "client-secret",
-      version: "V2.2",
+            version: "V2.2",
       companyName: "Test Company",
       adminEmail: "admin@test.com",
-      adminName: "Admin Test",
-    });
-
-    // Act
-    const result = await handler(event);
-
+      adminName: "Admin Test"
+    };
+    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
+    
     // Assert
-    expect(result.statusCode).toBe(200);
-    const body = JSON.parse(result.body);
-    expect(body.message).toBe("All tests passed successfully");
-    expect(body.passingPercentage).toBe(100);
-    expect(body.testRunId).toBe("test-uuid-1234");
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
+    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      message: "All tests passed successfully",
+      passingPercentage: 100,
+      testRunId: "test-uuid-1234"
+    }));
 
     // Verify that saveTestRun was called correctly
     expect(dbUtils.saveTestRun).toHaveBeenCalledWith(
@@ -387,6 +391,7 @@ describe("runTestCases Lambda handler V2 specific", () => {
   });
 });
 
+
 describe("runTestCases Lambda handler V3 specific", () => {
   const mockAccessToken = "mock-access-token";
   const mockOidAuthUrl = "https://auth.example.com/token";
@@ -396,28 +401,28 @@ describe("runTestCases Lambda handler V3 specific", () => {
     next: "https://api.example.com/3/footprints?offset=2&limit=1",
   };
 
-  // Prepare the APIGatewayProxyEvent mock
-  const createEvent = (body: any): APIGatewayProxyEvent => {
-    return {
-      body: JSON.stringify(body),
-      headers: {},
-      multiValueHeaders: {},
-      httpMethod: "POST",
-      isBase64Encoded: false,
-      path: "/test",
-      pathParameters: null,
-      queryStringParameters: null,
-      multiValueQueryStringParameters: null,
-      stageVariables: null,
-      requestContext: {} as any,
-      resource: "",
-    };
-  };
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let controller: TestRunController;
 
   // Setup before each test
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
+
+    // Setup mock request and response
+    mockRequest = {
+      query: {},
+      params: {},
+      body: {}
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+    };
+
+    controller = new TestRunController();
 
     // Mock the auth utils functions
     (authUtils.getOidAuthUrl as jest.Mock).mockResolvedValue(mockOidAuthUrl);
@@ -448,7 +453,7 @@ describe("runTestCases Lambda handler V3 specific", () => {
 
   test("should execute all test cases", async () => {
     // Arrange
-    const event = createEvent({
+    mockRequest.body = {
       baseUrl: mockBaseUrl,
       clientId: "client-id",
       clientSecret: "client-secret",
@@ -456,20 +461,29 @@ describe("runTestCases Lambda handler V3 specific", () => {
       companyName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
-    });
+    }
 
     // Act
-    const result = await handler(event);
+    await controller.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // Assert
-    const body = JSON.parse(result.body);
-
-    expect(body.testRunId).toBe("test-uuid-1234");
-
-    expect(
-      body.results.find((r) => r.testKey === "TESTCASE#13")
-    ).toHaveProperty("status", "PENDING");
-
+    expect(mockResponse.status).toHaveBeenCalledWith(500);
+    
+    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
+      testRunId: "test-uuid-1234",
+      results: expect.arrayContaining([
+        expect.objectContaining({
+          testKey: "TESTCASE#13",
+          status: "PENDING",
+        }),
+        expect.objectContaining({
+          testKey: "TESTCASE#14",
+          status: "PENDING",
+        })
+      ]),
+    }));
+    
+    const body = (mockResponse.json as jest.Mock).mock.calls[0][0];
     expect(
       body.results
         .filter(
