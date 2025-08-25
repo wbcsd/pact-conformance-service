@@ -1,12 +1,11 @@
+import { Request, Response } from "express";
 import * as authUtils from "../../utils/authUtils";
 import * as fetchFootprints from "../../utils/fetchFootprints";
 import * as runTestCaseModule from "../../utils/runTestCase";
 import * as dbUtils from "../../utils/dbUtils";
-import { APIGatewayProxyEvent } from "aws-lambda";
-import { testRunController, TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
+import { TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
 import { mockFootprintsV3 } from "../mocks/footprints";
 import { TestResultStatus } from "../../types/types";
-import { Request, Response } from "express";
 
 // Mock the environment variables
 process.env.WEBHOOK_URL = "https://webhook.test.url";
@@ -133,7 +132,7 @@ describe("runTestCases Lambda handler general tests", () => {
 
     // Act
     mockRequest.body = requestBody;
-    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
+    await controller.createTestRun(mockRequest as Request, mockResponse as Response);
     
     // Assert
     expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -170,7 +169,7 @@ describe("runTestCases Lambda handler general tests", () => {
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
     };
-    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
+    await controller.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // Assert
     expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -238,7 +237,7 @@ describe("runTestCases Lambda handler general tests", () => {
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
     };
-    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
+    await controller.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // Assert
     expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -263,7 +262,7 @@ describe("runTestCases Lambda handler general tests", () => {
     // Act
     mockRequest.body = {
     };
-    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
+    await controller.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // Assert
     expect(mockResponse.status).toHaveBeenCalledWith(400);
@@ -352,8 +351,8 @@ describe("runTestCases Lambda handler V2 specific", () => {
       adminEmail: "admin@test.com",
       adminName: "Admin Test"
     };
-    await testRunController.createTestRun(mockRequest as Request, mockResponse as Response);
-    
+    await controller.createTestRun(mockRequest as Request, mockResponse as Response);
+
     // Assert
     expect(mockResponse.status).toHaveBeenCalledWith(200);
     expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({

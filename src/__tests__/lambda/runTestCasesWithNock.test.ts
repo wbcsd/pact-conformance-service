@@ -1,11 +1,8 @@
-// Mock environment variable before importing the adapter as it reads the variable during import
-process.env.DYNAMODB_TABLE_NAME = "test-table";
-
-import { handler } from "../../lambda/runTestCases";
-import { APIGatewayProxyEvent } from "aws-lambda";
+import { Request, Response } from "express";
 import nock from "nock";
 import * as dbUtils from "../../utils/dbUtils";
 import { mockFootprints, mockFootprintsV3 } from "../mocks/footprints";
+import { TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
 
 // Mock the environment variables
 process.env.WEBHOOK_URL = "https://webhook.test.url";
@@ -40,28 +37,28 @@ describe("runTestCases Lambda handler with nock", () => {
   const mockClientSecret = "test-client-secret";
   const mockAccessToken = "mock-access-token-12345";
 
-  // Prepare the APIGatewayProxyEvent mock
-  const createEvent = (body: any): APIGatewayProxyEvent => {
-    return {
-      body: JSON.stringify(body),
-      headers: {},
-      multiValueHeaders: {},
-      httpMethod: "POST",
-      isBase64Encoded: false,
-      path: "/test",
-      pathParameters: null,
-      queryStringParameters: null,
-      multiValueQueryStringParameters: null,
-      stageVariables: null,
-      requestContext: {} as any,
-      resource: "",
-    };
-  };
+  let controller: TestRunController;
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
 
   // Setup before each test
   beforeEach(() => {
     jest.clearAllMocks();
     nock.cleanAll();
+
+    // Setup mock request and response
+    mockRequest = {
+      query: {},
+      params: {},
+      body: {}
+    };
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+    };
+
+    // Setup controller to be tested
+    controller = new TestRunController();
 
     // Mock DB utility functions
     (dbUtils.saveTestRun as jest.Mock).mockResolvedValue(undefined);
@@ -225,7 +222,7 @@ describe("runTestCases Lambda handler with nock", () => {
       .reply(403, { code: "AccessDenied" });
 
     // Mock the test cases in runTestCases
-    const event = createEvent({
+    mockRequest.body = {
       baseUrl: mockBaseUrl,
       clientId: mockClientId,
       clientSecret: mockClientSecret,
@@ -234,22 +231,23 @@ describe("runTestCases Lambda handler with nock", () => {
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
       customAuthBaseUrl: mockAuthBaseUrl,
-    });
+    };
 
     // Run the lambda handler
-    const result = await handler(event);
+    await controller.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // We'll consider the test passing if the lambda handler returns without throwing
-    expect(result.statusCode).toBeDefined();
+    expect(mockResponse.status).toBeDefined();
+    const body = (mockResponse.json as jest.Mock).mock.calls[0][0]
 
     expect(
-      JSON.parse(result.body).results.filter(
+      body.results.filter(
         (r: TestResult) => r.success === false
       )
     ).toHaveLength(3); // Async tests should be pending
 
     expect(
-      JSON.parse(result.body).results.find(
+      body.results.find(
         (r: TestResult) => r.success === false && r.mandatory
       )
     ).toHaveProperty("testKey", "TESTCASE#21");
@@ -516,7 +514,7 @@ describe("runTestCases Lambda handler with nock", () => {
       .reply(403, { code: "AccessDenied" });
 
     // Mock the test cases in runTestCases
-    const event = createEvent({
+    mockRequest.body = {
       baseUrl: mockBaseUrl,
       clientId: mockClientId,
       clientSecret: mockClientSecret,
@@ -525,21 +523,21 @@ describe("runTestCases Lambda handler with nock", () => {
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
       customAuthBaseUrl: mockAuthBaseUrl,
-    });
+    };
 
     // Run the lambda handler
-    const result = await handler(event);
+    await controller.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // We'll consider the test passing if the lambda handler returns without throwing
-    expect(result.statusCode).toBeDefined();
-
+    expect(mockResponse.status).toBeDefined();
+    const body = (mockResponse.json as jest.Mock).mock.calls[0][0];
     expect(
-      JSON.parse(result.body).results.filter(
+      body.results.filter(
         (r: TestResult) => r.success === false
       )
     ).toHaveLength(3); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14)
     expect(
-      JSON.parse(result.body).results.find(
+      body.results.find(
         (r: TestResult) => r.success === false && r.mandatory
       )
     ).toHaveProperty("testKey", "TESTCASE#40");

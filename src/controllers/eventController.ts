@@ -1,18 +1,13 @@
-import { APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from "aws-lambda";
-import {
-  EventTypes,
-  EventTypesV3,
-  TestResult,
-  TestResultStatus,
-  TestRunStatus,
-} from "../types/types";
+import { Request, Response } from 'express';
 import Ajv from "ajv";
+import * as jwt from "jsonwebtoken";
 import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
-import {
-  eventFulfilledSchema,
-  v3_0_EventFulfilledSchema,
-} from "../schemas/responseSchema";
+import { EventTypes, EventTypesV3, TestResult, TestResultStatus } from "../types/types";
+import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
+// import { Database } from '../data/interfaces/Database';
+// import { DatabaseFactory } from '../data/factory'; 
+// TODO: Use Database instead of dbUtils
 import {
   getTestData,
   getTestResults,
@@ -27,43 +22,73 @@ const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
 betterErrors(ajv);
 
+const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
+
 const TEST_CASE_13_NAME = "Test Case 13: Respond to Asynchronous PCF Request";
 const TEST_CASE_14_NAME = "Test Case 14: Handle Rejected PCF Request";
 
 const MANDATORY_VERSIONS = ["V2.2", "V2.3", "V3.0"];
 
-export const handler = async (
-  event: APIGatewayProxyEventV2
-): Promise<APIGatewayProxyResultV2> => {
-  try {
-    // Log the entire event for debugging
-    console.info("Received event:", JSON.stringify(event, null, 2));
+export class EventController {
+  // TODO: private db: Database;
 
-    // Parse and log the request body
-    if (event.body) {
-      const body = JSON.parse(event.body);
-      console.info("Request body:", JSON.stringify(body, null, 2));
+  constructor() {
+    // TODO: this.db = DatabaseFactory.create();
+  }
 
-      const testData = await getTestData(body.data.requestEventId);
+
+  /*
+   * POST /auth/token - Authenticate client and provide JWT token
+   * Migrated from authForAsyncListener Lambda
+  */
+  async authToken(req: Request, res: Response): Promise<void> {
+    const authHeader = req.headers.authorization?.[0];
+
+    if (!authHeader || !authHeader.startsWith("Basic ")) {
+      res.status(400).json({ code: "BadRequest" });
+      return;
+    }
+
+    const base64Credentials = authHeader.slice("Basic ".length).trim();
+    const credentials = Buffer.from(base64Credentials, "base64").toString("utf8");
+    const [clientId, clientSecret] = credentials.split(":");
+
+    if (clientId !== "test_client_id" || clientSecret !== "test_client_secret") {
+      res.status(400).json({ code: "BadRequest" });
+      return;
+    }
+
+    const token = jwt.sign({ clientId }, JWT_SECRET, { expiresIn: "1h" });
+
+    res.status(200).json({ access_token: token });
+  };
+
+  /*
+   * POST /2/event
+   * POST /3/event - Handle callback events from the tested client API
+   * Migrated from asyncRequestListener Lambda
+  */
+  async handleEvent(req: Request, res: Response): Promise<void> {
+    try {
+      // Log the entire event for debugging
+      console.info("Received event:", req.url, JSON.stringify(req.body, null, 2));
+
+      // Parse and log the request body
+      if (!req.body) {
+        throw new Error("Request body is missing");
+      }
+
+      const testData = await getTestData(req.body.data.requestEventId);
 
       if (!testData) {
-        logger.error(
-          `Test data not found for requestEventId: ${body.data.requestEventId}`
-        );
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            code: "BadRequest",
-            message: "Bad Request",
-          }),
-        };
+        throw new Error(`Test data not found for requestEventId: ${req.body.data.requestEventId}`);
       }
 
       /* We only care about the fulfilled event in response to TESTCASE#12 for this part as Test Case 13 is basically a follow-up
-         that processes the call back from a host system in response to the event fired in test case 12 */
+          that processes the call back from a host system in response to the event fired in test case 12 */
       if (
-        body.type === EventTypes.FULFILLED ||
-        body.type === EventTypesV3.FULFILLED
+        req.body.type === EventTypes.FULFILLED ||
+        req.body.type === EventTypesV3.FULFILLED
       ) {
         const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
 
@@ -74,13 +99,13 @@ export const handler = async (
             ? eventFulfilledSchema
             : v3_0_EventFulfilledSchema
         );
-        const eventIsValid = validateEvent(body);
+        const eventIsValid = validateEvent(req.body);
 
         // Validate the request path based on version
         const expectedPath = testData.version.startsWith("V2")
           ? "/2/events"
           : "/3/events";
-        const actualPath = event.requestContext?.http?.path;
+        const actualPath = req.url;
         const isPathValid = actualPath === expectedPath;
 
         if (eventIsValid && isPathValid) {
@@ -119,7 +144,7 @@ export const handler = async (
           };
         }
 
-        const productIds = body.data.pfs.flatMap(
+        const productIds = req.body.data.pfs.flatMap(
           (pf: { productIds: string[] }) => pf.productIds
         );
 
@@ -136,16 +161,16 @@ export const handler = async (
           };
         }
 
-        await saveTestCaseResult(body.data.requestEventId, testResult, true);
+        await saveTestCaseResult(req.body.data.requestEventId, testResult, true);
 
         // Load updated test results and recalculate test run status
-        const existingTestRun = await getTestResults(body.data.requestEventId);
+        const existingTestRun = await getTestResults(req.body.data.requestEventId);
         if (existingTestRun?.results) {
           const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
             existingTestRun.results
           );
           await updateTestRunStatus(
-            body.data.requestEventId,
+            req.body.data.requestEventId,
             testRunStatus,
             passingPercentage
           );
@@ -154,12 +179,12 @@ export const handler = async (
           );
         }
       } else if (
-        body.type === EventTypes.REJECTED ||
-        body.type === EventTypesV3.REJECTED
+        req.body.type === EventTypes.REJECTED ||
+        req.body.type === EventTypesV3.REJECTED
       ) {
         console.info(
           "Processing rejected event:",
-          JSON.stringify(body, null, 2)
+          JSON.stringify(req.body, null, 2)
         );
 
         const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
@@ -169,12 +194,12 @@ export const handler = async (
         const expectedPath = testData.version.startsWith("V2")
           ? "/2/events"
           : "/3/events";
-        const actualPath = event.requestContext?.http?.path;
+        const actualPath = req.url;
         const isPathValid = actualPath === expectedPath;
 
         // For rejected events, we check that the error object has a code and message, plus path validation
         const hasValidErrorObject =
-          body.data.error && body.data.error.code && body.data.error.message;
+          req.body.data.error && req.body.data.error.code && req.body.data.error.message;
 
         if (hasValidErrorObject && isPathValid) {
           testResult = {
@@ -211,18 +236,18 @@ export const handler = async (
           };
         }
 
-        await saveTestCaseResult(body.data.requestEventId, testResult, true);
+        await saveTestCaseResult(req.body.data.requestEventId, testResult, true);
 
         // Load updated test results and recalculate test run status
         const existingTestRunForRejected = await getTestResults(
-          body.data.requestEventId
+          req.body.data.requestEventId
         );
         if (existingTestRunForRejected?.results) {
           const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
             existingTestRunForRejected.results
           );
           await updateTestRunStatus(
-            body.data.requestEventId,
+            req.body.data.requestEventId,
             testRunStatus,
             passingPercentage
           );
@@ -231,29 +256,30 @@ export const handler = async (
           );
         }
       }
-    } else {
-      logger.error("No request body received");
-    }
+      
+      res.status(200).send();
+      return;
 
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Length": 0,
-      },
-      body: "",
-    };
-  } catch (error) {
-    logger.error("Error processing request:", error);
+    } catch (error) {
+      logger.error("Error processing request:", error);
 
-    return {
-      statusCode: 400,
-      headers: {
-        "Content-Length": 0,
-      },
-      body: JSON.stringify({
+      res.status(400).json({
         code: "BadRequest",
         message: "Bad Request",
-      }),
-    };
+      });
+      return;
+    }
   }
-};
+}
+
+// Create controller instance
+export const eventController = new EventController();
+
+// Export route handlers
+export const authToken = async (req: Request, res: Response) =>
+  await eventController.authToken(req, res);
+
+export const handleEvent = async (req: Request, res: Response) =>
+  await eventController.handleEvent(req, res);
+
+

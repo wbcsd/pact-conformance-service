@@ -46,9 +46,9 @@ export class TestRunController {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
 
       // Validate limit parameter
-      if (limit !== undefined && (isNaN(limit) || limit <= 0 || limit > 100)) {
+      if (limit !== undefined && (isNaN(limit) || limit <= 0 || limit > 200)) {
         res.status(400).json({
-          error: 'Invalid limit parameter. Must be a positive integer between 1 and 100.'
+          error: 'Invalid limit parameter. Must be a positive integer between 1 and 200.'
         });
         return;
       }
@@ -81,7 +81,8 @@ export class TestRunController {
    */
   async getTestRunById(req: Request, res: Response): Promise<void> {
     try {
-      const testRunId = req.params.id;
+      // TODO: Remove query parameter after directory service has been adapted.
+      const testRunId = req.params.id || req.query.testRunId as string;
 
       if (!testRunId) {
         res.status(400).json({
