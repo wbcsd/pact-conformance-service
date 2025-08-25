@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { DatabaseFactory, DatabaseType } from "../data/factory";
+import { DatabaseFactory } from "../data/factory";
 import { TestRunStatus } from "../types/types";
 import { getTestResults } from "../utils/dbUtils";
 
@@ -13,8 +13,7 @@ export const handler = async (
   try {
     const adminEmail = event.queryStringParameters?.adminEmail;
 
-    const dbType = (process.env.DATABASE_TYPE || "dynamodb") as DatabaseType;
-    const database = DatabaseFactory.create(dbType);
+    const database = DatabaseFactory.create();
 
     // Get recent test runs for the specified email
     const testRuns = await database.getRecentTestRuns(
