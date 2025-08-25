@@ -16,12 +16,9 @@ export class PostgresAdapter implements Database {
       connectionString:
         connectionString || process.env.POSTGRES_CONNECTION_STRING,
     });
-
-    // Initialize schema if necessary
-    this.initializeSchema();
   }
 
-  private async initializeSchema(): Promise<void> {
+  async migrateToLatest(): Promise<void> {
     // Create tables if they don't exist
     const client = await this.pool.connect();
     try {
