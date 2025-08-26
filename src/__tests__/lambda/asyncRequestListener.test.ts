@@ -1,11 +1,5 @@
-// Mock environment variable before importing the adapter as it reads the variable during import
-process.env.DYNAMODB_TABLE_NAME = "test-table";
-
-import { handler } from "../../lambda/asyncRequestListener";
-import {
-  APIGatewayProxyEventV2,
-  APIGatewayProxyStructuredResultV2,
-} from "aws-lambda";
+import { Request, Response } from "express";
+import { EventController } from "../../controllers/eventController";
 
 import * as dbUtils from "../../utils/dbUtils";
 import { mockFootprints, mockFootprintsV3 } from "../mocks/footprints";
@@ -15,45 +9,28 @@ import { TestResultStatus } from "../../types/types";
 jest.mock("../../utils/dbUtils");
 
 describe("asyncRequestListener Lambda handler", () => {
-  // Prepare the APIGatewayProxyEventV2 mock
-  const createEvent = (
-    body: any,
-    path: string = "/2/events"
-  ): APIGatewayProxyEventV2 => {
-    return {
-      version: "2.0",
-      routeKey: "POST /events",
-      rawPath: path,
-      rawQueryString: "",
-      headers: {
-        "content-type": "application/json",
-      },
-      isBase64Encoded: false,
-      requestContext: {
-        accountId: "123456789012",
-        apiId: "test-api-id",
-        domainName: "test-domain.amazonaws.com",
-        domainPrefix: "test-domain",
-        http: {
-          method: "POST",
-          path: path,
-          protocol: "HTTP/1.1",
-          sourceIp: "127.0.0.1",
-          userAgent: "test-user-agent",
-        },
-        requestId: "test-request-id",
-        routeKey: "POST /events",
-        stage: "$default",
-        time: "01/Jan/2025:00:00:00 +0000",
-        timeEpoch: 1704067200000,
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    };
-  };
+  
+  let controller: EventController;
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
 
   // Setup before each test
   beforeEach(() => {
+
     jest.clearAllMocks();
+
+    mockRequest = {
+      query: {},
+      params: {},
+      body: {}
+    };
+    
+    mockResponse = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis(),
+    };
+
+    controller = new EventController();
   });
 
   test("should process valid fulfillment event and mark test as successful", async () => {
@@ -88,15 +65,14 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Create the API Gateway event with V2 path
-    const event = createEvent(validEventBody, "/2/events");
+    mockRequest.url = "/2/events";
+    mockRequest.body = validEventBody;
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
     // Validate the response
-    expect(response.statusCode).toBe(200);
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that getTestData was called correctly
     expect(dbUtils.getTestData).toHaveBeenCalledWith("request-123");
@@ -147,15 +123,14 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Create the API Gateway event with V3 path
-    const event = createEvent(validEventBody, "/3/events");
+    mockRequest.url = "/3/events";
+    mockRequest.body = validEventBody;
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
     // Validate the response
-    expect(response.statusCode).toBe(200);
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that getTestData was called correctly
     expect(dbUtils.getTestData).toHaveBeenCalledWith("request-123");
@@ -230,15 +205,14 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Create the API Gateway event with V2 path
-    const event = createEvent(eventBody, "/2/events");
+    mockRequest.url = "/2/events";
+    mockRequest.body = eventBody;
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
     // Verify response
-    expect(response.statusCode).toBe(200);
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
@@ -285,15 +259,14 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Create the API Gateway event with V2 path
-    const event = createEvent(invalidEventBody, "/2/events");
+    mockRequest.url = "/2/events";
+    mockRequest.body = invalidEventBody;
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
     // Verify response
-    expect(response.statusCode).toBe(200);
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result due to validation
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
@@ -310,38 +283,35 @@ describe("asyncRequestListener Lambda handler", () => {
     );
   });
 
-  test("should return 200 status code even when body is missing", async () => {
+  test("should return 400 status code when body is missing", async () => {
     // Create event with no body
-    const event = createEvent(null);
+    mockRequest.url = "/2/events";
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
-    // Verify response is still 200 even though processing didn't happen
-    expect(response.statusCode).toBe(200);
+    // Verify response is 400 because the event is malformed.
+    expect(mockResponse.status).toHaveBeenCalledWith(400);
 
     // Verify that getTestData was not called
     expect(dbUtils.getTestData).not.toHaveBeenCalled();
     expect(dbUtils.saveTestCaseResult).not.toHaveBeenCalled();
   });
 
-  test("should return 400 status code even when test data cannot be found", async () => {
+  test("should return 400 status code when it's immediately clear test data cannot be found", async () => {
     // Create event with body but no testRunId
     (dbUtils.getTestData as jest.Mock).mockResolvedValue(null);
 
-    const event = createEvent({
+    mockRequest.url = "/2/events";
+    mockRequest.body = {
       data: { requestEventId: "123" },
-    });
+    };
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
-    // Verify response is still 200 even though processing didn't happen
-    expect(response.statusCode).toBe(400);
+    // Verify response is 400
+    expect(mockResponse.status).toHaveBeenCalledWith(400);
 
     expect(dbUtils.getTestData).toHaveBeenCalled();
     expect(dbUtils.saveTestCaseResult).not.toHaveBeenCalled();
@@ -374,15 +344,14 @@ describe("asyncRequestListener Lambda handler", () => {
       },
     };
 
-    // Create the API Gateway event with V2 path
-    const event = createEvent(eventBody, "/2/events");
+    // Create the request
+    mockRequest.url = "/2/events";
+    mockRequest.body = eventBody;
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
-    expect(response.statusCode).toBe(400);
+    expect(mockResponse.status).toHaveBeenCalledWith(400);
   });
 
   test("should do nothing when the event type is not Fulfilled or Rejected", async () => {
@@ -413,16 +382,15 @@ describe("asyncRequestListener Lambda handler", () => {
       },
     };
 
-    // Create the API Gateway event with V2 path (default for event type Created.v1)
-    const event = createEvent(eventBody, "/2/events");
+    // Create the request (default for event type Created.v1)
+    mockRequest.url = "/2/events";
+    mockRequest.body = eventBody;
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
     // Verify response is 200
-    expect(response.statusCode).toBe(200);
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that DB functions were not called
     expect(dbUtils.saveTestCaseResult).not.toHaveBeenCalled();
@@ -459,16 +427,15 @@ describe("asyncRequestListener Lambda handler", () => {
       },
     };
 
-    // Create the API Gateway event with wrong path (V3 path for V2 event)
-    const event = createEvent(validEventBody, "/3/events");
+    // Create the request with wrong path (V3 path for V2 event)
+    mockRequest.url = "/3/events";
+    mockRequest.body = validEventBody;
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
     // Validate the response
-    expect(response.statusCode).toBe(200);
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result due to path validation
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
@@ -518,16 +485,15 @@ describe("asyncRequestListener Lambda handler", () => {
       },
     };
 
-    // Create the API Gateway event with wrong path (V2 path for V3 event)
-    const event = createEvent(validEventBody, "/2/events");
+    // Create the request with wrong path (V2 path for V3 event)
+    mockRequest.url = "/2/events";
+    mockRequest.body = validEventBody;
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
     // Validate the response
-    expect(response.statusCode).toBe(200);
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result due to path validation
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
@@ -575,16 +541,15 @@ describe("asyncRequestListener Lambda handler", () => {
       },
     };
 
-    // Create the API Gateway event with wrong path
-    const event = createEvent(invalidEventBody, "/3/events");
+    // Create the request with wrong path
+    mockRequest.url = "/3/events";
+    mockRequest.body = invalidEventBody;
 
     // Call the handler
-    const response = (await handler(
-      event
-    )) as APIGatewayProxyStructuredResultV2;
+    await controller.handleEvent(mockRequest as Request, mockResponse as Response);
 
     // Verify response
-    expect(response.statusCode).toBe(200);
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result containing both errors
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
@@ -603,3 +568,4 @@ describe("asyncRequestListener Lambda handler", () => {
     );
   });
 });
+     

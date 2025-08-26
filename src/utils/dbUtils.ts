@@ -1,15 +1,10 @@
 import config from "../config";
 import { TestData, TestResult } from "../types/types";
 import { Database, SaveTestRunDetails } from "../data/interfaces/Database";
-import { DatabaseFactory, DatabaseType } from "../data/factory";
-
-// Re-exporting the SK_TYPES for backward compatibility
-export { SK_TYPES } from "../data/adapters/DynamoDBAdapter";
+import { DatabaseFactory } from "../data/factory";
 
 // Create and export the database instance
-const db: Database = DatabaseFactory.create(
-  config.databaseType as DatabaseType
-);
+const db: Database = DatabaseFactory.create();
 
 export const saveTestRun = async (
   details: SaveTestRunDetails
@@ -38,6 +33,10 @@ export const saveTestCaseResults = async (
   testResults: TestResult[]
 ): Promise<void> => {
   return db.saveTestCaseResults(testRunId, testResults);
+};
+
+export const getRecentTestRuns = async (adminEmail: string, limit?: number) => {
+  return db.getRecentTestRuns(adminEmail, limit);
 };
 
 export const getTestResults = async (testRunId: string) => {
