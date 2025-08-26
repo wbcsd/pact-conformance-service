@@ -71,7 +71,7 @@ export class EventController {
   async handleEvent(req: Request, res: Response): Promise<void> {
     try {
       // Log the entire event for debugging
-      console.info("Received event:", req.url, JSON.stringify(req.body, null, 2));
+      logger.info("Received event:", { url: req.url, body: req.body });
 
       // Parse and log the request body
       if (!req.body) {
