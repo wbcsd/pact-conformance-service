@@ -60,4 +60,5 @@ export interface Database {
     adminEmail?: string,
     limit?: number
   ): Promise<TestRunDetails[]>;
+  searchTestRuns(searchTerm: string): Promise<TestRunDetails[]>;
 }

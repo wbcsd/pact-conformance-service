@@ -43,6 +43,10 @@ export const getTestResults = async (testRunId: string) => {
   return db.getTestResults(testRunId);
 };
 
+export const searchTestRuns = async (searchTerm: string) => {
+  return db.searchTestRuns(searchTerm);
+};
+
 export const saveTestData = async (
   testRunId: string,
   testData: TestData

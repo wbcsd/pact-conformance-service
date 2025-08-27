@@ -318,6 +318,53 @@ export class PostgresAdapter implements Database {
     }
   }
 
+  async searchTestRuns(searchTerm: string): Promise<TestRunDetails[]> {
+    // There must be a search term
+    if (!searchTerm || searchTerm.trim().length === 0) {
+      return [];
+    }
+
+    // Search term must be at least 3 characters
+    if (searchTerm.trim().length < 3) {
+      return [];
+    }
+
+    // Prevent SQL wildcard characters to avoid broad searches and potential SQL injection
+    if (/,;%/gi.test(searchTerm)) {
+      return [];
+    }
+
+    const likeTerm = `%${searchTerm.trim()}%`;
+    const query = `
+      SELECT * FROM test_runs
+      WHERE company_name ILIKE $1
+         OR admin_email ILIKE $1
+         OR admin_name ILIKE $1
+      ORDER BY timestamp DESC
+    `;
+
+    try {
+      const result = await this.pool.query(query, [likeTerm]);
+      console.log("RESULTS", result.rows);
+      return result.rows.map(
+        (row: any) =>
+          ({
+            testId: row.test_id,
+            timestamp: row.timestamp,
+            companyName: row.company_name,
+            adminEmail: row.admin_email,
+            adminName: row.admin_name,
+            techSpecVersion: row.tech_spec_version,
+            status: row.status,
+            passingPercentage: row.passing_percentage,
+          } as TestRunDetails)
+      );
+    } catch (error) {
+      logger.error("Error searching test runs:", error);
+      throw error;
+    }
+  }
+
   async close(): Promise<void> {
     await this.pool.end();
   }
