@@ -30,6 +30,14 @@ export class TestRunController {
     // TODO: this.db = DatabaseFactory.create();
   }
 
+  async searchOrGetTestRuns(req: Request, res: Response): Promise<void> {
+    if (req.query.query) {
+      await this.searchTestRuns(req, res);
+    } else {
+      await this.getTestRuns(req, res);
+    }
+  }
+
   /**
    * GET /testruns - List all test runs
    * Migrated from getRecentTestRuns Lambda
@@ -77,7 +85,7 @@ export class TestRunController {
    * GET /testruns/search?query= - Search test runs by company name or admin email
    * New endpoint
    */
-  async searchTestRuns(req: Request, res: Response): Promise<void> {
+  private async searchTestRuns(req: Request, res: Response): Promise<void> {
     try {
       const searchTerm = req.query.query as string;
       const isEmptySearchTerm = !searchTerm || searchTerm.trim() === "";
@@ -425,8 +433,8 @@ export const testRunController = new TestRunController();
 export const getTestRuns = (req: Request, res: Response) =>
   testRunController.getTestRuns(req, res);
 
-export const searchTestRuns = (req: Request, res: Response) =>
-  testRunController.searchTestRuns(req, res);
+export const searchOrGetTestRuns = (req: Request, res: Response) =>
+  testRunController.searchOrGetTestRuns(req, res);
 
 export const getTestRunById = (req: Request, res: Response) =>
   testRunController.getTestRunById(req, res);
