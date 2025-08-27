@@ -88,10 +88,14 @@ export class TestRunController {
   async searchTestRuns(req: Request, res: Response): Promise<void> {
     try {
       const searchTerm = req.query.query as string;
+      const isEmptySearchTerm = !searchTerm || searchTerm.trim() === "";
+      const isShortSearchTerm = searchTerm && searchTerm.trim().length < 3;
+      const isInvalidTerm = searchTerm && /,;%/gi.test(searchTerm);
 
-      if (!searchTerm || searchTerm.trim() === "") {
-        res.status(400).json({
-          error: "Missing or empty search query parameter",
+      if (isEmptySearchTerm || isShortSearchTerm || isInvalidTerm) {
+        res.status(200).json({
+          testRuns: [],
+          count: 0,
         });
         return;
       }

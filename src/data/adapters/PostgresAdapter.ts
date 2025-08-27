@@ -319,21 +319,6 @@ export class PostgresAdapter implements Database {
   }
 
   async searchTestRuns(searchTerm: string): Promise<TestRunDetails[]> {
-    // There must be a search term
-    if (!searchTerm || searchTerm.trim().length === 0) {
-      return [];
-    }
-
-    // Search term must be at least 3 characters
-    if (searchTerm.trim().length < 3) {
-      return [];
-    }
-
-    // Prevent SQL wildcard characters to avoid broad searches and potential SQL injection
-    if (/,;%/gi.test(searchTerm)) {
-      return [];
-    }
-
     const likeTerm = `%${searchTerm.trim()}%`;
     const query = `
       SELECT * FROM test_runs
