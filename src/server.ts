@@ -36,7 +36,6 @@ app.get("/health-check", (_, res) => {
 app.get("/testruns/", searchOrGetTestRuns);
 app.get("/testruns/:id", getTestRunById);
 app.post("/testruns/", createTestRun);
-app.get("/searchtestruns/", searchOrGetTestRuns);
 
 // Backwards compatible endpoints
 app.get("/getRecentTestRuns", getTestRuns);

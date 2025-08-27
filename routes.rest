@@ -8,17 +8,17 @@ Accept: application/json
 Content-Type: application/json
 
 ### Search test runs
-GET http://localhost:8004/searchtestruns/?query={{searchTerm}}
+GET http://localhost:8004/testruns/?query={{searchTerm}}
 Accept: application/json
 Content-Type: application/json
 
 ### Search test runs with admin email filter
-GET http://localhost:8004/searchtestruns/?query={{searchTerm}}&adminEmail=dummy@email.com
+GET http://localhost:8004/testruns/?query={{searchTerm}}&adminEmail=dummy@email.com
 Accept: application/json
 Content-Type: application/json
 
 ### Search test runs with limit
-GET http://localhost:8004/searchtestruns/?query={{searchTerm}}&limit=2
+GET http://localhost:8004/testruns/?query={{searchTerm}}&limit=2
 Accept: application/json
 Content-Type: application/json
 
