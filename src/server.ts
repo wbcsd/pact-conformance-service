@@ -1,7 +1,12 @@
 import express from "express";
 import config from "./config";
 import logger, { loggerMiddleware } from "./utils/logger";
-import { getTestRuns, getTestRunById, createTestRun } from "./controllers/testRunController";
+import {
+  getTestRuns,
+  getTestRunById,
+  createTestRun,
+  searchTestRuns,
+} from "./controllers/testRunController";
 import { handleEvent, authToken } from "./controllers/eventController";
 
 // Create Express app
@@ -31,6 +36,7 @@ app.get("/health-check", (_, res) => {
 app.get("/testruns/", getTestRuns);
 app.get("/testruns/:id", getTestRunById);
 app.post("/testruns/", createTestRun);
+app.get("/searchtestruns/", searchTestRuns);
 
 // Backwards compatible endpoints
 app.get("/getRecentTestRuns", getTestRuns);
