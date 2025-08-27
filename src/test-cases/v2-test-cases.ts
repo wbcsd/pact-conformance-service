@@ -262,8 +262,50 @@ export const generateV2TestCases = ({
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-12-receive-asynchronous-pcf-request",
     },
-    // Test Case 13 is about receiving the PCF data from the webhook endpoint as a data recipient, this request will be triggered by the previous test.
-    // It will be tested in the listener lambda
+    {
+      name: "Test Case 13: Received Request Fulfilled Response",
+      callback: true,
+      endpoint: '/2/events',
+      method: "POST",
+      schema: undefined, // v2_0_EventFulfilledSchema
+      mandatoryVersion: ["V2.2", "V2.3"],
+      testKey: "TESTCASE#13",
+      documentationUrl: 
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
+    },
+    {
+      name: "Test Case 14.A: Send Asynchronous Request to be Rejected",
+      method: "POST",
+      endpoint: `/2/events`,
+      headers: {
+        "Content-Type": "application/cloudevents+json; charset=UTF-8",
+      },
+      expectedStatusCodes: [200],
+      requestData: {
+        specversion: "1.0",
+        id: testRunId,
+        source: webhookUrl,
+        time: new Date().toISOString(),
+        type: "org.wbcsd.pathfinder.ProductFootprintRequest.Created.v1",
+        data: {
+          productId: ["urn:pact:null"], // SPs will be instructed to reject a request with null productIds,
+          comment: "Please send PCF data for this year.",
+        },
+      },
+      mandatoryVersion: ["V2.2", "V2.3"],
+      testKey: "TESTCASE#14.A",
+    },
+    {
+      name: "Test Case 14.B: Handle Rejected PCF Request",
+      callback: true,
+      endpoint: '/2/events',
+      method: "POST",
+      schema: undefined, // v2_0_EventRejectedSchema,
+      mandatoryVersion: ["V2.2", "V2.3"],
+      testKey: "TESTCASE#14",
+      documentationUrl: 
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
+    },
     {
       name: "Test Case 15: Receive Notification of PCF Update (Published Event)",
       method: "POST",
@@ -284,7 +326,7 @@ export const generateV2TestCases = ({
       },
       mandatoryVersion: ["V2.2", "V2.3"],
       testKey: "TESTCASE#15",
-      documentationUrl:
+      documentationUrl: 
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-15-receive-notification-of-pcf-update-published-event",
     },
     {

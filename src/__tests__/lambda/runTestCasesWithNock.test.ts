@@ -17,6 +17,7 @@ jest.mock("../../utils/dbUtils");
 
 interface TestResult {
   success: boolean;
+  status: string;
   mandatory: boolean;
   testKey?: string;
 }
@@ -242,15 +243,15 @@ describe("runTestCases Lambda handler with nock", () => {
 
     expect(
       body.results.filter(
-        (r: TestResult) => r.success === false
+        (r: TestResult) => r.status === "PENDING"
       )
-    ).toHaveLength(3); // Async tests should be pending
+    ).toHaveLength(2); // Async tests should be pending
 
     expect(
       body.results.find(
-        (r: TestResult) => r.success === false && r.mandatory
+        (r: TestResult) => r.status === "PENDING" && r.mandatory
       )
-    ).toHaveProperty("testKey", "TESTCASE#21");
+    ).toHaveProperty("testKey", "TESTCASE#13");
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);
@@ -533,14 +534,14 @@ describe("runTestCases Lambda handler with nock", () => {
     const body = (mockResponse.json as jest.Mock).mock.calls[0][0];
     expect(
       body.results.filter(
-        (r: TestResult) => r.success === false
+        (r: TestResult) => r.status === "PENDING"
       )
-    ).toHaveLength(3); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14)
+    ).toHaveLength(2); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14)
     expect(
       body.results.find(
         (r: TestResult) => r.success === false && r.mandatory
       )
-    ).toHaveProperty("testKey", "TESTCASE#40");
+    ).toHaveProperty("testKey", "TESTCASE#13");
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);

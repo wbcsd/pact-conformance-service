@@ -29,6 +29,7 @@ interface TestCaseResult {
 
 export interface TestCase {
   name: string;
+  callback?: boolean;
   method: "GET" | "POST" | "PUT" | "DELETE";
   endpoint?: string;
   expectedStatusCodes?: number[];

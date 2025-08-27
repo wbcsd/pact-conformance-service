@@ -56,6 +56,9 @@ export const runTestCase = async (
   accessToken: string,
   version: ApiVersion
 ): Promise<TestResult> => {
+
+  // TODO: This should throw an error instead of returning a failed test result. This is not
+  // something an end-user can correct, it can only be fixed by the developer.
   if (!testCase.endpoint && !testCase.customUrl) {
     return {
       name: testCase.name,
@@ -65,6 +68,27 @@ export const runTestCase = async (
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: "N/A - Missing URL",
+      documentationUrl: testCase.documentationUrl,
+    };
+  }
+
+  // If this is a callback test case, it needs to be handled by the Event listener, see EventController.
+  // We will not make an actual HTTP request, but just return the TestCaseResult with PENDING state.
+  if (testCase.callback) {
+    return {
+      name: testCase.name,
+      status: TestResultStatus.PENDING,
+      success: false,
+      mandatory: isMandatoryVersion(testCase, version),
+      testKey: testCase.testKey,
+      curlRequest: generateCurlCommand(
+        `${process.env.WEBHOOK_URL}/${testCase.endpoint}`, 
+        testCase.method, {
+          "Content-Type": "application/json",
+          Authorization: `Bearer TOKEN`,
+        }, 
+        "{ 'todo': '<TODO>' }" 
+      ),
       documentationUrl: testCase.documentationUrl,
     };
   }

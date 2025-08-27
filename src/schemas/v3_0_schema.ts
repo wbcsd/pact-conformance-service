@@ -490,6 +490,47 @@ export const v3_0_EventFulfilledSchema = {
   definitions: sharedDefinitions,
 };
 
+export const v3_0_EventRejectedSchema = {
+  type: "object",
+  required: ["type", "specversion", "id", "source", "time", "data"],
+  properties: {
+    type: {
+      type: "string",
+      const: "org.wbcsd.pact.ProductFootprint.RequestRejectedEvent.3",
+      description:
+        "Event type identifier for a rejected product footprint request",
+    },
+    specversion: {
+      type: "string",
+      description: "Version of the CloudEvents specification",
+    },
+    id: {
+      type: "string",
+      description: "Unique identifier for the event",
+    },
+    source: {
+      type: "string",
+      description: "URI identifying the context in which the event happened",
+    },
+    time: {
+      type: "string",
+      format: "date-time",
+      description: "Timestamp when the event was generated",
+    },
+    data: {
+      type: "object",
+      required: ["requestEventId", "pfs"],
+      properties: {
+        requestEventId: {
+          type: "string",
+          description: "ID of the original request event",
+        },
+      },
+    },
+  },
+  definitions: sharedDefinitions,
+};
+
 export const V3_0_SingleFootprintResponseSchema = {
   type: "object",
   properties: {
