@@ -1,4 +1,3 @@
-import config from "../config";
 import { TestData, TestResult } from "../types/types";
 import { Database, SaveTestRunDetails } from "../data/interfaces/Database";
 import { DatabaseFactory } from "../data/factory";
@@ -43,8 +42,12 @@ export const getTestResults = async (testRunId: string) => {
   return db.getTestResults(testRunId);
 };
 
-export const searchTestRuns = async (searchTerm: string) => {
-  return db.searchTestRuns(searchTerm);
+export const searchTestRuns = async (
+  searchTerm: string,
+  adminEmail: string,
+  limit: number
+) => {
+  return db.searchTestRuns(searchTerm, adminEmail, limit);
 };
 
 export const saveTestData = async (

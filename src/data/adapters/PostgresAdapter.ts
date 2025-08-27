@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from "pg";
+import { Pool } from "pg";
 import { TestData, TestResult } from "../../types/types";
 import {
   Database,
@@ -318,18 +318,35 @@ export class PostgresAdapter implements Database {
     }
   }
 
-  async searchTestRuns(searchTerm: string): Promise<TestRunDetails[]> {
+  async searchTestRuns(
+    searchTerm: string,
+    adminEmail: string,
+    limit?: number
+  ): Promise<TestRunDetails[]> {
     const likeTerm = `%${searchTerm.trim()}%`;
-    const query = `
-      SELECT * FROM test_runs
-      WHERE company_name ILIKE $1
-         OR admin_email ILIKE $1
-         OR admin_name ILIKE $1
-      ORDER BY timestamp DESC
-    `;
+    let query = "SELECT * FROM test_runs";
+    const queryParams: any[] = [likeTerm];
+
+    if (adminEmail) {
+      query +=
+        " WHERE admin_email = $2 AND (company_name ILIKE $1 OR admin_email ILIKE $1 OR admin_name ILIKE $1)";
+      queryParams.push(adminEmail);
+    } else {
+      query +=
+        " WHERE company_name ILIKE $1 OR admin_email ILIKE $1 OR admin_name ILIKE $1";
+    }
+
+    query += ` ORDER BY timestamp DESC`;
+
+    if (limit) {
+      // If adminEmail is provided, it's the 3rd parameter, otherwise 2nd
+      const paramIndex = adminEmail ? 3 : 2;
+      query += ` LIMIT $${paramIndex}`;
+      queryParams.push(limit);
+    }
 
     try {
-      const result = await this.pool.query(query, [likeTerm]);
+      const result = await this.pool.query(query, queryParams);
       console.log("RESULTS", result.rows);
       return result.rows.map(
         (row: any) =>

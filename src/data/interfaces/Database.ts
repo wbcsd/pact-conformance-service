@@ -1,4 +1,3 @@
-import { inherits } from "util";
 import { TestData, TestResult, TestRunStatus } from "../../types/types";
 
 // TODO: combine wuth TestRunDetails after fixing testId naming
@@ -60,5 +59,9 @@ export interface Database {
     adminEmail?: string,
     limit?: number
   ): Promise<TestRunDetails[]>;
-  searchTestRuns(searchTerm: string): Promise<TestRunDetails[]>;
+  searchTestRuns(
+    searchTerm: string,
+    adminEmail?: string,
+    limit?: number
+  ): Promise<TestRunDetails[]>;
 }

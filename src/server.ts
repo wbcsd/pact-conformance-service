@@ -5,7 +5,7 @@ import {
   getTestRuns,
   getTestRunById,
   createTestRun,
-  searchTestRun as searchTestRuns,
+  searchTestRuns,
 } from "./controllers/testRunController";
 import { handleEvent, authToken } from "./controllers/eventController";
 
