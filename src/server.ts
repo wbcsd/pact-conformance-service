@@ -5,7 +5,7 @@ import {
   getTestRuns,
   getTestRunById,
   createTestRun,
-  searchTestRuns,
+  searchOrGetTestRuns,
 } from "./controllers/testRunController";
 import { handleEvent, authToken } from "./controllers/eventController";
 
@@ -33,10 +33,9 @@ app.get("/health-check", (_, res) => {
 // Define routes
 
 // Create test run related routes
-app.get("/testruns/", getTestRuns);
+app.get("/testruns/", searchOrGetTestRuns);
 app.get("/testruns/:id", getTestRunById);
 app.post("/testruns/", createTestRun);
-app.get("/searchtestruns/", searchTestRuns);
 
 // Backwards compatible endpoints
 app.get("/getRecentTestRuns", getTestRuns);
