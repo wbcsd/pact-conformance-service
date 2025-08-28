@@ -73,7 +73,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(false);
     expect(res.status).toBe(TestResultStatus.FAILURE);
     expect(res.errorMessage).toBe(
       "Either endpoint or customUrl must be provided"
@@ -108,7 +107,6 @@ describe("runTestCase", () => {
     );
     expect((options as RequestInit).body).toBeUndefined();
 
-    expect(res.success).toBe(true);
     expect(res.status).toBe(TestResultStatus.SUCCESS);
     // Curl contains method, URL, auth header, content-type; no -d
     expect(res.curlRequest).toContain(
@@ -160,7 +158,7 @@ describe("runTestCase", () => {
     expect(res.curlRequest).toContain(" -H 'Content-Type: text/plain'");
     expect(res.curlRequest).toContain(" -H 'X-Test: 1'");
     expect(res.curlRequest).toContain(" -d 'raw-body'");
-    expect(res.success).toBe(true);
+    expect(res.status).toBe(TestResultStatus.SUCCESS);
   });
 
   it("fails when expectedStatusCodes do not include actual status", async () => {
@@ -179,7 +177,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(false);
     expect(res.status).toBe(TestResultStatus.FAILURE);
     expect(res.errorMessage).toBe("Expected status [201], but got 200");
   });
@@ -200,7 +197,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(false);
     expect(res.status).toBe(TestResultStatus.FAILURE);
     // Engine-specific message, keep assertion tolerant:
     expect(res.errorMessage).toMatch(/Unexpected|JSON/i);
@@ -228,7 +224,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(false);
     expect(res.status).toBe(TestResultStatus.FAILURE);
     expect(res.errorMessage).toContain("Schema validation failed:");
     expect(res.apiResponse).toBe(JSON.stringify({ id: "oops" }));
@@ -258,7 +253,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(true);
     expect(res.status).toBe(TestResultStatus.SUCCESS);
   });
 
@@ -280,7 +274,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(false);
     expect(res.status).toBe(TestResultStatus.FAILURE);
     expect(res.errorMessage).toBe("Condition failed!");
     expect(res.apiResponse).toBe(JSON.stringify({ id: 1 }));
@@ -304,7 +297,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(true);
     expect(res.status).toBe(TestResultStatus.SUCCESS);
     // default timeout is 5000ms unless env overrides at module-load time
     expect(res.errorMessage).not.toBeDefined();
@@ -327,7 +319,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(false);
     expect(res.status).toBe(TestResultStatus.FAILURE);
     expect(res.errorMessage).toBe("Request timeout after 5000ms");
   });
@@ -349,7 +340,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(true);
     expect(res.status).toBe(TestResultStatus.SUCCESS);
     expect(res.mandatory).toBe(true);
   });
@@ -397,7 +387,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(false);
     expect(res.status).toBe(TestResultStatus.FAILURE);
   });
 
@@ -418,7 +407,6 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.success).toBe(true);
     expect(res.status).toBe(TestResultStatus.SUCCESS);
     expect(res.errorMessage).not.toBeDefined();
   });

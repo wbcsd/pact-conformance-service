@@ -1,4 +1,4 @@
-import { TestResult, TestRunStatus } from "../types/types";
+import { TestResult, TestRunStatus, TestResultStatus } from "../types/types";
 
 /**
  * Recalculates test run status and passing percentage from test results
@@ -8,7 +8,7 @@ import { TestResult, TestRunStatus } from "../types/types";
 export const calculateTestRunMetrics = (testResults: TestResult[]) => {
   const mandatoryTests = testResults.filter((result) => result.mandatory);
   const failedMandatoryTests = mandatoryTests.filter(
-    (result) => !result.success
+    (result) => result.status !== TestResultStatus.SUCCESS
   );
 
   const passingPercentage =

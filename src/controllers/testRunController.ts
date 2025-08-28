@@ -170,7 +170,7 @@ export class TestRunController {
       // Calculate passing percentage
       const mandatoryTests = result.results.filter((test) => test.mandatory);
       const failedMandatoryTests = mandatoryTests.filter(
-        (test) => !test.success
+        (test) => test.status !== TestResultStatus.SUCCESS
       );
 
       const passingPercentage =
@@ -187,7 +187,7 @@ export class TestRunController {
         (test) => !test.mandatory
       );
       const failedNonMandatoryTests = nonMandatoryTests.filter(
-        (test) => !test.success
+        (test) => test.status !== TestResultStatus.SUCCESS
       );
       const nonMandatoryPassingPercentage =
         nonMandatoryTests.length > 0
@@ -333,7 +333,7 @@ export class TestRunController {
           accessToken,
           version
         );
-        if (result.success) {
+        if (result.status === TestResultStatus.SUCCESS) {
           logger.info(`Test case "${testCase.name}" passed.`);
         } else {
           logger.error(

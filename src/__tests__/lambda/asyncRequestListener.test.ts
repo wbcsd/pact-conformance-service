@@ -83,7 +83,6 @@ describe("asyncRequestListener Lambda handler", () => {
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestResultStatus.SUCCESS,
-        success: true,
         mandatory: true,
         testKey: "TESTCASE#13",
       }),
@@ -141,7 +140,6 @@ describe("asyncRequestListener Lambda handler", () => {
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestResultStatus.SUCCESS,
-        success: true,
         mandatory: true,
         testKey: "TESTCASE#13",
       }),
@@ -220,7 +218,6 @@ describe("asyncRequestListener Lambda handler", () => {
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestResultStatus.FAILURE,
-        success: false,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining("Product IDs do not match"),
@@ -274,7 +271,6 @@ describe("asyncRequestListener Lambda handler", () => {
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: "FAILURE",
-        success: false,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining("Event validation failed"),
@@ -443,7 +439,6 @@ describe("asyncRequestListener Lambda handler", () => {
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestResultStatus.FAILURE,
-        success: false,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining(
@@ -501,7 +496,6 @@ describe("asyncRequestListener Lambda handler", () => {
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestResultStatus.FAILURE,
-        success: false,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining(
@@ -557,7 +551,6 @@ describe("asyncRequestListener Lambda handler", () => {
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: "FAILURE",
-        success: false,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringMatching(

@@ -83,7 +83,6 @@ describe("runTestCases Lambda handler general tests", () => {
     (runTestCaseModule.runTestCase as jest.Mock).mockResolvedValue({
       name: "Test Case",
       status: TestResultStatus.SUCCESS,
-      success: true,
       mandatory: true,
       testKey: "TESTCASE#1",
     });
@@ -114,7 +113,6 @@ describe("runTestCases Lambda handler general tests", () => {
           return Promise.resolve({
             name: testCase.name,
             status: TestResultStatus.FAILURE,
-            success: false,
             errorMessage: "Test failed",
             mandatory: true,
             testKey: testCase.testKey,
@@ -123,7 +121,6 @@ describe("runTestCases Lambda handler general tests", () => {
         return Promise.resolve({
           name: testCase.name,
           status: TestResultStatus.SUCCESS,
-          success: true,
           mandatory: true,
           testKey: testCase.testKey,
         });
@@ -198,7 +195,6 @@ describe("runTestCases Lambda handler general tests", () => {
           return Promise.resolve({
             name: testCase.name,
             status: TestResultStatus.FAILURE,
-            success: false,
             errorMessage: "Mandatory test failed",
             mandatory: true,
             testKey: testCase.testKey,
@@ -210,7 +206,6 @@ describe("runTestCases Lambda handler general tests", () => {
           return Promise.resolve({
             name: testCase.name,
             status: TestResultStatus.FAILURE,
-            success: false,
             errorMessage: "Optional test failed",
             mandatory: false,
             testKey: testCase.testKey,
@@ -220,7 +215,6 @@ describe("runTestCases Lambda handler general tests", () => {
         return Promise.resolve({
           name: testCase.name,
           status: TestResultStatus.SUCCESS,
-          success: true,
           mandatory: !isOptional,
           testKey: testCase.testKey,
         });
@@ -327,7 +321,6 @@ describe("runTestCases Lambda handler V2 specific", () => {
     (runTestCaseModule.runTestCase as jest.Mock).mockResolvedValue({
       name: "Test Case",
       status: TestResultStatus.SUCCESS,
-      success: true,
       mandatory: true,
       testKey: "TESTCASE#1",
     });
@@ -438,7 +431,6 @@ describe("runTestCases Lambda handler V3 specific", () => {
     (runTestCaseModule.runTestCase as jest.Mock).mockResolvedValue({
       name: "Test Case",
       status: TestResultStatus.SUCCESS,
-      success: true,
       mandatory: true,
       testKey: "TESTCASE#1",
     });

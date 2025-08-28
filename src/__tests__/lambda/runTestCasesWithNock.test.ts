@@ -16,7 +16,6 @@ jest.mock("crypto", () => ({
 jest.mock("../../utils/dbUtils");
 
 interface TestResult {
-  success: boolean;
   status: string;
   mandatory: boolean;
   testKey?: string;
@@ -539,7 +538,7 @@ describe("runTestCases Lambda handler with nock", () => {
     ).toHaveLength(2); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14.B)
     expect(
       body.results.find(
-        (r: TestResult) => r.success === false && r.mandatory
+        (r: TestResult) => r.status !== "SUCCESS" && r.mandatory
       )
     ).toHaveProperty("testKey", "TESTCASE#13");
 

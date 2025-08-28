@@ -18,7 +18,7 @@ const pinoInstance = pino({
 
 const wrap =
   (method: "info" | "error" | "warn" | "debug") =>
-  (message: string, meta?: any) => {
+  (message: any, meta?: any) => {
     if (meta) {
       pinoInstance[method](meta, message);
     } else {
@@ -26,13 +26,12 @@ const wrap =
     }
   };
 
-const logger = {
+const logger = console || {
   info: wrap("info"),
   error: wrap("error"),
   warn: wrap("warn"),
   debug: wrap("debug"),
 };
-
 const loggerMiddleware = pinoHttp({ logger: pinoInstance });
 
 export { loggerMiddleware };

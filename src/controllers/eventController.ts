@@ -112,7 +112,6 @@ export class EventController {
           testResult = {
             name: TEST_CASE_13_NAME,
             status: TestResultStatus.SUCCESS,
-            success: true,
             mandatory: isMandatory,
             testKey: "TESTCASE#13",
             documentationUrl: testData.version.startsWith("V2")
@@ -134,7 +133,6 @@ export class EventController {
           testResult = {
             name: TEST_CASE_13_NAME,
             status: TestResultStatus.FAILURE,
-            success: false,
             mandatory: isMandatory,
             testKey: "TESTCASE#13",
             errorMessage,
@@ -156,7 +154,6 @@ export class EventController {
           testResult = {
             ...testResult,
             status: TestResultStatus.FAILURE,
-            success: false,
             errorMessage: `Product IDs do not match, the request was made for productIds [${testData.productIds}] but received data for productIds [${productIds}]`,
           };
         }
@@ -205,7 +202,6 @@ export class EventController {
           testResult = {
             name: TEST_CASE_14_NAME,
             status: TestResultStatus.SUCCESS,
-            success: true,
             mandatory: isMandatory,
             testKey: "TESTCASE#14.B",
             documentationUrl: testData.version.startsWith("V2")
@@ -226,7 +222,6 @@ export class EventController {
           testResult = {
             name: TEST_CASE_14_NAME,
             status: TestResultStatus.FAILURE,
-            success: false,
             mandatory: isMandatory,
             testKey: "TESTCASE#14.B",
             errorMessage,

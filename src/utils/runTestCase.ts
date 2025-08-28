@@ -63,7 +63,6 @@ export const runTestCase = async (
     return {
       name: testCase.name,
       status: TestResultStatus.FAILURE,
-      success: false,
       errorMessage: "Either endpoint or customUrl must be provided",
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
@@ -78,7 +77,6 @@ export const runTestCase = async (
     return {
       name: testCase.name,
       status: TestResultStatus.PENDING,
-      success: false,
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: generateCurlCommand(
@@ -135,7 +133,6 @@ export const runTestCase = async (
         status: response.ok
           ? TestResultStatus.FAILURE
           : TestResultStatus.SUCCESS,
-        success: !response.ok,
         mandatory: isMandatoryVersion(testCase, version),
         testKey: testCase.testKey,
         curlRequest: curlCmd,
@@ -150,7 +147,6 @@ export const runTestCase = async (
       return {
         name: testCase.name,
         status: TestResultStatus.FAILURE,
-        success: false,
         errorMessage: `Expected status [${testCase.expectedStatusCodes.join(
           ","
         )}], but got ${response.status}`,
@@ -182,7 +178,6 @@ export const runTestCase = async (
         );
         return {
           name: testCase.name,
-          success: false,
           status: TestResultStatus.FAILURE,
           errorMessage: `Schema validation failed: ${JSON.stringify(
             validate.errors
@@ -208,7 +203,6 @@ export const runTestCase = async (
         return {
           name: testCase.name,
           status: TestResultStatus.FAILURE,
-          success: false,
           errorMessage: testCase.conditionErrorMessage,
           apiResponse: JSON.stringify(responseData),
           mandatory: isMandatoryVersion(testCase, version),
@@ -222,7 +216,6 @@ export const runTestCase = async (
     return {
       name: testCase.name,
       status: TestResultStatus.SUCCESS,
-      success: true,
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: curlCmd,
@@ -244,7 +237,6 @@ export const runTestCase = async (
         testCase.expectHttpError === true
           ? TestResultStatus.SUCCESS
           : TestResultStatus.FAILURE,
-      success: testCase.expectHttpError === true,
       // If we expect an HTTP error, we don't return an error message
       ...(testCase.expectHttpError === true
         ? {}

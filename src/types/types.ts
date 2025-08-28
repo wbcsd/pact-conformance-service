@@ -46,7 +46,6 @@ export interface TestCase {
 }
 export interface TestResult {
   name: string;
-  success: boolean;
   status: TestResultStatus;
   errorMessage?: string;
   apiResponse?: string;
