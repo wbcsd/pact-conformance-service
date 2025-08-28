@@ -294,6 +294,8 @@ export const generateV2TestCases = ({
       },
       mandatoryVersion: ["V2.2", "V2.3"],
       testKey: "TESTCASE#14.A",
+      documentationUrl: 
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
     },
     {
       name: "Test Case 14.B: Handle Rejected PCF Request",
@@ -302,7 +304,7 @@ export const generateV2TestCases = ({
       method: "POST",
       schema: undefined, // v2_0_EventRejectedSchema,
       mandatoryVersion: ["V2.2", "V2.3"],
-      testKey: "TESTCASE#14",
+      testKey: "TESTCASE#14.B",
       documentationUrl: 
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
     },

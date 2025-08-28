@@ -536,7 +536,7 @@ describe("runTestCases Lambda handler with nock", () => {
       body.results.filter(
         (r: TestResult) => r.status === "PENDING"
       )
-    ).toHaveLength(2); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14)
+    ).toHaveLength(2); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14.B)
     expect(
       body.results.find(
         (r: TestResult) => r.success === false && r.mandatory

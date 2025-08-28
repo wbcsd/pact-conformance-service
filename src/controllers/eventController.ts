@@ -25,7 +25,7 @@ betterErrors(ajv);
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
 const TEST_CASE_13_NAME = "Test Case 13: Respond to Asynchronous PCF Request";
-const TEST_CASE_14_NAME = "Test Case 14: Handle Rejected PCF Request";
+const TEST_CASE_14_NAME = "Test Case 14.B: Handle Rejected PCF Request";
 
 const MANDATORY_VERSIONS = ["V2.2", "V2.3", "V3.0"];
 
@@ -207,7 +207,7 @@ export class EventController {
             status: TestResultStatus.SUCCESS,
             success: true,
             mandatory: isMandatory,
-            testKey: "TESTCASE#14",
+            testKey: "TESTCASE#14.B",
             documentationUrl: testData.version.startsWith("V2")
               ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event"
               : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
@@ -228,7 +228,7 @@ export class EventController {
             status: TestResultStatus.FAILURE,
             success: false,
             mandatory: isMandatory,
-            testKey: "TESTCASE#14",
+            testKey: "TESTCASE#14.B",
             errorMessage,
             documentationUrl: testData.version.startsWith("V2")
               ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event"

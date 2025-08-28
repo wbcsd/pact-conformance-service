@@ -185,10 +185,10 @@ describe("runTestCases Lambda handler general tests", () => {
     // and have some of each fail
     (runTestCaseModule.runTestCase as jest.Mock).mockImplementation(
       (baseUrl, testCase, accessToken, version) => {
-        // Tests 12, 14, 15, 16 are mandatory only for V2.2 and V2.3
+        // Tests 12, 14.A, 15, 16 are mandatory only for V2.2 and V2.3
         const isOptional = [
           "TESTCASE#12",
-          "TESTCASE#14",
+          "TESTCASE#14.A",
           "TESTCASE#15",
           "TESTCASE#16",
         ].includes(testCase.testKey);
@@ -379,7 +379,6 @@ describe("runTestCases Lambda handler V2 specific", () => {
     });
 
     // Verify that runTestCase was called the correct number of times (once for each test case)
-    // There are 18 test cases defined in the handler, plus one placeholder for TESTCASE#13 which is skipped
     expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(22);
 
     // Verify that saveTestCaseResults was called with the results
@@ -467,31 +466,6 @@ describe("runTestCases Lambda handler V3 specific", () => {
 
     // Assert
     expect(mockResponse.status).toHaveBeenCalledWith(200);
-    
-    // console.warn("MockResponse");
-    // console.warn((mockResponse.json as jest.Mock).mock.calls[0][0]);
-    // expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
-    //   testRunId: "test-uuid-1234",
-    //   results: expect.arrayContaining([
-    //     expect.objectContaining({
-    //       testKey: "TESTCASE#13",
-    //       status: "PENDING",
-    //     }),
-    //     expect.objectContaining({
-    //       testKey: "TESTCASE#14",
-    //       status: "PENDING",
-    //     })
-    //   ]),
-    // }));
-    
-    // const body = (mockResponse.json as jest.Mock).mock.calls[0][0];
-    // expect(
-    //   body.results
-    //     .filter(
-    //       (r) => r.testKey !== "TESTCASE#13" && r.testKey !== "TESTCASE#14"
-    //     )
-    //     .every((r) => r.status === "SUCCESS")
-    // ).toBe(true);
 
     // Verify that saveTestRun was called correctly
     expect(dbUtils.saveTestRun).toHaveBeenCalledWith(
