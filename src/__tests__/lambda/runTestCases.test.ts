@@ -5,7 +5,7 @@ import * as runTestCaseModule from "../../utils/runTestCase";
 import * as dbUtils from "../../utils/dbUtils";
 import { TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
 import { mockFootprintsV3 } from "../mocks/footprints";
-import { TestResultStatus } from "../../types/types";
+import { TestCaseResultStatus } from "../../types/types";
 
 // Mock the environment variables
 process.env.WEBHOOK_URL = "https://webhook.test.url";
@@ -82,8 +82,7 @@ describe("runTestCases Lambda handler general tests", () => {
     // Mock the test case runner to return success by default
     (runTestCaseModule.runTestCase as jest.Mock).mockResolvedValue({
       name: "Test Case",
-      status: TestResultStatus.SUCCESS,
-      success: true,
+      status: TestCaseResultStatus.SUCCESS,
       mandatory: true,
       testKey: "TESTCASE#1",
     });
@@ -113,8 +112,7 @@ describe("runTestCases Lambda handler general tests", () => {
         if (testCase.testKey === "TESTCASE#4") {
           return Promise.resolve({
             name: testCase.name,
-            status: TestResultStatus.FAILURE,
-            success: false,
+            status: TestCaseResultStatus.FAILURE,
             errorMessage: "Test failed",
             mandatory: true,
             testKey: testCase.testKey,
@@ -122,8 +120,7 @@ describe("runTestCases Lambda handler general tests", () => {
         }
         return Promise.resolve({
           name: testCase.name,
-          status: TestResultStatus.SUCCESS,
-          success: true,
+          status: TestCaseResultStatus.SUCCESS,
           mandatory: true,
           testKey: testCase.testKey,
         });
@@ -185,10 +182,10 @@ describe("runTestCases Lambda handler general tests", () => {
     // and have some of each fail
     (runTestCaseModule.runTestCase as jest.Mock).mockImplementation(
       (baseUrl, testCase, accessToken, version) => {
-        // Tests 12, 14, 15, 16 are mandatory only for V2.2 and V2.3
+        // Tests 12, 14.A, 15, 16 are mandatory only for V2.2 and V2.3
         const isOptional = [
           "TESTCASE#12",
-          "TESTCASE#14",
+          "TESTCASE#14.A",
           "TESTCASE#15",
           "TESTCASE#16",
         ].includes(testCase.testKey);
@@ -197,8 +194,7 @@ describe("runTestCases Lambda handler general tests", () => {
         if (testCase.testKey === "TESTCASE#4") {
           return Promise.resolve({
             name: testCase.name,
-            status: TestResultStatus.FAILURE,
-            success: false,
+            status: TestCaseResultStatus.FAILURE,
             errorMessage: "Mandatory test failed",
             mandatory: true,
             testKey: testCase.testKey,
@@ -209,8 +205,7 @@ describe("runTestCases Lambda handler general tests", () => {
         if (testCase.testKey === "TESTCASE#12") {
           return Promise.resolve({
             name: testCase.name,
-            status: TestResultStatus.FAILURE,
-            success: false,
+            status: TestCaseResultStatus.FAILURE,
             errorMessage: "Optional test failed",
             mandatory: false,
             testKey: testCase.testKey,
@@ -219,8 +214,7 @@ describe("runTestCases Lambda handler general tests", () => {
 
         return Promise.resolve({
           name: testCase.name,
-          status: TestResultStatus.SUCCESS,
-          success: true,
+          status: TestCaseResultStatus.SUCCESS,
           mandatory: !isOptional,
           testKey: testCase.testKey,
         });
@@ -326,8 +320,7 @@ describe("runTestCases Lambda handler V2 specific", () => {
     // Mock the test case runner to return success by default
     (runTestCaseModule.runTestCase as jest.Mock).mockResolvedValue({
       name: "Test Case",
-      status: TestResultStatus.SUCCESS,
-      success: true,
+      status: TestCaseResultStatus.SUCCESS,
       mandatory: true,
       testKey: "TESTCASE#1",
     });
@@ -379,14 +372,13 @@ describe("runTestCases Lambda handler V2 specific", () => {
     });
 
     // Verify that runTestCase was called the correct number of times (once for each test case)
-    // There are 18 test cases defined in the handler, plus one placeholder for TESTCASE#13 which is skipped
-    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(19);
+    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(22);
 
     // Verify that saveTestCaseResults was called with the results
     expect(dbUtils.saveTestCaseResults).toHaveBeenCalled();
     const savedResults = (dbUtils.saveTestCaseResults as jest.Mock).mock
       .calls[0][1];
-    expect(savedResults).toHaveLength(21); // 18 test cases + 2 placeholders for the async test cases
+    expect(savedResults).toHaveLength(22); 
   });
 });
 
@@ -438,8 +430,7 @@ describe("runTestCases Lambda handler V3 specific", () => {
     // Mock the test case runner to return success by default
     (runTestCaseModule.runTestCase as jest.Mock).mockResolvedValue({
       name: "Test Case",
-      status: TestResultStatus.SUCCESS,
-      success: true,
+      status: TestCaseResultStatus.SUCCESS,
       mandatory: true,
       testKey: "TESTCASE#1",
     });
@@ -466,30 +457,7 @@ describe("runTestCases Lambda handler V3 specific", () => {
     await controller.createTestRun(mockRequest as Request, mockResponse as Response);
 
     // Assert
-    expect(mockResponse.status).toHaveBeenCalledWith(500);
-    
-    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
-      testRunId: "test-uuid-1234",
-      results: expect.arrayContaining([
-        expect.objectContaining({
-          testKey: "TESTCASE#13",
-          status: "PENDING",
-        }),
-        expect.objectContaining({
-          testKey: "TESTCASE#14",
-          status: "PENDING",
-        })
-      ]),
-    }));
-    
-    const body = (mockResponse.json as jest.Mock).mock.calls[0][0];
-    expect(
-      body.results
-        .filter(
-          (r) => r.testKey !== "TESTCASE#13" && r.testKey !== "TESTCASE#14"
-        )
-        .every((r) => r.status === "SUCCESS")
-    ).toBe(true);
+    expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestRun was called correctly
     expect(dbUtils.saveTestRun).toHaveBeenCalledWith(
@@ -510,12 +478,13 @@ describe("runTestCases Lambda handler V3 specific", () => {
 
     // Verify that runTestCase was called the correct number of times (once for each test case)
     // There are 39 test cases defined in the handler (29 original + 10 new inverse), minus 2 async placeholders which are skipped = 37
-    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(38);
+    expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(41);
 
     // Verify that saveTestCaseResults was called with the results
     expect(dbUtils.saveTestCaseResults).toHaveBeenCalled();
     const savedResults = (dbUtils.saveTestCaseResults as jest.Mock).mock
       .calls[0][1];
-    expect(savedResults).toHaveLength(40); // 37 executed test cases + 2 placeholder for the async test cases
+    
+    expect(savedResults).toHaveLength(41); // 39 executed test cases + 2 placeholder for the async test cases
   });
 });

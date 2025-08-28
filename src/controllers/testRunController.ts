@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import logger from "../utils/logger";
 import {
   TestResult,
-  TestResultStatus,
+  TestCaseResultStatus,
   TestRunStatus,
   ApiVersion,
 } from "../types/types";
@@ -17,8 +17,7 @@ import * as dbUtils from "../utils/dbUtils";
 // TODO: Move all this stuff into a service
 import {
   fetchFootprints,
-  getLinksHeaderFromFootprints,
-  sendCreateRequestEvent,
+  getLinksHeaderFromFootprints
 } from "../utils/fetchFootprints";
 import { runTestCase } from "../utils/runTestCase";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
@@ -170,7 +169,7 @@ export class TestRunController {
       // Calculate passing percentage
       const mandatoryTests = result.results.filter((test) => test.mandatory);
       const failedMandatoryTests = mandatoryTests.filter(
-        (test) => !test.success
+        (test) => test.status !== TestCaseResultStatus.SUCCESS
       );
 
       const passingPercentage =
@@ -187,7 +186,7 @@ export class TestRunController {
         (test) => !test.mandatory
       );
       const failedNonMandatoryTests = nonMandatoryTests.filter(
-        (test) => !test.success
+        (test) => test.status !== TestCaseResultStatus.SUCCESS
       );
       const nonMandatoryPassingPercentage =
         nonMandatoryTests.length > 0
@@ -333,7 +332,7 @@ export class TestRunController {
           accessToken,
           version
         );
-        if (result.success) {
+        if (result.status === TestCaseResultStatus.SUCCESS) {
           logger.info(`Test case "${testCase.name}" passed.`);
         } else {
           logger.error(
@@ -343,46 +342,12 @@ export class TestRunController {
         results.push(result);
       }
 
-      // Send create request event for the async create request rejected test case.
-      await sendCreateRequestEvent(
-        baseUrl,
-        accessToken,
-        version,
-        ["urn:pact:null"], // SPs will be instructed to reject a request with null productIds
-        testRunId,
-        process.env.WEBHOOK_URL || ""
-      );
-
-      const resultsWithAsyncPlaceholder: TestResult[] = [
-        ...results,
-        {
-          name: "Test Case 13: Respond to Asynchronous PCF Request",
-          status: TestResultStatus.PENDING,
-          success: false,
-          mandatory: version === "V2.3" || version === "V3.0",
-          testKey: "TESTCASE#13",
-          documentationUrl: version.startsWith("V2")
-            ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event"
-            : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
-        },
-        {
-          name: "Test Case 14: Handle Rejected PCF Request",
-          status: TestResultStatus.PENDING,
-          success: false,
-          mandatory: version === "V2.3" || version === "V3.0",
-          testKey: "TESTCASE#14",
-          documentationUrl: version.startsWith("V2")
-            ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event"
-            : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
-        },
-      ];
-
-      await dbUtils.saveTestCaseResults(testRunId, resultsWithAsyncPlaceholder);
+      await dbUtils.saveTestCaseResults(testRunId, results);
 
       // Load existing test results from database to get the most up-to-date state
       const existingTestRun = await dbUtils.getTestResults(testRunId);
       const finalTestResults =
-        existingTestRun?.results || resultsWithAsyncPlaceholder;
+        existingTestRun?.results || results;
 
       // Calculate test run status and passing percentage from loaded results
       const { testRunStatus, passingPercentage, failedMandatoryTests } =

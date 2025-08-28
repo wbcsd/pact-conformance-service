@@ -3,7 +3,7 @@ import Ajv from "ajv";
 import * as jwt from "jsonwebtoken";
 import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
-import { EventTypes, EventTypesV3, TestResult, TestResultStatus } from "../types/types";
+import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus } from "../types/types";
 import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
 // import { Database } from '../data/interfaces/Database';
 // import { DatabaseFactory } from '../data/factory'; 
@@ -25,7 +25,7 @@ betterErrors(ajv);
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
 const TEST_CASE_13_NAME = "Test Case 13: Respond to Asynchronous PCF Request";
-const TEST_CASE_14_NAME = "Test Case 14: Handle Rejected PCF Request";
+const TEST_CASE_14_NAME = "Test Case 14.B: Handle Rejected PCF Request";
 
 const MANDATORY_VERSIONS = ["V2.2", "V2.3", "V3.0"];
 
@@ -87,7 +87,7 @@ export class EventController {
       /* We only care about the fulfilled event in response to TESTCASE#12 for this part as Test Case 13 is basically a follow-up
           that processes the call back from a host system in response to the event fired in test case 12 */
       if (
-        req.body.type === EventTypes.FULFILLED ||
+        req.body.type === EventTypesV2.FULFILLED ||
         req.body.type === EventTypesV3.FULFILLED
       ) {
         const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
@@ -111,8 +111,7 @@ export class EventController {
         if (eventIsValid && isPathValid) {
           testResult = {
             name: TEST_CASE_13_NAME,
-            status: TestResultStatus.SUCCESS,
-            success: true,
+            status: TestCaseResultStatus.SUCCESS,
             mandatory: isMandatory,
             testKey: "TESTCASE#13",
             documentationUrl: testData.version.startsWith("V2")
@@ -133,8 +132,7 @@ export class EventController {
 
           testResult = {
             name: TEST_CASE_13_NAME,
-            status: TestResultStatus.FAILURE,
-            success: false,
+            status: TestCaseResultStatus.FAILURE,
             mandatory: isMandatory,
             testKey: "TESTCASE#13",
             errorMessage,
@@ -155,8 +153,7 @@ export class EventController {
         if (!testPassed) {
           testResult = {
             ...testResult,
-            status: TestResultStatus.FAILURE,
-            success: false,
+            status: TestCaseResultStatus.FAILURE,
             errorMessage: `Product IDs do not match, the request was made for productIds [${testData.productIds}] but received data for productIds [${productIds}]`,
           };
         }
@@ -179,7 +176,7 @@ export class EventController {
           );
         }
       } else if (
-        req.body.type === EventTypes.REJECTED ||
+        req.body.type === EventTypesV2.REJECTED ||
         req.body.type === EventTypesV3.REJECTED
       ) {
         console.info(
@@ -204,10 +201,9 @@ export class EventController {
         if (hasValidErrorObject && isPathValid) {
           testResult = {
             name: TEST_CASE_14_NAME,
-            status: TestResultStatus.SUCCESS,
-            success: true,
+            status: TestCaseResultStatus.SUCCESS,
             mandatory: isMandatory,
-            testKey: "TESTCASE#14",
+            testKey: "TESTCASE#14.B",
             documentationUrl: testData.version.startsWith("V2")
               ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event"
               : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
@@ -225,10 +221,9 @@ export class EventController {
 
           testResult = {
             name: TEST_CASE_14_NAME,
-            status: TestResultStatus.FAILURE,
-            success: false,
+            status: TestCaseResultStatus.FAILURE,
             mandatory: isMandatory,
-            testKey: "TESTCASE#14",
+            testKey: "TESTCASE#14.B",
             errorMessage,
             documentationUrl: testData.version.startsWith("V2")
               ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event"

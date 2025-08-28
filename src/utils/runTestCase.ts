@@ -5,7 +5,7 @@ import {
   ApiVersion,
   TestCase,
   TestResult,
-  TestResultStatus,
+  TestCaseResultStatus,
 } from "../types/types";
 import logger from "./logger";
 
@@ -56,15 +56,37 @@ export const runTestCase = async (
   accessToken: string,
   version: ApiVersion
 ): Promise<TestResult> => {
+
+  // TODO: This should throw an error instead of returning a failed test result. This is not
+  // something an end-user can correct, it can only be fixed by the developer.
   if (!testCase.endpoint && !testCase.customUrl) {
     return {
       name: testCase.name,
-      status: TestResultStatus.FAILURE,
-      success: false,
+      status: TestCaseResultStatus.FAILURE,
       errorMessage: "Either endpoint or customUrl must be provided",
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: "N/A - Missing URL",
+      documentationUrl: testCase.documentationUrl,
+    };
+  }
+
+  // If this is a callback test case, it needs to be handled by the Event listener, see EventController.
+  // We will not make an actual HTTP request, but just return the TestCaseResult with PENDING state.
+  if (testCase.callback) {
+    return {
+      name: testCase.name,
+      status: TestCaseResultStatus.PENDING,
+      mandatory: isMandatoryVersion(testCase, version),
+      testKey: testCase.testKey,
+      curlRequest: generateCurlCommand(
+        `${process.env.WEBHOOK_URL}/${testCase.endpoint}`, 
+        testCase.method, {
+          "Content-Type": "application/json",
+          Authorization: `Bearer TOKEN`,
+        }, 
+        "{ 'todo': '<TODO>' }" 
+      ),
       documentationUrl: testCase.documentationUrl,
     };
   }
@@ -109,9 +131,8 @@ export const runTestCase = async (
       return {
         name: testCase.name,
         status: response.ok
-          ? TestResultStatus.FAILURE
-          : TestResultStatus.SUCCESS,
-        success: !response.ok,
+          ? TestCaseResultStatus.FAILURE
+          : TestCaseResultStatus.SUCCESS,
         mandatory: isMandatoryVersion(testCase, version),
         testKey: testCase.testKey,
         curlRequest: curlCmd,
@@ -125,8 +146,7 @@ export const runTestCase = async (
     ) {
       return {
         name: testCase.name,
-        status: TestResultStatus.FAILURE,
-        success: false,
+        status: TestCaseResultStatus.FAILURE,
         errorMessage: `Expected status [${testCase.expectedStatusCodes.join(
           ","
         )}], but got ${response.status}`,
@@ -158,8 +178,7 @@ export const runTestCase = async (
         );
         return {
           name: testCase.name,
-          success: false,
-          status: TestResultStatus.FAILURE,
+          status: TestCaseResultStatus.FAILURE,
           errorMessage: `Schema validation failed: ${JSON.stringify(
             validate.errors
           )}`,
@@ -183,8 +202,7 @@ export const runTestCase = async (
       if (!conditionPassed) {
         return {
           name: testCase.name,
-          status: TestResultStatus.FAILURE,
-          success: false,
+          status: TestCaseResultStatus.FAILURE,
           errorMessage: testCase.conditionErrorMessage,
           apiResponse: JSON.stringify(responseData),
           mandatory: isMandatoryVersion(testCase, version),
@@ -197,8 +215,7 @@ export const runTestCase = async (
 
     return {
       name: testCase.name,
-      status: TestResultStatus.SUCCESS,
-      success: true,
+      status: TestCaseResultStatus.SUCCESS,
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: curlCmd,
@@ -218,9 +235,8 @@ export const runTestCase = async (
       // If we expect an HTTP error, we consider the test successful if the request fails
       status:
         testCase.expectHttpError === true
-          ? TestResultStatus.SUCCESS
-          : TestResultStatus.FAILURE,
-      success: testCase.expectHttpError === true,
+          ? TestCaseResultStatus.SUCCESS
+          : TestCaseResultStatus.FAILURE,
       // If we expect an HTTP error, we don't return an error message
       ...(testCase.expectHttpError === true
         ? {}

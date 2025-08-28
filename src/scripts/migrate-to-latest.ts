@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
-import { DatabaseFactory } from '../data/factory';
-import logger from '../utils/logger';
-
 dotenv.config();
+
+import logger from '../utils/logger';
+import { DatabaseFactory } from '../data/factory';
 
 async function preDeployMigration() {
   try {
