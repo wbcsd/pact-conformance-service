@@ -1,7 +1,12 @@
 import express from "express";
 import config from "./config";
 import logger, { loggerMiddleware } from "./utils/logger";
-import { getTestRuns, getTestRunById, createTestRun } from "./controllers/testRunController";
+import {
+  getTestRuns,
+  getTestRunById,
+  createTestRun,
+  searchOrGetTestRuns,
+} from "./controllers/testRunController";
 import { handleEvent, authToken } from "./controllers/eventController";
 
 // Create Express app
@@ -28,7 +33,7 @@ app.get("/health-check", (_, res) => {
 // Define routes
 
 // Create test run related routes
-app.get("/testruns/", getTestRuns);
+app.get("/testruns/", searchOrGetTestRuns);
 app.get("/testruns/:id", getTestRunById);
 app.post("/testruns/", createTestRun);
 

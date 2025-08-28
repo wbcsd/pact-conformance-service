@@ -1,0 +1,28 @@
+# rest file for routes using the VSCode REST Client extension
+@searchTerm=test
+
+
+### Get all test runs
+GET http://localhost:8004/testruns
+Accept: application/json
+Content-Type: application/json
+
+### Search test runs
+GET http://localhost:8004/testruns/?query={{searchTerm}}
+Accept: application/json
+Content-Type: application/json
+
+### Search test runs with admin email filter
+GET http://localhost:8004/testruns/?query={{searchTerm}}&adminEmail=dummy@email.com
+Accept: application/json
+Content-Type: application/json
+
+### Search test runs with limit
+GET http://localhost:8004/testruns/?query={{searchTerm}}&limit=2
+Accept: application/json
+Content-Type: application/json
+
+### Get test run by ID
+GET http://localhost:8004/testruns/060efbc1-db69-4e3f-8f4a-e23e371219c2
+Accept: application/json
+Content-Type: application/json
