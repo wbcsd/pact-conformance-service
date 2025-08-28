@@ -288,7 +288,9 @@ export const generateV2TestCases = ({
         time: new Date().toISOString(),
         type: EventTypesV2.CREATED,
         data: {
-          productId: ["urn:pact:null"], // SPs will be instructed to reject a request with null productIds,
+          pf: {
+            productIds: ["urn:pact:null"], // SPs will be instructed to reject a request with null productIds,
+          },
           comment: "Please send PCF data for this year.",
         },
       },
