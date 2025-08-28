@@ -1,4 +1,5 @@
 // Constants for test run status
+// TODO: Make consistent with TestCaseResultStatus
 export enum TestRunStatus {
   PASS = "PASS",
   FAIL = "FAIL",
@@ -10,21 +11,6 @@ export enum TestCaseResultStatus {
   PENDING = "PENDING",
   SUCCESS = "SUCCESS",
   FAILURE = "FAILURE",
-}
-
-export enum TestCaseNames {
-  AUTHENTICATE_WITH_INCORRECT_CREDENTIALS = "Authenticate with incorrect credentials",
-}
-
-export interface TestRun {
-  testId: string;
-  timestamp: number;
-  testCases: TestCaseResult[];
-}
-interface TestCaseResult {
-  name: string;
-  status: TestCaseResultStatus;
-  message?: string;
 }
 
 export interface TestCase {
@@ -44,6 +30,7 @@ export interface TestCase {
   documentationUrl?: string;
   expectHttpError?: boolean;
 }
+
 export interface TestResult {
   name: string;
   status: TestCaseResultStatus;
@@ -60,7 +47,7 @@ export interface TestData {
   version: string;
 }
 
-export enum EventTypes {
+export enum EventTypesV2 {
   CREATED = "org.wbcsd.pathfinder.ProductFootprintRequest.Created.v1",
   FULFILLED = "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
   REJECTED = "org.wbcsd.pathfinder.ProductFootprintRequest.Rejected.v1",
