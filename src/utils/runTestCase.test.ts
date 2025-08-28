@@ -1,6 +1,6 @@
 import { jest } from "@jest/globals";
 import { runTestCase } from "./runTestCase";
-import { TestResultStatus } from "../types/types";
+import { TestCaseResultStatus } from "../types/types";
 
 type AnyObj = Record<string, any>;
 
@@ -73,7 +73,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.FAILURE);
+    expect(res.status).toBe(TestCaseResultStatus.FAILURE);
     expect(res.errorMessage).toBe(
       "Either endpoint or customUrl must be provided"
     );
@@ -107,7 +107,7 @@ describe("runTestCase", () => {
     );
     expect((options as RequestInit).body).toBeUndefined();
 
-    expect(res.status).toBe(TestResultStatus.SUCCESS);
+    expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
     // Curl contains method, URL, auth header, content-type; no -d
     expect(res.curlRequest).toContain(
       "curl -X GET 'https://api.example.com/health'"
@@ -158,7 +158,7 @@ describe("runTestCase", () => {
     expect(res.curlRequest).toContain(" -H 'Content-Type: text/plain'");
     expect(res.curlRequest).toContain(" -H 'X-Test: 1'");
     expect(res.curlRequest).toContain(" -d 'raw-body'");
-    expect(res.status).toBe(TestResultStatus.SUCCESS);
+    expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
   });
 
   it("fails when expectedStatusCodes do not include actual status", async () => {
@@ -177,7 +177,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.FAILURE);
+    expect(res.status).toBe(TestCaseResultStatus.FAILURE);
     expect(res.errorMessage).toBe("Expected status [201], but got 200");
   });
 
@@ -197,7 +197,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.FAILURE);
+    expect(res.status).toBe(TestCaseResultStatus.FAILURE);
     // Engine-specific message, keep assertion tolerant:
     expect(res.errorMessage).toMatch(/Unexpected|JSON/i);
   });
@@ -224,7 +224,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.FAILURE);
+    expect(res.status).toBe(TestCaseResultStatus.FAILURE);
     expect(res.errorMessage).toContain("Schema validation failed:");
     expect(res.apiResponse).toBe(JSON.stringify({ id: "oops" }));
   });
@@ -253,7 +253,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.SUCCESS);
+    expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
   });
 
   it("condition fails -> failure with provided conditionErrorMessage", async () => {
@@ -274,7 +274,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.FAILURE);
+    expect(res.status).toBe(TestCaseResultStatus.FAILURE);
     expect(res.errorMessage).toBe("Condition failed!");
     expect(res.apiResponse).toBe(JSON.stringify({ id: 1 }));
   });
@@ -297,7 +297,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.SUCCESS);
+    expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
     // default timeout is 5000ms unless env overrides at module-load time
     expect(res.errorMessage).not.toBeDefined();
     expect(res.mandatory).toBe(false);
@@ -319,7 +319,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.FAILURE);
+    expect(res.status).toBe(TestCaseResultStatus.FAILURE);
     expect(res.errorMessage).toBe("Request timeout after 5000ms");
   });
 
@@ -340,7 +340,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.SUCCESS);
+    expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
     expect(res.mandatory).toBe(true);
   });
 
@@ -387,7 +387,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.FAILURE);
+    expect(res.status).toBe(TestCaseResultStatus.FAILURE);
   });
 
   it("should succeed for 500 when expectHttpError is true", async () => {
@@ -407,7 +407,7 @@ describe("runTestCase", () => {
       VERSION as any
     );
 
-    expect(res.status).toBe(TestResultStatus.SUCCESS);
+    expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
     expect(res.errorMessage).not.toBeDefined();
   });
 });

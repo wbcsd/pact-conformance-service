@@ -3,7 +3,7 @@ import Ajv from "ajv";
 import * as jwt from "jsonwebtoken";
 import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
-import { EventTypes, EventTypesV3, TestResult, TestResultStatus } from "../types/types";
+import { EventTypes, EventTypesV3, TestResult, TestCaseResultStatus } from "../types/types";
 import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
 // import { Database } from '../data/interfaces/Database';
 // import { DatabaseFactory } from '../data/factory'; 
@@ -111,7 +111,7 @@ export class EventController {
         if (eventIsValid && isPathValid) {
           testResult = {
             name: TEST_CASE_13_NAME,
-            status: TestResultStatus.SUCCESS,
+            status: TestCaseResultStatus.SUCCESS,
             mandatory: isMandatory,
             testKey: "TESTCASE#13",
             documentationUrl: testData.version.startsWith("V2")
@@ -132,7 +132,7 @@ export class EventController {
 
           testResult = {
             name: TEST_CASE_13_NAME,
-            status: TestResultStatus.FAILURE,
+            status: TestCaseResultStatus.FAILURE,
             mandatory: isMandatory,
             testKey: "TESTCASE#13",
             errorMessage,
@@ -153,7 +153,7 @@ export class EventController {
         if (!testPassed) {
           testResult = {
             ...testResult,
-            status: TestResultStatus.FAILURE,
+            status: TestCaseResultStatus.FAILURE,
             errorMessage: `Product IDs do not match, the request was made for productIds [${testData.productIds}] but received data for productIds [${productIds}]`,
           };
         }
@@ -201,7 +201,7 @@ export class EventController {
         if (hasValidErrorObject && isPathValid) {
           testResult = {
             name: TEST_CASE_14_NAME,
-            status: TestResultStatus.SUCCESS,
+            status: TestCaseResultStatus.SUCCESS,
             mandatory: isMandatory,
             testKey: "TESTCASE#14.B",
             documentationUrl: testData.version.startsWith("V2")
@@ -221,7 +221,7 @@ export class EventController {
 
           testResult = {
             name: TEST_CASE_14_NAME,
-            status: TestResultStatus.FAILURE,
+            status: TestCaseResultStatus.FAILURE,
             mandatory: isMandatory,
             testKey: "TESTCASE#14.B",
             errorMessage,

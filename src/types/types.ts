@@ -6,7 +6,7 @@ export enum TestRunStatus {
 }
 
 // Constants for test result status
-export enum TestResultStatus {
+export enum TestCaseResultStatus {
   PENDING = "PENDING",
   SUCCESS = "SUCCESS",
   FAILURE = "FAILURE",
@@ -23,7 +23,7 @@ export interface TestRun {
 }
 interface TestCaseResult {
   name: string;
-  status: TestResultStatus;
+  status: TestCaseResultStatus;
   message?: string;
 }
 
@@ -46,7 +46,7 @@ export interface TestCase {
 }
 export interface TestResult {
   name: string;
-  status: TestResultStatus;
+  status: TestCaseResultStatus;
   errorMessage?: string;
   apiResponse?: string;
   mandatory: boolean;

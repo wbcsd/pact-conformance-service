@@ -5,7 +5,7 @@ import {
   ApiVersion,
   TestCase,
   TestResult,
-  TestResultStatus,
+  TestCaseResultStatus,
 } from "../types/types";
 import logger from "./logger";
 
@@ -62,7 +62,7 @@ export const runTestCase = async (
   if (!testCase.endpoint && !testCase.customUrl) {
     return {
       name: testCase.name,
-      status: TestResultStatus.FAILURE,
+      status: TestCaseResultStatus.FAILURE,
       errorMessage: "Either endpoint or customUrl must be provided",
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
@@ -76,7 +76,7 @@ export const runTestCase = async (
   if (testCase.callback) {
     return {
       name: testCase.name,
-      status: TestResultStatus.PENDING,
+      status: TestCaseResultStatus.PENDING,
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: generateCurlCommand(
@@ -131,8 +131,8 @@ export const runTestCase = async (
       return {
         name: testCase.name,
         status: response.ok
-          ? TestResultStatus.FAILURE
-          : TestResultStatus.SUCCESS,
+          ? TestCaseResultStatus.FAILURE
+          : TestCaseResultStatus.SUCCESS,
         mandatory: isMandatoryVersion(testCase, version),
         testKey: testCase.testKey,
         curlRequest: curlCmd,
@@ -146,7 +146,7 @@ export const runTestCase = async (
     ) {
       return {
         name: testCase.name,
-        status: TestResultStatus.FAILURE,
+        status: TestCaseResultStatus.FAILURE,
         errorMessage: `Expected status [${testCase.expectedStatusCodes.join(
           ","
         )}], but got ${response.status}`,
@@ -178,7 +178,7 @@ export const runTestCase = async (
         );
         return {
           name: testCase.name,
-          status: TestResultStatus.FAILURE,
+          status: TestCaseResultStatus.FAILURE,
           errorMessage: `Schema validation failed: ${JSON.stringify(
             validate.errors
           )}`,
@@ -202,7 +202,7 @@ export const runTestCase = async (
       if (!conditionPassed) {
         return {
           name: testCase.name,
-          status: TestResultStatus.FAILURE,
+          status: TestCaseResultStatus.FAILURE,
           errorMessage: testCase.conditionErrorMessage,
           apiResponse: JSON.stringify(responseData),
           mandatory: isMandatoryVersion(testCase, version),
@@ -215,7 +215,7 @@ export const runTestCase = async (
 
     return {
       name: testCase.name,
-      status: TestResultStatus.SUCCESS,
+      status: TestCaseResultStatus.SUCCESS,
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: curlCmd,
@@ -235,8 +235,8 @@ export const runTestCase = async (
       // If we expect an HTTP error, we consider the test successful if the request fails
       status:
         testCase.expectHttpError === true
-          ? TestResultStatus.SUCCESS
-          : TestResultStatus.FAILURE,
+          ? TestCaseResultStatus.SUCCESS
+          : TestCaseResultStatus.FAILURE,
       // If we expect an HTTP error, we don't return an error message
       ...(testCase.expectHttpError === true
         ? {}

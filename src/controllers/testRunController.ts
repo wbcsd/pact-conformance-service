@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import logger from "../utils/logger";
 import {
   TestResult,
-  TestResultStatus,
+  TestCaseResultStatus,
   TestRunStatus,
   ApiVersion,
 } from "../types/types";
@@ -170,7 +170,7 @@ export class TestRunController {
       // Calculate passing percentage
       const mandatoryTests = result.results.filter((test) => test.mandatory);
       const failedMandatoryTests = mandatoryTests.filter(
-        (test) => test.status !== TestResultStatus.SUCCESS
+        (test) => test.status !== TestCaseResultStatus.SUCCESS
       );
 
       const passingPercentage =
@@ -187,7 +187,7 @@ export class TestRunController {
         (test) => !test.mandatory
       );
       const failedNonMandatoryTests = nonMandatoryTests.filter(
-        (test) => test.status !== TestResultStatus.SUCCESS
+        (test) => test.status !== TestCaseResultStatus.SUCCESS
       );
       const nonMandatoryPassingPercentage =
         nonMandatoryTests.length > 0
@@ -333,7 +333,7 @@ export class TestRunController {
           accessToken,
           version
         );
-        if (result.status === TestResultStatus.SUCCESS) {
+        if (result.status === TestCaseResultStatus.SUCCESS) {
           logger.info(`Test case "${testCase.name}" passed.`);
         } else {
           logger.error(

@@ -3,7 +3,7 @@ import { EventController } from "../../controllers/eventController";
 
 import * as dbUtils from "../../utils/dbUtils";
 import { mockFootprints, mockFootprintsV3 } from "../mocks/footprints";
-import { TestResultStatus } from "../../types/types";
+import { TestCaseResultStatus } from "../../types/types";
 
 // Mock the DB utils
 jest.mock("../../utils/dbUtils");
@@ -82,7 +82,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.SUCCESS,
+        status: TestCaseResultStatus.SUCCESS,
         mandatory: true,
         testKey: "TESTCASE#13",
       }),
@@ -139,7 +139,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.SUCCESS,
+        status: TestCaseResultStatus.SUCCESS,
         mandatory: true,
         testKey: "TESTCASE#13",
       }),
@@ -217,7 +217,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.FAILURE,
+        status: TestCaseResultStatus.FAILURE,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining("Product IDs do not match"),
@@ -438,7 +438,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.FAILURE,
+        status: TestCaseResultStatus.FAILURE,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining(
@@ -495,7 +495,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.FAILURE,
+        status: TestCaseResultStatus.FAILURE,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining(
