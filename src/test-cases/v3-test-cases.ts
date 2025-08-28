@@ -1,4 +1,4 @@
-import { ApiVersion, TestCase } from "../types/types";
+import { ApiVersion, TestCase, EventTypesV3 } from "../types/types";
 import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
 import {
@@ -314,7 +314,7 @@ export const generateV3TestCases = ({
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
-        type: "org.wbcsd.pact.ProductFootprint.RequestCreatedEvent.3",
+        type: EventTypesV3.CREATED,
         data: {
           productId: filterParams.productIds,
           comment: "Please send PCF data for this year.",
@@ -348,7 +348,7 @@ export const generateV3TestCases = ({
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
-        type: "org.wbcsd.pact.ProductFootprint.RequestCreatedEvent.3",
+        type: EventTypesV3.CREATED,
         data: {
           productId: ["urn:pact:null"], // SPs will be instructed to reject a request with null productIds,
           comment: "Please send PCF data for this year.",
@@ -376,7 +376,7 @@ export const generateV3TestCases = ({
       endpoint: `/3/events`,
       expectedStatusCodes: [200],
       requestData: {
-        type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
+        type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
         id: randomUUID(),
         source: webhookUrl,
@@ -399,7 +399,7 @@ export const generateV3TestCases = ({
       endpoint: `/3/events`,
       expectedStatusCodes: [400, 401],
       requestData: {
-        type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
+        type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
         id: testRunId,
         source: webhookUrl,
@@ -429,7 +429,7 @@ export const generateV3TestCases = ({
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
-        type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
+        type: EventTypesV3.PUBLISHED,
         data: {
           pfIds: ["3a6c14a7-4deb-498a-b5ea-16ce2535b576"],
         },
@@ -893,7 +893,7 @@ export const generateV3TestCases = ({
       endpoint: `/3/events`,
       expectedStatusCodes: [400],
       requestData: {
-        type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
+        type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
         id: randomUUID(),
         source: webhookUrl,

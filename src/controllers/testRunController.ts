@@ -17,8 +17,7 @@ import * as dbUtils from "../utils/dbUtils";
 // TODO: Move all this stuff into a service
 import {
   fetchFootprints,
-  getLinksHeaderFromFootprints,
-  sendCreateRequestEvent,
+  getLinksHeaderFromFootprints
 } from "../utils/fetchFootprints";
 import { runTestCase } from "../utils/runTestCase";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";

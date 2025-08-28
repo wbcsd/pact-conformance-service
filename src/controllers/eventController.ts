@@ -3,7 +3,7 @@ import Ajv from "ajv";
 import * as jwt from "jsonwebtoken";
 import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
-import { EventTypes, EventTypesV3, TestResult, TestCaseResultStatus } from "../types/types";
+import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus } from "../types/types";
 import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
 // import { Database } from '../data/interfaces/Database';
 // import { DatabaseFactory } from '../data/factory'; 
@@ -87,7 +87,7 @@ export class EventController {
       /* We only care about the fulfilled event in response to TESTCASE#12 for this part as Test Case 13 is basically a follow-up
           that processes the call back from a host system in response to the event fired in test case 12 */
       if (
-        req.body.type === EventTypes.FULFILLED ||
+        req.body.type === EventTypesV2.FULFILLED ||
         req.body.type === EventTypesV3.FULFILLED
       ) {
         const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
@@ -176,7 +176,7 @@ export class EventController {
           );
         }
       } else if (
-        req.body.type === EventTypes.REJECTED ||
+        req.body.type === EventTypesV2.REJECTED ||
         req.body.type === EventTypesV3.REJECTED
       ) {
         console.info(

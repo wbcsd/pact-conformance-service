@@ -1,4 +1,4 @@
-import { ApiVersion, TestCase } from "../types/types";
+import { ApiVersion, TestCase, EventTypesV2 } from "../types/types";
 import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
 import {
@@ -249,7 +249,7 @@ export const generateV2TestCases = ({
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
-        type: "org.wbcsd.pathfinder.ProductFootprintRequest.Created.v1",
+        type: EventTypesV2.CREATED,
         data: {
           pf: {
             productIds: footprints.data[0].productIds,
@@ -286,7 +286,7 @@ export const generateV2TestCases = ({
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
-        type: "org.wbcsd.pathfinder.ProductFootprintRequest.Created.v1",
+        type: EventTypesV2.CREATED,
         data: {
           productId: ["urn:pact:null"], // SPs will be instructed to reject a request with null productIds,
           comment: "Please send PCF data for this year.",
@@ -314,7 +314,7 @@ export const generateV2TestCases = ({
       endpoint: `/2/events`,
       expectedStatusCodes: [200],
       requestData: {
-        type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+        type: EventTypesV2.PUBLISHED,
         specversion: "1.0",
         id: randomUUID(),
         source: webhookUrl,
@@ -337,7 +337,7 @@ export const generateV2TestCases = ({
       endpoint: `/2/events`,
       expectedStatusCodes: [400, 401],
       requestData: {
-        type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+        type: EventTypesV2.PUBLISHED,
         specversion: "1.0",
         id: testRunId,
         source: webhookUrl,
@@ -367,7 +367,7 @@ export const generateV2TestCases = ({
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
-        type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+        type: EventTypesV2.PUBLISHED,
         data: {
           pfIds: ["3a6c14a7-4deb-498a-b5ea-16ce2535b576"],
         },
@@ -432,7 +432,7 @@ export const generateV2TestCases = ({
       endpoint: `/2/events`,
       expectedStatusCodes: [400],
       requestData: {
-        type: "org.wbcsd.pathfinder.ProductFootprint.Published.v1",
+        type: EventTypesV2.PUBLISHED,
         specversion: "1.0",
         id: randomUUID(),
         source: webhookUrl,
