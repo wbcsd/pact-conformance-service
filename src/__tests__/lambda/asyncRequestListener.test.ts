@@ -107,7 +107,7 @@ describe("asyncRequestListener Lambda handler", () => {
       id: "123e4567-e89b-12d3-a456-426614174000",
       eventId: "123e4567-e89b-12d3-a456-426614174000",
       specversion: "1.0",
-      type: EventTypesV2.FULFILLED,
+      type: EventTypesV3.FULFILLED,
       source: "https://example.com",
       time: currentTime,
       data: {
