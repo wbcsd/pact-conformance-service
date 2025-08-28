@@ -211,6 +211,7 @@ export class PostgresAdapter implements Database {
       const resultsQuery = `
         SELECT result FROM test_results 
         WHERE test_id = $1
+        ORDER BY test_key
       `;
       const resultsData = await client.query(resultsQuery, [testRunId]);
 
