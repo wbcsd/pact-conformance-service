@@ -14,7 +14,7 @@ export class PostgresAdapter implements Database {
   constructor(connectionString?: string) {
     this.pool = new Pool({
       connectionString:
-        connectionString || process.env.POSTGRES_CONNECTION_STRING,
+        connectionString || process.env.DB_CONNECTION_STRING,
     });
   }
 
