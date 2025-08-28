@@ -16,8 +16,7 @@ const pinoInstance = pino({
     : { level: "info" }),
 });
 
-const wrap =
-  (method: "info" | "error" | "warn" | "debug") =>
+const wrap = (method: "info" | "error" | "warn" | "debug") =>
   (message: any, meta?: any) => {
     if (meta) {
       pinoInstance[method](meta, message);
@@ -26,13 +25,18 @@ const wrap =
     }
   };
 
-const logger = console || {
+const logger = process.env.LOGGER === "CONSOLE" ? console : {
   info: wrap("info"),
   error: wrap("error"),
   warn: wrap("warn"),
   debug: wrap("debug"),
 };
-const loggerMiddleware = pinoHttp({ logger: pinoInstance });
+
+const loggerMiddleware = process.env.LOGGER === "CONSOLE" ? 
+  (req: any, res: any, next: any) => {
+    next();
+  } : 
+  pinoHttp({ logger: pinoInstance });
 
 export { loggerMiddleware };
 export default logger;
