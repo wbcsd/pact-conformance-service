@@ -10,10 +10,7 @@ import {
 import logger from "./logger";
 
 // Setup timeout for the fetch request
-const DEFAULT_FETCH_TIMEOUT_MS = parseInt(
-  process.env.FETCH_TIMEOUT_MS || "5000",
-  10
-);
+const DEFAULT_FETCH_TIMEOUT_MS = parseInt(process.env.FETCH_TIMEOUT_MS || "5000");
 
 const isMandatoryVersion = (testCase: TestCase, version: ApiVersion) => {
   if (testCase.mandatoryVersion) {
@@ -80,7 +77,7 @@ export const runTestCase = async (
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: generateCurlCommand(
-        `${process.env.WEBHOOK_URL}/${testCase.endpoint}`, 
+        `${process.env.CONFORMANCE_API}/${testCase.endpoint}`, 
         testCase.method, {
           "Content-Type": "application/json",
           Authorization: `Bearer TOKEN`,

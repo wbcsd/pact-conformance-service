@@ -18,6 +18,18 @@ export class PostgresAdapter implements Database {
     });
   }
 
+  async checkConnection(): Promise<boolean> {
+    try {
+      const client = await this.pool.connect();
+      await client.query(`SELECT version()`);
+      client.release();
+      return true;
+    } catch (error) {
+      logger.error("Database connection error:", error);
+      return false;
+    }
+  }
+
   async migrateToLatest(): Promise<void> {
     // Create tables if they don't exist
     const client = await this.pool.connect();

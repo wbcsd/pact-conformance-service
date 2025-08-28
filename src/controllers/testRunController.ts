@@ -314,7 +314,7 @@ export class TestRunController {
         clientSecret,
         authRequestData,
         version,
-        webhookUrl: process.env.WEBHOOK_URL || "",
+        webhookUrl: process.env.CONFORMANCE_API || "",
       };
 
       const testCases = version.startsWith("V2")

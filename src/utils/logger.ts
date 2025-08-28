@@ -25,14 +25,14 @@ const wrap = (method: "info" | "error" | "warn" | "debug") =>
     }
   };
 
-const logger = process.env.LOGGER === "CONSOLE" ? console : {
+const logger = process.env.LOG_OUTPUT === "console" ? console : {
   info: wrap("info"),
   error: wrap("error"),
   warn: wrap("warn"),
   debug: wrap("debug"),
 };
 
-const loggerMiddleware = process.env.LOGGER === "CONSOLE" ? 
+const loggerMiddleware = process.env.LOG_OUTPUT === "console" ? 
   (req: any, res: any, next: any) => {
     next();
   } : 

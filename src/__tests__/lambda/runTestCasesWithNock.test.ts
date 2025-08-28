@@ -5,7 +5,7 @@ import { mockFootprints, mockFootprintsV3 } from "../mocks/footprints";
 import { TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
 
 // Mock the environment variables
-process.env.WEBHOOK_URL = "https://webhook.test.url";
+process.env.CONFORMANCE_API = "https://webhook.test.url";
 
 // Mock the UUID generation to get consistent test IDs
 jest.mock("crypto", () => ({

@@ -8,7 +8,7 @@ import { mockFootprintsV3 } from "../mocks/footprints";
 import { TestCaseResultStatus } from "../../types/types";
 
 // Mock the environment variables
-process.env.WEBHOOK_URL = "https://webhook.test.url";
+process.env.CONFORMANCE_API = "https://webhook.test.url";
 
 // Mock the UUID generation to get consistent test IDs
 jest.mock("crypto", () => ({

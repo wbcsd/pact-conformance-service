@@ -11,7 +11,7 @@ async function preDeployMigration() {
 
     // Check if required environment variables are set
     const requiredEnvVars = ['DB_CONNECTION_STRING'];
-    const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+    const missingEnvVars = requiredEnvVars.filter(name => !process.env[name]);
     
     if (missingEnvVars.length > 0) {
       console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));
