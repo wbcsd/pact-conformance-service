@@ -1,4 +1,6 @@
 import { Pool } from "pg";
+import config from "../../config";
+import logger from "../../utils/logger";
 import { TestData, TestResult } from "../../types/types";
 import {
   Database,
@@ -6,7 +8,6 @@ import {
   TestRunWithResults,
   SaveTestRunDetails,
 } from "../interfaces/Database";
-import logger from "../../utils/logger";
 
 export class PostgresAdapter implements Database {
   private pool: Pool;
@@ -14,7 +15,7 @@ export class PostgresAdapter implements Database {
   constructor(connectionString?: string) {
     this.pool = new Pool({
       connectionString:
-        connectionString || process.env.DB_CONNECTION_STRING,
+        connectionString || config.DB_CONNECTION_STRING,
     });
   }
 

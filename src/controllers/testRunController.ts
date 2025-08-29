@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import config from "../config";
 import logger from "../utils/logger";
 import {
   TestResult,
@@ -314,7 +315,7 @@ export class TestRunController {
         clientSecret,
         authRequestData,
         version,
-        webhookUrl: process.env.CONFORMANCE_API || "",
+        webhookUrl: config.CONFORMANCE_API,
       };
 
       const testCases = version.startsWith("V2")

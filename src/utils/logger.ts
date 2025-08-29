@@ -1,8 +1,9 @@
 import pino from "pino";
 import pinoHttp from "pino-http";
+import config from "../config";
 
 const pinoInstance = pino({
-  ...(process.env.NODE_ENV !== "production"
+  ...(config.NODE_ENV !== "production"
     ? {
         level: "debug",
         transport: {
@@ -25,14 +26,14 @@ const wrap = (method: "info" | "error" | "warn" | "debug") =>
     }
   };
 
-const logger = process.env.LOG_OUTPUT === "console" ? console : {
+const logger = config.LOG_OUTPUT === "console" ? console : {
   info: wrap("info"),
   error: wrap("error"),
   warn: wrap("warn"),
   debug: wrap("debug"),
 };
 
-const loggerMiddleware = process.env.LOG_OUTPUT === "console" ? 
+const loggerMiddleware = config.LOG_OUTPUT === "console" ? 
   (req: any, res: any, next: any) => {
     next();
   } : 
