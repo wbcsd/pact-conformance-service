@@ -7,13 +7,8 @@ import {
   TestResult,
   TestCaseResultStatus,
 } from "../types/types";
+import config from "../config";
 import logger from "./logger";
-
-// Setup timeout for the fetch request
-const DEFAULT_FETCH_TIMEOUT_MS = parseInt(
-  process.env.FETCH_TIMEOUT_MS || "5000",
-  10
-);
 
 const isMandatoryVersion = (testCase: TestCase, version: ApiVersion) => {
   if (testCase.mandatoryVersion) {
@@ -80,7 +75,7 @@ export const runTestCase = async (
       mandatory: isMandatoryVersion(testCase, version),
       testKey: testCase.testKey,
       curlRequest: generateCurlCommand(
-        `${process.env.WEBHOOK_URL}/${testCase.endpoint}`, 
+        `${config.CONFORMANCE_API}/${testCase.endpoint}`, 
         testCase.method, {
           "Content-Type": "application/json",
           Authorization: `Bearer TOKEN`,
@@ -123,7 +118,7 @@ export const runTestCase = async (
   try {
     const response = await fetch(url, {
       ...options,
-      signal: AbortSignal.timeout(DEFAULT_FETCH_TIMEOUT_MS),
+      signal: AbortSignal.timeout(config.TESTCASE_TIMEOUT),
     });
 
     if (testCase.expectHttpError === true) {
@@ -225,7 +220,7 @@ export const runTestCase = async (
     // Check if the error is due to timeout
     const isTimeoutError = error.name === "AbortError";
     const errorMessage = isTimeoutError
-      ? `Request timeout after ${DEFAULT_FETCH_TIMEOUT_MS}ms`
+      ? `Request timeout after ${config.TESTCASE_TIMEOUT}ms`
       : error.message;
 
     logger.info((testCase.expectHttpError ?? "").toString(), error);

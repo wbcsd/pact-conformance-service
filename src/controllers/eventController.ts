@@ -3,6 +3,7 @@ import Ajv from "ajv";
 import * as jwt from "jsonwebtoken";
 import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
+import config from "../config";
 import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus } from "../types/types";
 import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
 // import { Database } from '../data/interfaces/Database';
@@ -21,8 +22,6 @@ import logger from "../utils/logger";
 const ajv = new Ajv({ allErrors: true });
 addFormats(ajv);
 betterErrors(ajv);
-
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
 const TEST_CASE_13_NAME = "Test Case 13: Respond to Asynchronous PCF Request";
 const TEST_CASE_14_NAME = "Test Case 14.B: Handle Rejected PCF Request";
@@ -58,7 +57,7 @@ export class EventController {
       return;
     }
 
-    const token = jwt.sign({ clientId }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ clientId }, config.JWT_SECRET, { expiresIn: "1h" });
 
     res.status(200).json({ access_token: token });
   };

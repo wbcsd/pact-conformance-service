@@ -1,4 +1,6 @@
 import { Pool } from "pg";
+import config from "../../config";
+import logger from "../../utils/logger";
 import { TestData, TestResult } from "../../types/types";
 import {
   Database,
@@ -6,7 +8,6 @@ import {
   TestRunWithResults,
   SaveTestRunDetails,
 } from "../interfaces/Database";
-import logger from "../../utils/logger";
 
 export class PostgresAdapter implements Database {
   private pool: Pool;
@@ -14,8 +15,20 @@ export class PostgresAdapter implements Database {
   constructor(connectionString?: string) {
     this.pool = new Pool({
       connectionString:
-        connectionString || process.env.POSTGRES_CONNECTION_STRING,
+        connectionString || config.DB_CONNECTION_STRING,
     });
+  }
+
+  async checkConnection(): Promise<boolean> {
+    try {
+      const client = await this.pool.connect();
+      await client.query(`SELECT version()`);
+      client.release();
+      return true;
+    } catch (error) {
+      logger.error("Database connection error:", error);
+      return false;
+    }
   }
 
   async migrateToLatest(): Promise<void> {

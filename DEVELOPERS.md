@@ -84,11 +84,7 @@ Edit `.env` file with your local configuration:
 
 ```bash
 PORT=8004
-DATABASE_TYPE=postgres
-DATABASE_NAME=pact_conformance_db
-DATABASE_USER=postgres
-DATABASE_PASSWORD=postgres
-POSTGRES_CONNECTION_STRING=postgres://postgres:postgres@localhost:5433/pact-conformance-db
+DB_CONNECTION_STRING=postgres://postgres:postgres@localhost:5433/pact-conformance-db
 ```
 
 **Note**: The Lambda functions use DynamoDB in production, but the local development server can use PostgreSQL for testing database operations.

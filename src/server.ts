@@ -1,7 +1,5 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
 import express from "express";
+import config from "./config";
 import logger, { loggerMiddleware } from "./utils/logger";
 import {
   getTestRuns,
@@ -13,7 +11,7 @@ import { handleEvent, authToken } from "./controllers/eventController";
 
 // Create Express app
 const app = express();
-const port = process.env.PORT || 8080;
+const port = config.PORT || 8080;
 
 // Middleware for parsing JSON bodies
 app.use(express.json());

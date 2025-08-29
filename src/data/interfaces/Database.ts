@@ -36,6 +36,7 @@ export interface TestRunWithResults {
 }
 
 export interface Database {
+  checkConnection(): Promise<boolean>;
   migrateToLatest(): Promise<void>;
   saveTestRun(details: SaveTestRunDetails): Promise<void>;
   updateTestRunStatus(

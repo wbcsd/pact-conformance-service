@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import config from "../../config";
 import * as authUtils from "../../utils/authUtils";
 import * as fetchFootprints from "../../utils/fetchFootprints";
 import * as runTestCaseModule from "../../utils/runTestCase";
@@ -8,7 +9,7 @@ import { mockFootprintsV3 } from "../mocks/footprints";
 import { TestCaseResultStatus } from "../../types/types";
 
 // Mock the environment variables
-process.env.WEBHOOK_URL = "https://webhook.test.url";
+config.CONFORMANCE_API = "https://webhook.test.url";
 
 // Mock the UUID generation to get consistent test IDs
 jest.mock("crypto", () => ({
