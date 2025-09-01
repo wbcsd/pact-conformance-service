@@ -10,8 +10,8 @@ async function preDeployMigration() {
     logger.info('Pre-deployment migration started');
 
     // Check if required environment variables are set
-    const requiredEnvVars = ['POSTGRES_CONNECTION_STRING'];
-    const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+    const requiredEnvVars = ['DB_CONNECTION_STRING'];
+    const missingEnvVars = requiredEnvVars.filter(name => !process.env[name]);
     
     if (missingEnvVars.length > 0) {
       console.error('❌ Missing required environment variables:', missingEnvVars.join(', '));

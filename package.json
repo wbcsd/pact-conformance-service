@@ -11,7 +11,8 @@
     "start": "NODE_ENV=production node ./dist/server.js",
     "test": "jest --maxWorkers=1",
     "test:watch": "jest --watch",
-    "db:migrate": "ts-node ./src/scripts/migrate-to-latest.ts"
+    "check": "ts-node ./src/scripts/check-config.ts",
+    "migrate": "ts-node ./src/scripts/migrate-to-latest.ts"
   },
   "keywords": [],
   "author": "",
