@@ -312,7 +312,6 @@ const sharedDefinitions = {
             },
           },
         },
-        minItems: 1,
         uniqueItems: true,
         description:
           "The product-specific or sector-specific rules applied for calculating or allocating GHG emissions.",
