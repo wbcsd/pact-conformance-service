@@ -4,17 +4,9 @@ import * as jwt from "jsonwebtoken";
 import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
 import config from "../config";
+import { db } from "../data";
 import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus } from "../types/types";
 import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
-// import { Database } from '../data/interfaces/Database';
-// import { DatabaseFactory } from '../data/factory'; 
-// TODO: Use Database instead of dbUtils
-import {
-  getTestData,
-  getTestResults,
-  saveTestCaseResult,
-  updateTestRunStatus,
-} from "../utils/dbUtils";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import logger from "../utils/logger";
 
@@ -29,12 +21,6 @@ const TEST_CASE_14_NAME = "Test Case 14.B: Handle Rejected PCF Request";
 const MANDATORY_VERSIONS = ["V2.2", "V2.3", "V3.0"];
 
 export class EventController {
-  // TODO: private db: Database;
-
-  constructor() {
-    // TODO: this.db = DatabaseFactory.create();
-  }
-
 
   /*
    * POST /auth/token - Authenticate client and provide JWT token
@@ -77,7 +63,7 @@ export class EventController {
         throw new Error("Request body is missing");
       }
 
-      const testData = await getTestData(req.body.data.requestEventId);
+      const testData = await db.getTestData(req.body.data.requestEventId);
 
       if (!testData) {
         throw new Error(`Test data not found for requestEventId: ${req.body.data.requestEventId}`);
@@ -157,15 +143,15 @@ export class EventController {
           };
         }
 
-        await saveTestCaseResult(req.body.data.requestEventId, testResult, true);
+        await db.saveTestCaseResult(req.body.data.requestEventId, testResult, true);
 
         // Load updated test results and recalculate test run status
-        const existingTestRun = await getTestResults(req.body.data.requestEventId);
+        const existingTestRun = await db.getTestResults(req.body.data.requestEventId);
         if (existingTestRun?.results) {
           const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
             existingTestRun.results
           );
-          await updateTestRunStatus(
+          await db.updateTestRunStatus(
             req.body.data.requestEventId,
             testRunStatus,
             passingPercentage
@@ -230,17 +216,17 @@ export class EventController {
           };
         }
 
-        await saveTestCaseResult(req.body.data.requestEventId, testResult, true);
+        await db.saveTestCaseResult(req.body.data.requestEventId, testResult, true);
 
         // Load updated test results and recalculate test run status
-        const existingTestRunForRejected = await getTestResults(
+        const existingTestRunForRejected = await db.getTestResults(
           req.body.data.requestEventId
         );
         if (existingTestRunForRejected?.results) {
           const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
             existingTestRunForRejected.results
           );
-          await updateTestRunStatus(
+          await db.updateTestRunStatus(
             req.body.data.requestEventId,
             testRunStatus,
             passingPercentage

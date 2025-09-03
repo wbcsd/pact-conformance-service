@@ -11,10 +11,7 @@ import { getAccessToken, getOidAuthUrl } from "../utils/authUtils";
 import { randomUUID } from "crypto";
 import { generateV2TestCases } from "../test-cases/v2-test-cases";
 import { generateV3TestCases } from "../test-cases/v3-test-cases";
-// import { Database } from '../data/interfaces/Database';
-// import { DatabaseFactory } from '../data/factory';
-// TODO: Use Database instead of dbUtils
-import * as dbUtils from "../utils/dbUtils";
+import { db } from "../data";
 // TODO: Move all this stuff into a service
 import {
   fetchFootprints,
@@ -24,11 +21,6 @@ import { runTestCase } from "../utils/runTestCase";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 
 export class TestRunController {
-  // TODO: private db: Database;
-
-  constructor() {
-    // TODO: this.db = DatabaseFactory.create();
-  }
 
   /**
    * GET /testruns - List all test runs
@@ -53,7 +45,7 @@ export class TestRunController {
         return;
       }
 
-      const testRuns = await dbUtils.listTestRuns(adminEmail, searchTerm, page, pageSize);
+      const testRuns = await db.listTestRuns(adminEmail, searchTerm, page, pageSize);
 
       logger.info("Successfully retrieved test runs", {
         count: testRuns.length,
@@ -92,7 +84,7 @@ export class TestRunController {
         return;
       }
 
-      const result = await dbUtils.getTestResults(testRunId);
+      const result = await db.getTestResults(testRunId);
 
       if (!result) {
         logger.warn("Test run not found", { testRunId });
@@ -196,7 +188,7 @@ export class TestRunController {
     try {
       const testRunId = randomUUID();
 
-      await dbUtils.saveTestRun({
+      await db.saveTestRun({
         testRunId,
         companyName,
         adminEmail,
@@ -235,7 +227,7 @@ export class TestRunController {
         version
       );
 
-      dbUtils.saveTestData(testRunId, {
+      db.saveTestData(testRunId, {
         productIds: footprints.data[0].productIds,
         version,
       });
@@ -279,10 +271,10 @@ export class TestRunController {
         results.push(result);
       }
 
-      await dbUtils.saveTestCaseResults(testRunId, results);
+      await db.saveTestCaseResults(testRunId, results);
 
       // Load existing test results from database to get the most up-to-date state
-      const existingTestRun = await dbUtils.getTestResults(testRunId);
+      const existingTestRun = await db.getTestResults(testRunId);
       const finalTestResults =
         existingTestRun?.results || results;
 
@@ -291,7 +283,7 @@ export class TestRunController {
         calculateTestRunMetrics(finalTestResults);
 
       // Save the test run status and passing percentage to the database
-      await dbUtils.updateTestRunStatus(
+      await db.updateTestRunStatus(
         testRunId,
         testRunStatus,
         passingPercentage
