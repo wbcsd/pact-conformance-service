@@ -1,21 +1,58 @@
 import { Pool } from "pg";
+import { Kysely, PostgresDialect, sql, ColumnType } from "kysely";
 import config from "../../config";
 import logger from "../../utils/logger";
 import { TestData, TestResult } from "../../types/types";
 import {
-  Database,
+  Database as DatabaseInterface,
   TestRunDetails,
   TestRunWithResults,
   SaveTestRunDetails,
 } from "../interfaces/Database";
 
-export class PostgresAdapter implements Database {
+interface TestRunsTable {
+  test_id: string;
+  timestamp: ColumnType<Date, Date | string, Date | string>; // we accept Date|string on write to match original
+  company_name: string;
+  admin_email: string;
+  admin_name: string;
+  tech_spec_version: string;
+  status: string | null;
+  passing_percentage: number | null;
+}
+
+interface TestResultsTable {
+  test_id: string;
+  test_key: string;
+  timestamp: ColumnType<Date, Date | string, Date | string>;
+  // store whole TestResult payload as jsonb
+  result: unknown; // jsonb
+}
+
+interface TestDataTable {
+  test_id: string;
+  timestamp: ColumnType<Date, Date | string, Date | string>;
+  data: unknown; // jsonb
+}
+
+interface DB {
+  test_runs: TestRunsTable;
+  test_results: TestResultsTable;
+  test_data: TestDataTable;
+}
+
+export class PostgresAdapter implements DatabaseInterface {
   private pool: Pool;
+  private db: Kysely<DB>;
 
   constructor(connectionString?: string) {
     this.pool = new Pool({
       connectionString:
         connectionString || config.DB_CONNECTION_STRING,
+    });
+
+    this.db = new Kysely<DB>({
+      dialect: new PostgresDialect({ pool: this.pool }),
     });
   }
 
@@ -32,91 +69,92 @@ export class PostgresAdapter implements Database {
   }
 
   async migrateToLatest(): Promise<void> {
-    // Create tables if they don't exist
-    const client = await this.pool.connect();
-    try {
-      await client.query("BEGIN");
+    const trx = await this.db.transaction().execute(async (tx) => {
+      // Create test_runs if not exists
+      await tx.schema
+        .createTable("test_runs")
+        .ifNotExists()
+        .addColumn("test_id", "varchar(255)", (col) => col.primaryKey())
+        .addColumn("timestamp", "timestamp", (col) => col.notNull())
+        .addColumn("company_name", "varchar(255)", (col) => col.notNull())
+        .addColumn("admin_email", "varchar(255)", (col) => col.notNull())
+        .addColumn("admin_name", "varchar(255)", (col) => col.notNull())
+        .addColumn("tech_spec_version", "varchar(50)", (col) => col.notNull())
+        // keep columns present for new installs; the ALTER below handles older DBs
+        .addColumn("status", "varchar(50)")
+        .addColumn("passing_percentage", "integer")
+        .execute();
 
-      // Create test_runs table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS test_runs (
-          test_id VARCHAR(255) PRIMARY KEY,
-          timestamp TIMESTAMP NOT NULL,
-          company_name VARCHAR(255) NOT NULL,
-          admin_email VARCHAR(255) NOT NULL,
-          admin_name VARCHAR(255) NOT NULL,
-          tech_spec_version VARCHAR(50) NOT NULL,
-          status VARCHAR(50),
-          passing_percentage INTEGER
+      // Create test_results if not exists
+      await tx.schema
+        .createTable("test_results")
+        .ifNotExists()
+        .addColumn("test_id", "varchar(255)", (col) => col.notNull())
+        .addColumn("test_key", "varchar(255)", (col) => col.notNull())
+        .addColumn("timestamp", "timestamp", (col) => col.notNull())
+        .addColumn("result", "jsonb", (col) => col.notNull())
+        .addPrimaryKeyConstraint("test_results_pkey", ["test_id", "test_key"])
+        .addForeignKeyConstraint(
+          "test_results_test_runs_fkey",
+          ["test_id"],
+          "test_runs",
+          ["test_id"]
         )
-      `);
+        .execute();
 
-      // Create test_results table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS test_results (
-          test_id VARCHAR(255) NOT NULL,
-          test_key VARCHAR(255) NOT NULL,
-          timestamp TIMESTAMP NOT NULL,
-          result JSONB NOT NULL,
-          PRIMARY KEY (test_id, test_key),
-          FOREIGN KEY (test_id) REFERENCES test_runs(test_id)
+      // Create test_data if not exists
+      await tx.schema
+        .createTable("test_data")
+        .ifNotExists()
+        .addColumn("test_id", "varchar(255)", (col) => col.primaryKey())
+        .addColumn("timestamp", "timestamp", (col) => col.notNull())
+        .addColumn("data", "jsonb", (col) => col.notNull())
+        .addForeignKeyConstraint(
+          "test_data_test_runs_fkey",
+          ["test_id"],
+          "test_runs",
+          ["test_id"]
         )
-      `);
+        .execute();
 
-      // Create test_data table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS test_data (
-          test_id VARCHAR(255) PRIMARY KEY,
-          timestamp TIMESTAMP NOT NULL,
-          data JSONB NOT NULL,
-          FOREIGN KEY (test_id) REFERENCES test_runs(test_id)
-        )
-      `);
+      // Preserve original migration step: add status & passing_percentage if they don't exist
+      await tx.executeQuery(
+        sql`
+          ALTER TABLE test_runs 
+          ADD COLUMN IF NOT EXISTS status VARCHAR(50),
+          ADD COLUMN IF NOT EXISTS passing_percentage INTEGER
+        `.compile(tx)
+      );
+    });
 
-      // Add status and passing_percentage columns if they don't exist (migration)
-      await client.query(`
-        ALTER TABLE test_runs 
-        ADD COLUMN IF NOT EXISTS status VARCHAR(50),
-        ADD COLUMN IF NOT EXISTS passing_percentage INTEGER
-      `);
-
-      await client.query("COMMIT");
-    } catch (error) {
-      await client.query("ROLLBACK");
-      logger.error("Error initializing schema:", error);
-      throw error;
-    } finally {
-      client.release();
-    }
+    void trx; // not used beyond execution
   }
 
   async saveTestRun(details: SaveTestRunDetails): Promise<void> {
     const timestamp = new Date().toISOString();
 
-    const query = `
-      INSERT INTO test_runs (
-        test_id, timestamp, company_name, 
-        admin_email, admin_name, tech_spec_version
-      ) VALUES ($1, $2, $3, $4, $5, $6)
-      ON CONFLICT (test_id) DO UPDATE SET
-        timestamp = $2,
-        company_name = $3,
-        admin_email = $4,
-        admin_name = $5,
-        tech_spec_version = $6
-    `;
-
-    const values = [
-      details.testRunId,
-      timestamp,
-      details.companyName,
-      details.adminEmail,
-      details.adminName,
-      details.techSpecVersion,
-    ];
-
     try {
-      await this.pool.query(query, values);
+      await this.db
+        .insertInto("test_runs")
+        .values({
+          test_id: details.testRunId,
+          timestamp,
+          company_name: details.companyName,
+          admin_email: details.adminEmail,
+          admin_name: details.adminName,
+          tech_spec_version: details.techSpecVersion,
+        })
+        .onConflict((oc) =>
+          oc.column("test_id").doUpdateSet({
+            timestamp,
+            company_name: details.companyName,
+            admin_email: details.adminEmail,
+            admin_name: details.adminName,
+            tech_spec_version: details.techSpecVersion,
+          })
+        )
+        .execute();
+
       logger.info(`Test run ${details.testRunId} saved successfully`);
     } catch (error) {
       logger.error("Error saving test run:", error);
@@ -129,17 +167,24 @@ export class PostgresAdapter implements Database {
     status: string,
     passingPercentage: number
   ): Promise<void> {
-    const query = `
-      UPDATE test_runs 
-      SET status = $2, passing_percentage = $3
-      WHERE test_id = $1
-    `;
-
-    const values = [testRunId, status, passingPercentage];
-
     try {
-      const result = await this.pool.query(query, values);
-      if (result.rowCount === 0) {
+      const res = await this.db
+        .updateTable("test_runs")
+        .set({
+          status,
+          passing_percentage: passingPercentage,
+        })
+        .where("test_id", "=", testRunId)
+        .executeTakeFirst();
+
+      // For Postgres, res.numUpdatedRows is a BigInt-like value; coerce to number
+      const updated =
+        typeof res.numUpdatedRows === "bigint"
+          ? Number(res.numUpdatedRows)
+          : // SQLite/others may return undefined; fallback to 0/1 check
+            (res as any)?.numUpdatedRows ?? 0;
+
+      if (updated === 0) {
         console.warn(`No test run found with ID ${testRunId} to update`);
       } else {
         logger.info(
@@ -158,40 +203,44 @@ export class PostgresAdapter implements Database {
     overwriteExisting: boolean
   ): Promise<void> {
     const timestamp = new Date().toISOString();
-    const client = await this.pool.connect();
 
     try {
-      if (!overwriteExisting) {
-        // Check if record already exists
-        const checkResult = await client.query(
-          "SELECT 1 FROM test_results WHERE test_id = $1 AND test_key = $2",
-          [testRunId, testResult.testKey]
-        );
+      await this.db.transaction().execute(async (tx) => {
+        if (!overwriteExisting) {
+          const existing = await tx
+            .selectFrom("test_results")
+            .select((eb) => eb.lit(1).as("one"))
+            .where("test_id", "=", testRunId)
+            .where("test_key", "=", testResult.testKey)
+            .executeTakeFirst();
 
-        if (checkResult.rows.length > 0) {
-          console.debug("Item already exists, no action taken.");
-          return;
+          if (existing) {
+            console.debug("Item already exists, no action taken.");
+            return;
+          }
         }
-      }
 
-      const query = `
-        INSERT INTO test_results (test_id, test_key, timestamp, result)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (test_id, test_key) 
-        DO UPDATE SET timestamp = $3, result = $4
-      `;
-
-      await client.query(query, [
-        testRunId,
-        testResult.testKey,
-        timestamp,
-        JSON.stringify(testResult),
-      ]);
+        await tx
+          .insertInto("test_results")
+          .values({
+            test_id: testRunId,
+            test_key: testResult.testKey,
+            timestamp,
+            // Keep behavior the same; original stored the entire result payload in JSONB.
+            // Using the object directly allows pg to serialize to jsonb.
+            result: testResult as unknown,
+          })
+          .onConflict((oc) =>
+            oc.columns(["test_id", "test_key"]).doUpdateSet({
+              timestamp,
+              result: testResult as unknown,
+            })
+          )
+          .execute();
+      });
     } catch (error) {
       logger.error(`Error saving test case: ${testResult.name}`, error);
       throw error;
-    } finally {
-      client.release();
     }
   }
 
@@ -217,60 +266,57 @@ export class PostgresAdapter implements Database {
   }
 
   async getTestResults(testRunId: string): Promise<TestRunWithResults | null> {
-    const client = await this.pool.connect();
+    // Keep the same “two round trips” approach and the same null handling semantics
+    // as the original (which would throw if details are missing but results exist).
+    const resultsRows = await this.db
+      .selectFrom("test_results")
+      .select(["result"])
+      .where("test_id", "=", testRunId)
+      .orderBy("test_key")
+      .execute();
 
-    try {
-      // Get test results
-      const resultsQuery = `
-        SELECT result FROM test_results 
-        WHERE test_id = $1
-        ORDER BY test_key
-      `;
-      const resultsData = await client.query(resultsQuery, [testRunId]);
+    const details = await this.db
+      .selectFrom("test_runs")
+      .selectAll()
+      .where("test_id", "=", testRunId)
+      .executeTakeFirst();
 
-      // Get test run details
-      const detailsQuery = `
-        SELECT * FROM test_runs 
-        WHERE test_id = $1
-      `;
-      const detailsData = await client.query(detailsQuery, [testRunId]);
-      const details = detailsData.rows.length > 0 ? detailsData.rows[0] : null;
+    const results = resultsRows.map((r) => r.result as TestResult);
 
-      const results = resultsData.rows.map((row: any) => row.result);
-
-      return {
-        testRunId: details.test_id,
-        timestamp: details.timestamp,
-        companyName: details.company_name,
-        adminEmail: details.admin_email,
-        adminName: details.admin_name,
-        techSpecVersion: details.tech_spec_version,
-        status: details.status,
-        passingPercentage: details.passing_percentage,
-        results,
-      };
-    } finally {
-      client.release();
-    }
+    return {
+      // Note: original code would throw if details is null when accessing properties.
+      // We preserve that by intentionally not guarding here.
+      testRunId: (details as any).test_id,
+      timestamp: (details as any).timestamp,
+      companyName: (details as any).company_name,
+      adminEmail: (details as any).admin_email,
+      adminName: (details as any).admin_name,
+      techSpecVersion: (details as any).tech_spec_version,
+      status: (details as any).status ?? undefined,
+      passingPercentage: (details as any).passing_percentage ?? undefined,
+      results,
+    };
   }
 
   async saveTestData(testRunId: string, testData: TestData): Promise<void> {
     const timestamp = new Date().toISOString();
 
-    const query = `
-      INSERT INTO test_data (test_id, timestamp, data)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (test_id) DO UPDATE SET
-        timestamp = $2,
-        data = $3
-    `;
-
     try {
-      await this.pool.query(query, [
-        testRunId,
-        timestamp,
-        JSON.stringify(testData),
-      ]);
+      await this.db
+        .insertInto("test_data")
+        .values({
+          test_id: testRunId,
+          timestamp,
+          data: testData as unknown,
+        })
+        .onConflict((oc) =>
+          oc.column("test_id").doUpdateSet({
+            timestamp,
+            data: testData as unknown,
+          })
+        )
+        .execute();
+
       logger.info("Test data saved successfully");
     } catch (error) {
       logger.error("Error saving test data:", error);
@@ -279,17 +325,15 @@ export class PostgresAdapter implements Database {
   }
 
   async getTestData(testRunId: string): Promise<TestData | null> {
-    const query = `
-      SELECT data FROM test_data
-      WHERE test_id = $1
-    `;
-
     try {
-      const result = await this.pool.query(query, [testRunId]);
-      if (result.rows.length === 0) {
-        return null;
-      }
-      return result.rows[0].data;
+      const row = await this.db
+        .selectFrom("test_data")
+        .select(["data"])
+        .where("test_id", "=", testRunId)
+        .executeTakeFirst();
+
+      if (!row) return null;
+      return row.data as TestData;
     } catch (error) {
       logger.error("Error retrieving test data:", error);
       throw error;
@@ -300,30 +344,30 @@ export class PostgresAdapter implements Database {
     adminEmail?: string,
     limit?: number
   ): Promise<TestRunDetails[]> {
-    const params: any[] = [];
-    let query = `
-      SELECT * FROM test_runs
-    `;
-    if (adminEmail) {
-      query += ` WHERE admin_email = $1`;
-      params.push(adminEmail);
-    }
-    query += ` ORDER BY timestamp DESC LIMIT $${params.length + 1}`;
-    params.push(limit || 1000);
-
     try {
-      const result = await this.pool.query(query, params);
-      return result.rows.map(
-        (row: any) =>
+      let q = this.db
+        .selectFrom("test_runs")
+        .selectAll()
+        .orderBy("timestamp", "desc")
+        .limit(limit || 1000);
+
+      if (adminEmail) {
+        q = q.where("admin_email", "=", adminEmail);
+      }
+
+      const rows = await q.execute();
+
+      return rows.map(
+        (row) =>
           ({
             testId: row.test_id,
-            timestamp: row.timestamp,
+            timestamp: row.timestamp as any, // preserve original shape
             companyName: row.company_name,
             adminEmail: row.admin_email,
             adminName: row.admin_name,
             techSpecVersion: row.tech_spec_version,
-            status: row.status,
-            passingPercentage: row.passing_percentage,
+            status: row.status ?? undefined,
+            passingPercentage: row.passing_percentage ?? undefined,
           } as TestRunDetails)
       );
     } catch (error) {
@@ -382,6 +426,7 @@ export class PostgresAdapter implements Database {
   }
 
   async close(): Promise<void> {
+    await this.db.destroy();
     await this.pool.end();
   }
 }
