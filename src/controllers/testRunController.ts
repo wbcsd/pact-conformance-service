@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import config from "../config";
 import logger from "../utils/logger";
+import { db } from "../data";
 import {
   TestResult,
   TestCaseResultStatus,
@@ -11,14 +12,15 @@ import { getAccessToken, getOidAuthUrl } from "../utils/authUtils";
 import { randomUUID } from "crypto";
 import { generateV2TestCases } from "../test-cases/v2-test-cases";
 import { generateV3TestCases } from "../test-cases/v3-test-cases";
-import { db } from "../data";
-// TODO: Move all this stuff into a service
 import {
   fetchFootprints,
   getLinksHeaderFromFootprints
 } from "../utils/fetchFootprints";
 import { runTestCase } from "../utils/runTestCase";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
+
+const MAX_PAGE_SIZE = 200;
+const DEFAULT_PAGE_SIZE = 50;
 
 export class TestRunController {
 
@@ -32,15 +34,13 @@ export class TestRunController {
 
       const adminEmail = req.query.adminEmail as string;
       const page = req.query.page ? parseInt(req.query.page as string) : 0;
-      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 50;
+      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : DEFAULT_PAGE_SIZE;
       const searchTerm = (req.query.query as string || "").trim();
-      // const isInvalidTerm = searchTerm && /,;%/gi.test(searchTerm);
 
-      // Validate pageSize parameter
-      if (pageSize < 0 || pageSize >= 200) {
+      if (pageSize < 0 || pageSize >= MAX_PAGE_SIZE) {
         res.status(400).json({
           error:
-            "Invalid pageSize parameter. Must be a positive integer between 1 and 200.",
+            `Invalid pageSize parameter. Must be a positive integer between 1 and ${MAX_PAGE_SIZE}.`,
         });
         return;
       }
