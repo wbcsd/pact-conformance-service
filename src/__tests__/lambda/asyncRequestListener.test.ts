@@ -3,7 +3,7 @@ import { EventController } from "../../controllers/eventController";
 
 import * as dbUtils from "../../utils/dbUtils";
 import { mockFootprints, mockFootprintsV3 } from "../mocks/footprints";
-import { TestResultStatus } from "../../types/types";
+import { TestCaseResultStatus, EventTypesV2, EventTypesV3 } from "../../types/types";
 
 // Mock the DB utils
 jest.mock("../../utils/dbUtils");
@@ -50,7 +50,7 @@ describe("asyncRequestListener Lambda handler", () => {
       id: "123e4567-e89b-12d3-a456-426614174000",
       eventId: "123e4567-e89b-12d3-a456-426614174000",
       specversion: "1.0",
-      type: "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
+      type: EventTypesV2.FULFILLED,
       source: "https://example.com",
       time: currentTime,
       data: {
@@ -82,8 +82,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.SUCCESS,
-        success: true,
+        status: TestCaseResultStatus.SUCCESS,
         mandatory: true,
         testKey: "TESTCASE#13",
       }),
@@ -108,7 +107,7 @@ describe("asyncRequestListener Lambda handler", () => {
       id: "123e4567-e89b-12d3-a456-426614174000",
       eventId: "123e4567-e89b-12d3-a456-426614174000",
       specversion: "1.0",
-      type: "org.wbcsd.pact.ProductFootprint.RequestFulfilledEvent.3",
+      type: EventTypesV3.FULFILLED,
       source: "https://example.com",
       time: currentTime,
       data: {
@@ -140,8 +139,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.SUCCESS,
-        success: true,
+        status: TestCaseResultStatus.SUCCESS,
         mandatory: true,
         testKey: "TESTCASE#13",
       }),
@@ -165,7 +163,7 @@ describe("asyncRequestListener Lambda handler", () => {
       id: "event-id-1234",
       eventId: "event-id-1234",
       specversion: "1.0",
-      type: "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
+      type: EventTypesV2.FULFILLED,
       source: "https://example.com",
       time: new Date().toISOString(),
       data: {
@@ -219,8 +217,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.FAILURE,
-        success: false,
+        status: TestCaseResultStatus.FAILURE,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining("Product IDs do not match"),
@@ -245,7 +242,7 @@ describe("asyncRequestListener Lambda handler", () => {
       id: "event-id-1234",
       eventId: "event-id-1234",
       // Missing specversion
-      type: "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
+      type: EventTypesV2.FULFILLED,
       source: "https://example.com",
       data: {
         requestEventId: "request-123",
@@ -274,7 +271,6 @@ describe("asyncRequestListener Lambda handler", () => {
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: "FAILURE",
-        success: false,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining("Event validation failed"),
@@ -327,7 +323,7 @@ describe("asyncRequestListener Lambda handler", () => {
     const eventBody = {
       eventId: "event-id-1234",
       specversion: "1.0",
-      type: "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
+      type: EventTypesV2.FULFILLED,
       source: "https://example.com",
       time: new Date().toISOString(),
       data: {
@@ -368,7 +364,7 @@ describe("asyncRequestListener Lambda handler", () => {
     const eventBody = {
       eventId: "event-id-1234",
       specversion: "1.0",
-      type: "org.wbcsd.pathfinder.ProductFootprintRequest.Created.v1",
+      type: EventTypesV2.CREATED,
       source: "https://example.com",
       time: new Date().toISOString(),
       data: {
@@ -413,7 +409,7 @@ describe("asyncRequestListener Lambda handler", () => {
       id: "123e4567-e89b-12d3-a456-426614174000",
       eventId: "123e4567-e89b-12d3-a456-426614174000",
       specversion: "1.0",
-      type: "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
+      type: EventTypesV2.FULFILLED,
       source: "https://example.com",
       time: currentTime,
       data: {
@@ -442,8 +438,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.FAILURE,
-        success: false,
+        status: TestCaseResultStatus.FAILURE,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining(
@@ -471,7 +466,7 @@ describe("asyncRequestListener Lambda handler", () => {
       id: "123e4567-e89b-12d3-a456-426614174000",
       eventId: "123e4567-e89b-12d3-a456-426614174000",
       specversion: "1.0",
-      type: "org.wbcsd.pact.ProductFootprint.RequestFulfilledEvent.3",
+      type: EventTypesV3.FULFILLED,
       source: "https://example.com",
       time: currentTime,
       data: {
@@ -500,8 +495,7 @@ describe("asyncRequestListener Lambda handler", () => {
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
-        status: TestResultStatus.FAILURE,
-        success: false,
+        status: TestCaseResultStatus.FAILURE,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringContaining(
@@ -557,7 +551,6 @@ describe("asyncRequestListener Lambda handler", () => {
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: "FAILURE",
-        success: false,
         mandatory: true,
         testKey: "TESTCASE#13",
         errorMessage: expect.stringMatching(

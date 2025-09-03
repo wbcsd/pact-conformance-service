@@ -1,4 +1,4 @@
-import { ApiVersion, TestCase } from "../types/types";
+import { ApiVersion, TestCase, EventTypesV3 } from "../types/types";
 import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
 import {
@@ -6,11 +6,13 @@ import {
   emptyResponseSchema,
   v3_0_ResponseSchema,
   V3_0_SingleFootprintResponseSchema,
+  v3_0_EventFulfilledSchema,
 } from "../schemas/responseSchema";
 import {
   getCorrectAuthHeaders,
   getIncorrectAuthHeaders,
 } from "../utils/authUtils";
+import { v3_0_EventRejectedSchema } from "../schemas/v3_0_schema";
 
 interface Footprint {
   id: string;
@@ -300,7 +302,7 @@ export const generateV3TestCases = ({
       conditionErrorMessage: "Expected response to not include data property",
     },
     {
-      name: "Test Case 12: Receive Asynchronous PCF Request",
+      name: "Test Case 12: Send Asynchronous PCF Request",
       method: "POST",
       endpoint: `/3/events`,
       headers: {
@@ -312,7 +314,7 @@ export const generateV3TestCases = ({
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
-        type: "org.wbcsd.pact.ProductFootprint.RequestCreatedEvent.3",
+        type: EventTypesV3.CREATED,
         data: {
           productId: filterParams.productIds,
           comment: "Please send PCF data for this year.",
@@ -323,15 +325,58 @@ export const generateV3TestCases = ({
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-12-receive-asynchronous-pcf-request",
     },
-    // Test Case 13 is about receiving the PCF data from the webhook endpoint as a data recipient, this request will be triggered by the previous test.
-    // It will be tested in the listener lambda
+    {
+      name: "Test Case 13: Received Request Fulfilled Response",
+      callback: true,
+      endpoint: '/3/events',
+      method: "POST",
+      schema: v3_0_EventFulfilledSchema,
+      mandatoryVersion: ["V3.0"],
+      testKey: "TESTCASE#13",
+      documentationUrl: "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
+    },
+    {
+      name: "Test Case 14.A: Send Asynchronous Request to be Rejected",
+      method: "POST",
+      endpoint: `/3/events`,
+      headers: {
+        "Content-Type": "application/cloudevents+json; charset=UTF-8",
+      },
+      expectedStatusCodes: [200],
+      requestData: {
+        specversion: "1.0",
+        id: testRunId,
+        source: webhookUrl,
+        time: new Date().toISOString(),
+        type: EventTypesV3.CREATED,
+        data: {
+          productId: ["urn:pact:null"], // SPs will be instructed to reject a request with null productIds,
+          comment: "Please send PCF data for this year.",
+        },
+      },
+      mandatoryVersion: ["V3.0"],
+      testKey: "TESTCASE#14.A",
+      documentationUrl: 
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
+    },
+    {
+      name: "Test Case 14.B: Handle Rejected PCF Request",
+      callback: true,
+      endpoint: '/3/events',
+      method: "POST",
+      schema: v3_0_EventRejectedSchema,
+      mandatoryVersion: ["V3.0"],
+      testKey: "TESTCASE#14.B",
+      documentationUrl: 
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
+    },
     {
       name: "Test Case 15: Receive Notification of PCF Update (Published Event)",
       method: "POST",
       endpoint: `/3/events`,
       expectedStatusCodes: [200],
       requestData: {
-        type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
+        type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
         id: randomUUID(),
         source: webhookUrl,
@@ -354,7 +399,7 @@ export const generateV3TestCases = ({
       endpoint: `/3/events`,
       expectedStatusCodes: [400, 401],
       requestData: {
-        type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
+        type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
         id: testRunId,
         source: webhookUrl,
@@ -384,7 +429,7 @@ export const generateV3TestCases = ({
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
-        type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
+        type: EventTypesV3.PUBLISHED,
         data: {
           pfIds: ["3a6c14a7-4deb-498a-b5ea-16ce2535b576"],
         },
@@ -848,7 +893,7 @@ export const generateV3TestCases = ({
       endpoint: `/3/events`,
       expectedStatusCodes: [400],
       requestData: {
-        type: "org.wbcsd.pact.ProductFootprint.PublishedEvent.3",
+        type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
         id: randomUUID(),
         source: webhookUrl,

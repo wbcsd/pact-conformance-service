@@ -1,6 +1,7 @@
-// src/db/adapters/PostgresAdapterKysely.ts
 import { Pool } from "pg";
 import { Kysely, PostgresDialect, sql, ColumnType } from "kysely";
+import config from "../../config";
+import logger from "../../utils/logger";
 import { TestData, TestResult } from "../../types/types";
 import {
   Database as DatabaseInterface,
@@ -8,7 +9,6 @@ import {
   TestRunWithResults,
   SaveTestRunDetails,
 } from "../interfaces/Database";
-import logger from "../../utils/logger";
 
 interface TestRunsTable {
   test_id: string;
@@ -48,12 +48,24 @@ export class PostgresAdapter implements DatabaseInterface {
   constructor(connectionString?: string) {
     this.pool = new Pool({
       connectionString:
-        connectionString || process.env.POSTGRES_CONNECTION_STRING,
+        connectionString || config.DB_CONNECTION_STRING,
     });
 
     this.db = new Kysely<DB>({
       dialect: new PostgresDialect({ pool: this.pool }),
     });
+  }
+
+  async checkConnection(): Promise<boolean> {
+    try {
+      const client = await this.pool.connect();
+      await client.query(`SELECT version()`);
+      client.release();
+      return true;
+    } catch (error) {
+      logger.error("Database connection error:", error);
+      return false;
+    }
   }
 
   async migrateToLatest(): Promise<void> {
@@ -260,6 +272,7 @@ export class PostgresAdapter implements DatabaseInterface {
       .selectFrom("test_results")
       .select(["result"])
       .where("test_id", "=", testRunId)
+      .orderBy("test_key")
       .execute();
 
     const details = await this.db
@@ -359,6 +372,55 @@ export class PostgresAdapter implements DatabaseInterface {
       );
     } catch (error) {
       logger.error("Error retrieving recent test runs:", error);
+      throw error;
+    }
+  }
+
+  async searchTestRuns(
+    searchTerm: string,
+    adminEmail: string,
+    limit?: number
+  ): Promise<TestRunDetails[]> {
+    const likeTerm = `%${searchTerm.trim()}%`;
+    let query = "SELECT * FROM test_runs";
+    const queryParams: any[] = [likeTerm];
+
+    if (adminEmail) {
+      query +=
+        " WHERE admin_email = $2 AND (company_name ILIKE $1 OR admin_email ILIKE $1 OR admin_name ILIKE $1)";
+      queryParams.push(adminEmail);
+    } else {
+      query +=
+        " WHERE company_name ILIKE $1 OR admin_email ILIKE $1 OR admin_name ILIKE $1";
+    }
+
+    query += ` ORDER BY timestamp DESC`;
+
+    if (limit) {
+      // If adminEmail is provided, it's the 3rd parameter, otherwise 2nd
+      const paramIndex = adminEmail ? 3 : 2;
+      query += ` LIMIT $${paramIndex}`;
+      queryParams.push(limit);
+    }
+
+    try {
+      const result = await this.pool.query(query, queryParams);
+      console.log("RESULTS", result.rows);
+      return result.rows.map(
+        (row: any) =>
+          ({
+            testId: row.test_id,
+            timestamp: row.timestamp,
+            companyName: row.company_name,
+            adminEmail: row.admin_email,
+            adminName: row.admin_name,
+            techSpecVersion: row.tech_spec_version,
+            status: row.status,
+            passingPercentage: row.passing_percentage,
+          } as TestRunDetails)
+      );
+    } catch (error) {
+      logger.error("Error searching test runs:", error);
       throw error;
     }
   }

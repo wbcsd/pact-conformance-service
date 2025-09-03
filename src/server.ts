@@ -1,17 +1,22 @@
 import express from "express";
 import config from "./config";
 import logger, { loggerMiddleware } from "./utils/logger";
-import { getTestRuns, getTestRunById, createTestRun } from "./controllers/testRunController";
+import {
+  getTestRuns,
+  getTestRunById,
+  createTestRun,
+  searchOrGetTestRuns,
+} from "./controllers/testRunController";
 import { handleEvent, authToken } from "./controllers/eventController";
 
 // Create Express app
 const app = express();
-const port = config.port;
+const port = config.PORT || 8080;
 
 // Middleware for parsing JSON bodies
 app.use(express.json());
 
-// Pino logging middleware
+// Logging middleware
 app.use(loggerMiddleware);
 
 // Define health check route
@@ -28,7 +33,7 @@ app.get("/health-check", (_, res) => {
 // Define routes
 
 // Create test run related routes
-app.get("/testruns/", getTestRuns);
+app.get("/testruns/", searchOrGetTestRuns);
 app.get("/testruns/:id", getTestRunById);
 app.post("/testruns/", createTestRun);
 

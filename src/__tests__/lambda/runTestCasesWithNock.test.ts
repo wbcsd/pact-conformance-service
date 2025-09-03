@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
+import config from "../../config";
 import nock from "nock";
 import * as dbUtils from "../../utils/dbUtils";
 import { mockFootprints, mockFootprintsV3 } from "../mocks/footprints";
 import { TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
 
 // Mock the environment variables
-process.env.WEBHOOK_URL = "https://webhook.test.url";
+config.CONFORMANCE_API = "https://webhook.test.url";
 
 // Mock the UUID generation to get consistent test IDs
 jest.mock("crypto", () => ({
@@ -16,7 +17,7 @@ jest.mock("crypto", () => ({
 jest.mock("../../utils/dbUtils");
 
 interface TestResult {
-  success: boolean;
+  status: string;
   mandatory: boolean;
   testKey?: string;
 }
@@ -242,15 +243,15 @@ describe("runTestCases Lambda handler with nock", () => {
 
     expect(
       body.results.filter(
-        (r: TestResult) => r.success === false
+        (r: TestResult) => r.status === "PENDING"
       )
-    ).toHaveLength(3); // Async tests should be pending
+    ).toHaveLength(2); // Async tests should be pending
 
     expect(
       body.results.find(
-        (r: TestResult) => r.success === false && r.mandatory
+        (r: TestResult) => r.status === "PENDING" && r.mandatory
       )
-    ).toHaveProperty("testKey", "TESTCASE#21");
+    ).toHaveProperty("testKey", "TESTCASE#13");
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);
@@ -533,14 +534,14 @@ describe("runTestCases Lambda handler with nock", () => {
     const body = (mockResponse.json as jest.Mock).mock.calls[0][0];
     expect(
       body.results.filter(
-        (r: TestResult) => r.success === false
+        (r: TestResult) => r.status === "PENDING"
       )
-    ).toHaveLength(3); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14)
+    ).toHaveLength(2); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14.B)
     expect(
       body.results.find(
-        (r: TestResult) => r.success === false && r.mandatory
+        (r: TestResult) => r.status !== "SUCCESS" && r.mandatory
       )
-    ).toHaveProperty("testKey", "TESTCASE#40");
+    ).toHaveProperty("testKey", "TESTCASE#13");
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);

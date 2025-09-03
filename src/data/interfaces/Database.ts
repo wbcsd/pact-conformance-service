@@ -1,4 +1,3 @@
-import { inherits } from "util";
 import { TestData, TestResult, TestRunStatus } from "../../types/types";
 
 // TODO: combine wuth TestRunDetails after fixing testId naming
@@ -37,6 +36,7 @@ export interface TestRunWithResults {
 }
 
 export interface Database {
+  checkConnection(): Promise<boolean>;
   migrateToLatest(): Promise<void>;
   saveTestRun(details: SaveTestRunDetails): Promise<void>;
   updateTestRunStatus(
@@ -57,6 +57,11 @@ export interface Database {
   saveTestData(testRunId: string, testData: TestData): Promise<void>;
   getTestData(testRunId: string): Promise<TestData | null>;
   getRecentTestRuns(
+    adminEmail?: string,
+    limit?: number
+  ): Promise<TestRunDetails[]>;
+  searchTestRuns(
+    searchTerm: string,
     adminEmail?: string,
     limit?: number
   ): Promise<TestRunDetails[]>;
