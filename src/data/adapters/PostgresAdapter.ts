@@ -340,20 +340,29 @@ export class PostgresAdapter implements DatabaseInterface {
     }
   }
 
-  async getRecentTestRuns(
+  async listTestRuns(
     adminEmail?: string,
-    limit?: number
+    searchTerm?: string,
+    page?: number,
+    pageSize?: number
   ): Promise<TestRunDetails[]> {
     try {
       let q = this.db
         .selectFrom("test_runs")
-        .selectAll()
-        .orderBy("timestamp", "desc")
-        .limit(limit || 1000);
-
+        .selectAll();
       if (adminEmail) {
         q = q.where("admin_email", "=", adminEmail);
       }
+      if (searchTerm) {
+        q = q.where((qb) =>
+          qb("company_name", "ilike", `%${searchTerm}%`)
+          .or("admin_email", "ilike", `%${searchTerm}%`)
+          .or("admin_name", "ilike", `%${searchTerm}%`))
+      }
+      q = q.orderBy("timestamp", "desc");
+      q = q.limit(pageSize || 50);
+      if (page)
+        q = q.offset(page * (pageSize || 50));
 
       const rows = await q.execute();
 
@@ -379,7 +388,7 @@ export class PostgresAdapter implements DatabaseInterface {
   async searchTestRuns(
     searchTerm: string,
     adminEmail: string,
-    limit?: number
+    limit?: number,
   ): Promise<TestRunDetails[]> {
     const likeTerm = `%${searchTerm.trim()}%`;
     let query = "SELECT * FROM test_runs";

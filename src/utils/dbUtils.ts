@@ -1,9 +1,6 @@
 import { TestData, TestResult } from "../types/types";
 import { Database, SaveTestRunDetails } from "../data/interfaces/Database";
-import { DatabaseFactory } from "../data/factory";
-
-// Create and export the database instance
-const db: Database = DatabaseFactory.create();
+import { db } from "../data";
 
 export const saveTestRun = async (
   details: SaveTestRunDetails
@@ -34,20 +31,16 @@ export const saveTestCaseResults = async (
   return db.saveTestCaseResults(testRunId, testResults);
 };
 
-export const getRecentTestRuns = async (adminEmail: string, limit?: number) => {
-  return db.getRecentTestRuns(adminEmail, limit);
+export const listTestRuns = async (
+  adminEmail: string, 
+  searchTerm?: string, 
+  page?: number, 
+  pageSize?: number) => {
+  return db.listTestRuns(adminEmail, searchTerm, page, pageSize);
 };
 
 export const getTestResults = async (testRunId: string) => {
   return db.getTestResults(testRunId);
-};
-
-export const searchTestRuns = async (
-  searchTerm: string,
-  adminEmail: string,
-  limit: number
-) => {
-  return db.searchTestRuns(searchTerm, adminEmail, limit);
 };
 
 export const saveTestData = async (
