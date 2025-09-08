@@ -1,12 +1,11 @@
 import { Request, Response } from "express";
 import { EventController } from "../../controllers/eventController";
-
-import * as dbUtils from "../../utils/dbUtils";
+import { db } from "../../data";
 import { mockFootprints, mockFootprintsV3 } from "../mocks/footprints";
 import { TestCaseResultStatus, EventTypesV2, EventTypesV3 } from "../../types/types";
 
-// Mock the DB utils
-jest.mock("../../utils/dbUtils");
+// Mock the DB
+jest.mock("../../data");
 
 describe("asyncRequestListener Lambda handler", () => {
   
@@ -41,8 +40,8 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Mock DB utility functions
-    (dbUtils.getTestData as jest.Mock).mockResolvedValue(mockTestData);
-    (dbUtils.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
+    (db.getTestData as jest.Mock).mockResolvedValue(mockTestData);
+    (db.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
 
     const currentTime = new Date().toISOString();
     // Valid event fulfillment body that matches the schema requirements
@@ -75,10 +74,10 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that getTestData was called correctly
-    expect(dbUtils.getTestData).toHaveBeenCalledWith("request-123");
+    expect(db.getTestData).toHaveBeenCalledWith("request-123");
 
     // Verify that saveTestCaseResult was called with the successful test result
-    expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
+    expect(db.saveTestCaseResult).toHaveBeenCalledWith(
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
@@ -98,8 +97,8 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Mock DB utility functions
-    (dbUtils.getTestData as jest.Mock).mockResolvedValue(mockTestData);
-    (dbUtils.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
+    (db.getTestData as jest.Mock).mockResolvedValue(mockTestData);
+    (db.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
 
     const currentTime = new Date().toISOString();
     // Valid event fulfillment body for V3.0 that matches the schema requirements
@@ -132,10 +131,10 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that getTestData was called correctly
-    expect(dbUtils.getTestData).toHaveBeenCalledWith("request-123");
+    expect(db.getTestData).toHaveBeenCalledWith("request-123");
 
     // Verify that saveTestCaseResult was called with the successful test result
-    expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
+    expect(db.saveTestCaseResult).toHaveBeenCalledWith(
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
@@ -155,8 +154,8 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Mock DB utility functions
-    (dbUtils.getTestData as jest.Mock).mockResolvedValue(mockTestData);
-    (dbUtils.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
+    (db.getTestData as jest.Mock).mockResolvedValue(mockTestData);
+    (db.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
 
     // Valid event structure but with different product IDs
     const eventBody = {
@@ -213,7 +212,7 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result
-    expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
+    expect(db.saveTestCaseResult).toHaveBeenCalledWith(
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
@@ -234,8 +233,8 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Mock DB utility functions
-    (dbUtils.getTestData as jest.Mock).mockResolvedValue(mockTestData);
-    (dbUtils.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
+    (db.getTestData as jest.Mock).mockResolvedValue(mockTestData);
+    (db.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
 
     // Invalid event body (missing required fields but with enough structure to process)
     const invalidEventBody = {
@@ -266,7 +265,7 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result due to validation
-    expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
+    expect(db.saveTestCaseResult).toHaveBeenCalledWith(
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
@@ -290,13 +289,13 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(400);
 
     // Verify that getTestData was not called
-    expect(dbUtils.getTestData).not.toHaveBeenCalled();
-    expect(dbUtils.saveTestCaseResult).not.toHaveBeenCalled();
+    expect(db.getTestData).not.toHaveBeenCalled();
+    expect(db.saveTestCaseResult).not.toHaveBeenCalled();
   });
 
   test("should return 400 status code when it's immediately clear test data cannot be found", async () => {
     // Create event with body but no testRunId
-    (dbUtils.getTestData as jest.Mock).mockResolvedValue(null);
+    (db.getTestData as jest.Mock).mockResolvedValue(null);
 
     mockRequest.url = "/2/events";
     mockRequest.body = {
@@ -309,13 +308,13 @@ describe("asyncRequestListener Lambda handler", () => {
     // Verify response is 400
     expect(mockResponse.status).toHaveBeenCalledWith(400);
 
-    expect(dbUtils.getTestData).toHaveBeenCalled();
-    expect(dbUtils.saveTestCaseResult).not.toHaveBeenCalled();
+    expect(db.getTestData).toHaveBeenCalled();
+    expect(db.saveTestCaseResult).not.toHaveBeenCalled();
   });
 
   test("should handle errors gracefully and return 400", async () => {
     // Mock DB utility function to throw an error
-    (dbUtils.getTestData as jest.Mock).mockRejectedValue(
+    (db.getTestData as jest.Mock).mockRejectedValue(
       new Error("Database error")
     );
 
@@ -358,7 +357,7 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Mock DB utility functions
-    (dbUtils.getTestData as jest.Mock).mockResolvedValue(mockTestData);
+    (db.getTestData as jest.Mock).mockResolvedValue(mockTestData);
 
     // Valid event body
     const eventBody = {
@@ -389,7 +388,7 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that DB functions were not called
-    expect(dbUtils.saveTestCaseResult).not.toHaveBeenCalled();
+    expect(db.saveTestCaseResult).not.toHaveBeenCalled();
   });
 
   test("should mark test as failure when V2 event uses wrong path", async () => {
@@ -400,8 +399,8 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Mock DB utility functions
-    (dbUtils.getTestData as jest.Mock).mockResolvedValue(mockTestData);
-    (dbUtils.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
+    (db.getTestData as jest.Mock).mockResolvedValue(mockTestData);
+    (db.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
 
     const currentTime = new Date().toISOString();
     // Valid event body for V2 but using wrong path
@@ -434,7 +433,7 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result due to path validation
-    expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
+    expect(db.saveTestCaseResult).toHaveBeenCalledWith(
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
@@ -457,8 +456,8 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Mock DB utility functions
-    (dbUtils.getTestData as jest.Mock).mockResolvedValue(mockTestData);
-    (dbUtils.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
+    (db.getTestData as jest.Mock).mockResolvedValue(mockTestData);
+    (db.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
 
     const currentTime = new Date().toISOString();
     // Valid event body for V3 but using wrong path
@@ -491,7 +490,7 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result due to path validation
-    expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
+    expect(db.saveTestCaseResult).toHaveBeenCalledWith(
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
@@ -514,8 +513,8 @@ describe("asyncRequestListener Lambda handler", () => {
     };
 
     // Mock DB utility functions
-    (dbUtils.getTestData as jest.Mock).mockResolvedValue(mockTestData);
-    (dbUtils.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
+    (db.getTestData as jest.Mock).mockResolvedValue(mockTestData);
+    (db.saveTestCaseResult as jest.Mock).mockResolvedValue(undefined);
 
     // Invalid event body (missing required fields) with wrong path
     const invalidEventBody = {
@@ -546,7 +545,7 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestCaseResult was called with a failure result containing both errors
-    expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
+    expect(db.saveTestCaseResult).toHaveBeenCalledWith(
       "request-123",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",

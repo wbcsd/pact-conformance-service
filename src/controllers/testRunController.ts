@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import config from "../config";
 import logger from "../utils/logger";
+import { db } from "../data";
 import {
   TestResult,
   TestCaseResultStatus,
@@ -11,11 +12,6 @@ import { getAccessToken, getOidAuthUrl } from "../utils/authUtils";
 import { randomUUID } from "crypto";
 import { generateV2TestCases } from "../test-cases/v2-test-cases";
 import { generateV3TestCases } from "../test-cases/v3-test-cases";
-// import { Database } from '../data/interfaces/Database';
-// import { DatabaseFactory } from '../data/factory';
-// TODO: Use Database instead of dbUtils
-import * as dbUtils from "../utils/dbUtils";
-// TODO: Move all this stuff into a service
 import {
   fetchFootprints,
   getLinksHeaderFromFootprints
@@ -23,49 +19,40 @@ import {
 import { runTestCase } from "../utils/runTestCase";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 
+const MAX_PAGE_SIZE = 200;
+const DEFAULT_PAGE_SIZE = 50;
+
 export class TestRunController {
-  // TODO: private db: Database;
-
-  constructor() {
-    // TODO: this.db = DatabaseFactory.create();
-  }
-
-  async searchOrGetTestRuns(req: Request, res: Response): Promise<void> {
-    if (req.query.query) {
-      await this.searchTestRuns(req, res);
-    } else {
-      await this.getTestRuns(req, res);
-    }
-  }
 
   /**
    * GET /testruns - List all test runs
    * Migrated from getRecentTestRuns Lambda
    */
-  async getTestRuns(req: Request, res: Response): Promise<void> {
+  async listTestRuns(req: Request, res: Response): Promise<void> {
     try {
       logger.info("Getting recent test runs", { query: req.query });
 
       const adminEmail = req.query.adminEmail as string;
-      const limit = req.query.limit
-        ? parseInt(req.query.limit as string)
-        : undefined;
+      const page = req.query.page ? parseInt(req.query.page as string) : 0;
+      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : DEFAULT_PAGE_SIZE;
+      const searchTerm = (req.query.query as string || "").trim();
 
-      // Validate limit parameter
-      if (limit !== undefined && (isNaN(limit) || limit <= 0 || limit > 200)) {
+      if (pageSize < 0 || pageSize >= MAX_PAGE_SIZE) {
         res.status(400).json({
           error:
-            "Invalid limit parameter. Must be a positive integer between 1 and 200.",
+            `Invalid pageSize parameter. Must be a positive integer between 1 and ${MAX_PAGE_SIZE}.`,
         });
         return;
       }
 
-      const testRuns = await dbUtils.getRecentTestRuns(adminEmail, limit);
+      const testRuns = await db.listTestRuns(adminEmail, searchTerm, page, pageSize);
 
       logger.info("Successfully retrieved test runs", {
         count: testRuns.length,
         adminEmail,
-        limit,
+        searchTerm,
+        page,
+        pageSize,
       });
 
       res.status(200).json({
@@ -76,65 +63,6 @@ export class TestRunController {
       logger.error("Error getting recent test runs:", error);
       res.status(500).json({
         error: "Failed to retrieve test runs",
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  }
-
-  /**
-   * GET /testruns/search?query= - Search test runs by company name or admin email
-   * New endpoint
-   */
-  private async searchTestRuns(req: Request, res: Response): Promise<void> {
-    try {
-      const searchTerm = req.query.query as string;
-      const isEmptySearchTerm = !searchTerm || searchTerm.trim() === "";
-      const isShortSearchTerm = searchTerm && searchTerm.trim().length < 3;
-      const isInvalidTerm = searchTerm && /,;%/gi.test(searchTerm);
-
-      if (isEmptySearchTerm || isShortSearchTerm || isInvalidTerm) {
-        res.status(200).json({
-          testRuns: [],
-          count: 0,
-        });
-        return;
-      }
-
-      const adminEmail = req.query.adminEmail as string;
-      const limit = req.query.limit
-        ? parseInt(req.query.limit as string)
-        : undefined;
-
-      // Validate limit parameter
-      if (limit !== undefined && (isNaN(limit) || limit <= 0 || limit > 200)) {
-        res.status(400).json({
-          error:
-            "Invalid limit parameter. Must be a positive integer between 1 and 200.",
-        });
-        return;
-      }
-
-      logger.info("Searching test runs", { searchTerm });
-
-      const testRuns = await dbUtils.searchTestRuns(
-        searchTerm,
-        adminEmail,
-        limit!
-      );
-
-      logger.info("Successfully retrieved search results", {
-        count: testRuns.length,
-        searchTerm,
-      });
-
-      res.status(200).json({
-        testRuns,
-        count: testRuns.length,
-      });
-    } catch (error) {
-      logger.error("Error searching test runs:", error);
-      res.status(500).json({
-        error: "Failed to search test runs",
         message: error instanceof Error ? error.message : "Unknown error",
       });
     }
@@ -156,7 +84,7 @@ export class TestRunController {
         return;
       }
 
-      const result = await dbUtils.getTestResults(testRunId);
+      const result = await db.getTestResults(testRunId);
 
       if (!result) {
         logger.warn("Test run not found", { testRunId });
@@ -260,7 +188,7 @@ export class TestRunController {
     try {
       const testRunId = randomUUID();
 
-      await dbUtils.saveTestRun({
+      await db.saveTestRun({
         testRunId,
         companyName,
         adminEmail,
@@ -299,7 +227,7 @@ export class TestRunController {
         version
       );
 
-      dbUtils.saveTestData(testRunId, {
+      db.saveTestData(testRunId, {
         productIds: footprints.data[0].productIds,
         version,
       });
@@ -343,10 +271,10 @@ export class TestRunController {
         results.push(result);
       }
 
-      await dbUtils.saveTestCaseResults(testRunId, results);
+      await db.saveTestCaseResults(testRunId, results);
 
       // Load existing test results from database to get the most up-to-date state
-      const existingTestRun = await dbUtils.getTestResults(testRunId);
+      const existingTestRun = await db.getTestResults(testRunId);
       const finalTestResults =
         existingTestRun?.results || results;
 
@@ -355,7 +283,7 @@ export class TestRunController {
         calculateTestRunMetrics(finalTestResults);
 
       // Save the test run status and passing percentage to the database
-      await dbUtils.updateTestRunStatus(
+      await db.updateTestRunStatus(
         testRunId,
         testRunStatus,
         passingPercentage
@@ -396,11 +324,8 @@ export class TestRunController {
 export const testRunController = new TestRunController();
 
 // Export route handlers
-export const getTestRuns = (req: Request, res: Response) =>
-  testRunController.getTestRuns(req, res);
-
-export const searchOrGetTestRuns = (req: Request, res: Response) =>
-  testRunController.searchOrGetTestRuns(req, res);
+export const listTestRuns = (req: Request, res: Response) =>
+  testRunController.listTestRuns(req, res);
 
 export const getTestRunById = (req: Request, res: Response) =>
   testRunController.getTestRunById(req, res);

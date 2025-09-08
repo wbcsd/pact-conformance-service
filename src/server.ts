@@ -2,10 +2,9 @@ import express from "express";
 import config from "./config";
 import logger, { loggerMiddleware } from "./utils/logger";
 import {
-  getTestRuns,
+  listTestRuns,
   getTestRunById,
-  createTestRun,
-  searchOrGetTestRuns,
+  createTestRun
 } from "./controllers/testRunController";
 import { handleEvent, authToken } from "./controllers/eventController";
 
@@ -33,12 +32,12 @@ app.get("/health-check", (_, res) => {
 // Define routes
 
 // Create test run related routes
-app.get("/testruns/", searchOrGetTestRuns);
+app.get("/testruns/", listTestRuns);
 app.get("/testruns/:id", getTestRunById);
 app.post("/testruns/", createTestRun);
 
 // Backwards compatible endpoints
-app.get("/getRecentTestRuns", getTestRuns);
+app.get("/getRecentTestRuns", listTestRuns);
 app.get("/getTestResults", getTestRunById);
 app.post("/runTestCases", createTestRun);
 

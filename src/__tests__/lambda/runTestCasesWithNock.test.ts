@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import config from "../../config";
 import nock from "nock";
-import * as dbUtils from "../../utils/dbUtils";
+import { db } from "../../data";
 import { mockFootprints, mockFootprintsV3 } from "../mocks/footprints";
 import { TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
 
@@ -13,8 +13,8 @@ jest.mock("crypto", () => ({
   randomUUID: jest.fn().mockReturnValue("test-uuid-1234"),
 }));
 
-// Mock the DB utils
-jest.mock("../../utils/dbUtils");
+// Mock the DB
+jest.mock("../../data");
 
 interface TestResult {
   status: string;
@@ -62,9 +62,9 @@ describe("runTestCases Lambda handler with nock", () => {
     controller = new TestRunController();
 
     // Mock DB utility functions
-    (dbUtils.saveTestRun as jest.Mock).mockResolvedValue(undefined);
-    (dbUtils.saveTestData as jest.Mock).mockResolvedValue(undefined);
-    (dbUtils.saveTestCaseResults as jest.Mock).mockResolvedValue(undefined);
+    (db.saveTestRun as jest.Mock).mockResolvedValue(undefined);
+    (db.saveTestData as jest.Mock).mockResolvedValue(undefined);
+    (db.saveTestCaseResults as jest.Mock).mockResolvedValue(undefined);
   });
 
   afterEach(() => {

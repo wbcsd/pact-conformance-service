@@ -56,13 +56,10 @@ export interface Database {
   getTestResults(testRunId: string): Promise<TestRunWithResults | null>;
   saveTestData(testRunId: string, testData: TestData): Promise<void>;
   getTestData(testRunId: string): Promise<TestData | null>;
-  getRecentTestRuns(
+  listTestRuns(
     adminEmail?: string,
-    limit?: number
-  ): Promise<TestRunDetails[]>;
-  searchTestRuns(
-    searchTerm: string,
-    adminEmail?: string,
-    limit?: number
+    searchTerm?: string,
+    page?: number,
+    pageSize?: number
   ): Promise<TestRunDetails[]>;
 }

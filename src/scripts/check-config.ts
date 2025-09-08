@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import logger from '../utils/logger';
-import { DatabaseFactory } from '../data/factory';
+import { db } from '../data';
 
 (async () => {
     console.log("Checking configuration...");
@@ -20,7 +20,7 @@ import { DatabaseFactory } from '../data/factory';
     console.log("All required environment variables are set.");
 
     console.log("Checking database...");
-    await DatabaseFactory.create().checkConnection();
+    await db.checkConnection();
     console.log("Database connection OK.");
 
     logger.warn("If you see this message, logging is configured correctly.");
