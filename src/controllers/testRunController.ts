@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import config from "../config";
 import logger from "../utils/logger";
-import { db } from "../data";
 import {
   TestResult,
   TestCaseResultStatus,
   TestRunStatus,
   ApiVersion,
-} from "../types/types";
+  TestStorage
+} from "../services/types";
 import { getAccessToken, getOidAuthUrl } from "../utils/authUtils";
 import { randomUUID } from "crypto";
 import { generateV2TestCases } from "../test-cases/v2-test-cases";
@@ -26,7 +26,6 @@ export class TestRunController {
 
   /**
    * GET /testruns - List all test runs
-   * Migrated from getRecentTestRuns Lambda
    */
   async listTestRuns(req: Request, res: Response): Promise<void> {
     try {
@@ -44,7 +43,8 @@ export class TestRunController {
         });
         return;
       }
-
+      
+      const db = req.app.locals.repo as TestStorage;
       const testRuns = await db.listTestRuns(adminEmail, searchTerm, page, pageSize);
 
       logger.info("Successfully retrieved test runs", {
@@ -70,7 +70,6 @@ export class TestRunController {
 
   /**
    * GET /testruns/:id - Get test run details with results
-   * Migrated from getTestResults Lambda
    */
   async getTestRunById(req: Request, res: Response): Promise<void> {
     try {
@@ -84,6 +83,7 @@ export class TestRunController {
         return;
       }
 
+      const db = req.app.locals.repo as TestStorage;
       const result = await db.getTestResults(testRunId);
 
       if (!result) {
@@ -142,7 +142,6 @@ export class TestRunController {
 
   /**
    * POST /testruns - Start a new test run
-   * Migrated from runTestCases Lambda
    */
   async createTestRun(req: Request, res: Response): Promise<void> {
     const {
@@ -188,6 +187,7 @@ export class TestRunController {
     try {
       const testRunId = randomUUID();
 
+      const db = req.app.locals.repo as TestStorage;
       await db.saveTestRun({
         testRunId,
         companyName,
@@ -210,7 +210,6 @@ export class TestRunController {
         ...(audience && { audience }),
         ...(resource && { resource }),
       }).toString();
-
       const accessToken = await getAccessToken(
         authBaseUrl,
         clientId,
@@ -310,9 +309,9 @@ export class TestRunController {
       });
       return;
     } catch (error: any) {
-      logger.error("Error in Lambda function:", error);
+      logger.error("Error TestRunController function:", error);
       res.status(500).json({
-        message: "Error occurred in Lambda test runner",
+        message: "Error occurred in TestRunController",
         error: error.message,
       });
       return;

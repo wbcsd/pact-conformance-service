@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import logger from '../utils/logger';
-import { db } from '../data';
+import { migrate } from '../data/migrate';
 
 async function preDeployMigration() {
   try {
@@ -22,7 +22,7 @@ async function preDeployMigration() {
     console.log('🔄 Running database schema migrations...');
 
     // Run migrations
-    await db.migrateToLatest();
+    await migrate();
 
     console.log('✅ Database schema migration completed successfully');
     logger.info('Pre-deployment migration completed successfully');

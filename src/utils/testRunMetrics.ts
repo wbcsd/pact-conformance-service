@@ -1,4 +1,4 @@
-import { TestResult, TestRunStatus, TestCaseResultStatus } from "../types/types";
+import { TestResult, TestRunStatus, TestCaseResultStatus } from "../services/types";
 
 /**
  * Recalculates test run status and passing percentage from test results

@@ -1,4 +1,4 @@
-import { ApiVersion, TestCase, EventTypesV2 } from "../types/types";
+import { ApiVersion, TestCase, EventTypesV2 } from "../services/types";
 import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
 import {

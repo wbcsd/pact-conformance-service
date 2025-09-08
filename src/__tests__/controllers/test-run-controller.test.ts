@@ -3,10 +3,21 @@ import config from "../../config";
 import * as authUtils from "../../utils/authUtils";
 import * as fetchFootprints from "../../utils/fetchFootprints";
 import * as runTestCaseModule from "../../utils/runTestCase";
-import { db } from "../../data";
-import { TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
-import { mockFootprintsV3 } from "../mocks/footprints";
-import { TestCaseResultStatus } from "../../types/types";
+import { TestRunController } from "../../controllers/TestRunController";
+import { mockFootprintsV2, mockFootprintsV3 } from "../mocks/footprints";
+import { TestCaseResultStatus, TestStorage } from "../../services/types";
+
+// Helper function to create a mocked TestRunRepository
+const createMockRepo = (): jest.Mocked<TestStorage> => ({
+  saveTestRun: jest.fn(),
+  updateTestRunStatus: jest.fn(),
+  saveTestCaseResult: jest.fn(),
+  saveTestCaseResults: jest.fn(),
+  getTestResults: jest.fn(),
+  saveTestData: jest.fn(),
+  getTestData: jest.fn(),
+  listTestRuns: jest.fn(),
+});
 
 // Mock the environment variables
 config.CONFORMANCE_API = "https://webhook.test.url";
@@ -19,7 +30,6 @@ jest.mock("crypto", () => ({
 // Mock the dependencies
 jest.mock("../../utils/authUtils");
 jest.mock("../../utils/fetchFootprints");
-jest.mock("../../data");
 jest.mock("../../utils/runTestCase");
 
 beforeAll(() => {
@@ -28,9 +38,10 @@ beforeAll(() => {
   jest.spyOn(console, "error").mockImplementation(() => {});
 });
 
-describe("runTestCases Lambda handler general tests", () => {
+describe("TestRunController general tests", () => {
 
   let controller: TestRunController;
+  let mockDb: jest.Mocked<TestStorage>;
   const mockAccessToken = "mock-access-token";
   const mockOidAuthUrl = "https://auth.example.com/token";
   const mockBaseUrl = "https://api.example.com";
@@ -54,16 +65,25 @@ describe("runTestCases Lambda handler general tests", () => {
     // Reset all mocks
     jest.clearAllMocks();
     
+    // Create a mocked TestRunRepository
+    mockDb = createMockRepo();
+    
     // Setup mock request and response
     mockRequest = {
       query: {},
       params: {},
-      body: {}
+      body: {},
+      app: {
+        locals: {
+          repo: mockDb
+        }
+      } as any
     };
     
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
     };
 
     controller = new TestRunController();
@@ -89,9 +109,9 @@ describe("runTestCases Lambda handler general tests", () => {
     });
 
     // Mock the DB utils
-    (db.saveTestRun as jest.Mock).mockResolvedValue(undefined);
-    (db.saveTestData as jest.Mock).mockResolvedValue(undefined);
-    (db.saveTestCaseResults as jest.Mock).mockResolvedValue(undefined);
+    mockDb.saveTestRun.mockResolvedValue(undefined);
+    mockDb.saveTestData.mockResolvedValue(undefined);
+    mockDb.saveTestCaseResults.mockResolvedValue(undefined);
   });
 
   test("should return 500 status when some tests fail", async () => {
@@ -267,41 +287,51 @@ describe("runTestCases Lambda handler general tests", () => {
   });
 });
 
-describe("runTestCases Lambda handler V2 specific", () => {
+describe("TestRunController V2 specific tests", () => {
   const mockAccessToken = "mock-access-token";
   const mockOidAuthUrl = "https://auth.example.com/token";
   const mockBaseUrl = "https://api.example.com";
-  const mockFootprints = {
-    data: [
-      {
-        id: "footprint-id-1",
-        productIds: ["product-id-1", "product-id-2"],
-        created: "2025-01-01T00:00:00Z",
-      },
-    ],
-  };
+  const mockFootprints = mockFootprintsV2;
+  //   data: [
+  //     {
+  //       id: "footprint-id-1",
+  //       productIds: ["product-id-1", "product-id-2"],
+  //       created: "2025-01-01T00:00:00Z",
+  //     },
+  //   ],
+  // };
   const mockPaginationLinks = {
     next: "https://api.example.com/2/footprints?offset=2&limit=1",
   };
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
   let controller: TestRunController;
+  let mockDb: jest.Mocked<TestStorage>;
 
   // Setup before each test
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
 
+    // Create a mocked TestRunRepository
+    mockDb = createMockRepo();
+
     // Setup mock request and response
     mockRequest = {
       query: {},
       params: {},
-      body: {}
+      body: {},
+      app: {
+        locals: {
+          repo: mockDb
+        }
+      } as any
     };
     
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
     };
 
     controller = new TestRunController();
@@ -327,9 +357,9 @@ describe("runTestCases Lambda handler V2 specific", () => {
     });
 
     // Mock the DB utils
-    (db.saveTestRun as jest.Mock).mockResolvedValue(undefined);
-    (db.saveTestData as jest.Mock).mockResolvedValue(undefined);
-    (db.saveTestCaseResults as jest.Mock).mockResolvedValue(undefined);
+    mockDb.saveTestRun.mockResolvedValue(undefined);
+    mockDb.saveTestData.mockResolvedValue(undefined);
+    mockDb.saveTestCaseResults.mockResolvedValue(undefined);
   });
 
   test("should execute all test cases and return success when all tests pass", async () => {
@@ -340,7 +370,7 @@ describe("runTestCases Lambda handler V2 specific", () => {
       baseUrl: mockBaseUrl,
       clientId: "client-id",
       clientSecret: "client-secret",
-            version: "V2.2",
+      version: "V2.2",
       companyName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test"
@@ -356,7 +386,7 @@ describe("runTestCases Lambda handler V2 specific", () => {
     }));
 
     // Verify that saveTestRun was called correctly
-    expect(db.saveTestRun).toHaveBeenCalledWith(
+    expect(mockDb.saveTestRun).toHaveBeenCalledWith(
       expect.objectContaining({
         testRunId: "test-uuid-1234",
         companyName: "Test Company",
@@ -367,8 +397,8 @@ describe("runTestCases Lambda handler V2 specific", () => {
     );
 
     // Verify that saveTestData was called correctly
-    expect(db.saveTestData).toHaveBeenCalledWith("test-uuid-1234", {
-      productIds: ["product-id-1", "product-id-2"],
+    expect(mockDb.saveTestData).toHaveBeenCalledWith("test-uuid-1234", {
+      productIds: ["urn:product-id-1", "urn:product-id-2"],
       version: "V2.2",
     });
 
@@ -376,15 +406,15 @@ describe("runTestCases Lambda handler V2 specific", () => {
     expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(22);
 
     // Verify that saveTestCaseResults was called with the results
-    expect(db.saveTestCaseResults).toHaveBeenCalled();
-    const savedResults = (db.saveTestCaseResults as jest.Mock).mock
+    expect(mockDb.saveTestCaseResults).toHaveBeenCalled();
+    const savedResults = (mockDb.saveTestCaseResults as jest.Mock).mock
       .calls[0][1];
     expect(savedResults).toHaveLength(22); 
   });
 });
 
 
-describe("runTestCases Lambda handler V3 specific", () => {
+describe("TestRunControlleer V3 specific tests", () => {
   const mockAccessToken = "mock-access-token";
   const mockOidAuthUrl = "https://auth.example.com/token";
   const mockBaseUrl = "https://api.example.com";
@@ -396,22 +426,32 @@ describe("runTestCases Lambda handler V3 specific", () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
   let controller: TestRunController;
+  let mockDb: jest.Mocked<TestStorage>;
 
   // Setup before each test
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
 
+    // Create mock database  
+    mockDb = createMockRepo();
+    
     // Setup mock request and response
     mockRequest = {
       query: {},
       params: {},
-      body: {}
+      body: {},
+      app: {
+        locals: {
+          repo: mockDb
+        }
+      } as any
     };
     
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
     };
 
     controller = new TestRunController();
@@ -437,9 +477,9 @@ describe("runTestCases Lambda handler V3 specific", () => {
     });
 
     // Mock the DB utils
-    (db.saveTestRun as jest.Mock).mockResolvedValue(undefined);
-    (db.saveTestData as jest.Mock).mockResolvedValue(undefined);
-    (db.saveTestCaseResults as jest.Mock).mockResolvedValue(undefined);
+    mockDb.saveTestRun.mockResolvedValue(undefined);
+    mockDb.saveTestData.mockResolvedValue(undefined);
+    mockDb.saveTestCaseResults.mockResolvedValue(undefined);
   });
 
   test("should execute all test cases", async () => {
@@ -452,7 +492,7 @@ describe("runTestCases Lambda handler V3 specific", () => {
       companyName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
-    }
+    };
 
     // Act
     await controller.createTestRun(mockRequest as Request, mockResponse as Response);
@@ -461,7 +501,7 @@ describe("runTestCases Lambda handler V3 specific", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that saveTestRun was called correctly
-    expect(db.saveTestRun).toHaveBeenCalledWith(
+    expect(mockDb.saveTestRun).toHaveBeenCalledWith(
       expect.objectContaining({
         testRunId: "test-uuid-1234",
         companyName: "Test Company",
@@ -472,7 +512,7 @@ describe("runTestCases Lambda handler V3 specific", () => {
     );
 
     // Verify that saveTestData was called correctly
-    expect(db.saveTestData).toHaveBeenCalledWith("test-uuid-1234", {
+    expect(mockDb.saveTestData).toHaveBeenCalledWith("test-uuid-1234", {
       productIds: mockFootprints.data[0].productIds,
       version: "V3.0",
     });
@@ -482,8 +522,8 @@ describe("runTestCases Lambda handler V3 specific", () => {
     expect(runTestCaseModule.runTestCase).toHaveBeenCalledTimes(41);
 
     // Verify that saveTestCaseResults was called with the results
-    expect(db.saveTestCaseResults).toHaveBeenCalled();
-    const savedResults = (db.saveTestCaseResults as jest.Mock).mock
+    expect(mockDb.saveTestCaseResults).toHaveBeenCalled();
+    const savedResults = (mockDb.saveTestCaseResults as jest.Mock).mock
       .calls[0][1];
     
     expect(savedResults).toHaveLength(41); // 39 executed test cases + 2 placeholder for the async test cases

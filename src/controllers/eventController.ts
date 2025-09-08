@@ -4,8 +4,8 @@ import * as jwt from "jsonwebtoken";
 import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
 import config from "../config";
-import { db } from "../data";
-import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus } from "../types/types";
+import { TestStorage } from "../services/types";
+import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus } from "../services/types";
 import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import logger from "../utils/logger";
@@ -24,7 +24,6 @@ export class EventController {
 
   /*
    * POST /auth/token - Authenticate client and provide JWT token
-   * Migrated from authForAsyncListener Lambda
   */
   async authToken(req: Request, res: Response): Promise<void> {
     const authHeader = req.headers.authorization?.[0];
@@ -51,9 +50,11 @@ export class EventController {
   /*
    * POST /2/event
    * POST /3/event - Handle callback events from the tested client API
-   * Migrated from asyncRequestListener Lambda
   */
   async handleEvent(req: Request, res: Response): Promise<void> {
+    
+    const db = req.app.locals.repo as TestStorage;
+    
     try {
       // Log the entire event for debugging
       logger.info("Received event:", { url: req.url, body: req.body });
