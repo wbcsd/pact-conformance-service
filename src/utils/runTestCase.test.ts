@@ -1,6 +1,6 @@
 import { jest } from "@jest/globals";
 import { runTestCase } from "./runTestCase";
-import { TestCaseResultStatus } from "../types/types";
+import { TestCaseResultStatus } from "../services/types";
 
 type AnyObj = Record<string, any>;
 

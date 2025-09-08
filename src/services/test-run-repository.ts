@@ -1,133 +1,24 @@
-import { Pool } from "pg";
-import { Kysely, PostgresDialect, sql, ColumnType } from "kysely";
-import config from "../../config";
-import logger from "../../utils/logger";
-import { TestData, TestResult } from "../../types/types";
-import {
-  Database as DatabaseInterface,
-  TestRunDetails,
-  TestRunWithResults,
-  SaveTestRunDetails,
-} from "../interfaces/Database";
+import { Kysely } from "kysely";
+import logger from "../utils/logger";
+import { DB } from "../data/types";
+import { 
+  TestStorage, 
+  SaveTestRunDetails, 
+  TestData, 
+  TestResult, 
+  TestRunWithResults, 
+  TestRunDetails 
+} from "./types";
 
-interface TestRunsTable {
-  test_id: string;
-  timestamp: ColumnType<Date, Date | string, Date | string>; // we accept Date|string on write to match original
-  company_name: string;
-  admin_email: string;
-  admin_name: string;
-  tech_spec_version: string;
-  status: string | null;
-  passing_percentage: number | null;
-}
+/*
+ * Repository for managing test runs and their results. Test runs and
+ * test results are stored in a database for retrieving historical data.
+ * Implements the TestStorage interface.
+ * Expected to be used with a Kysely instance.
+ */
+export class TestRunRepository implements TestStorage {
 
-interface TestResultsTable {
-  test_id: string;
-  test_key: string;
-  timestamp: ColumnType<Date, Date | string, Date | string>;
-  // store whole TestResult payload as jsonb
-  result: unknown; // jsonb
-}
-
-interface TestDataTable {
-  test_id: string;
-  timestamp: ColumnType<Date, Date | string, Date | string>;
-  data: unknown; // jsonb
-}
-
-interface DB {
-  test_runs: TestRunsTable;
-  test_results: TestResultsTable;
-  test_data: TestDataTable;
-}
-
-export class PostgresAdapter implements DatabaseInterface {
-  private pool: Pool;
-  private db: Kysely<DB>;
-
-  constructor(connectionString?: string) {
-    this.pool = new Pool({
-      connectionString:
-        connectionString || config.DB_CONNECTION_STRING,
-    });
-
-    this.db = new Kysely<DB>({
-      dialect: new PostgresDialect({ pool: this.pool }),
-    });
-  }
-
-  async checkConnection(): Promise<boolean> {
-    try {
-      const client = await this.pool.connect();
-      await client.query(`SELECT version()`);
-      client.release();
-      return true;
-    } catch (error) {
-      logger.error("Database connection error:", error);
-      return false;
-    }
-  }
-
-  async migrateToLatest(): Promise<void> {
-    const trx = await this.db.transaction().execute(async (tx) => {
-      // Create test_runs if not exists
-      await tx.schema
-        .createTable("test_runs")
-        .ifNotExists()
-        .addColumn("test_id", "varchar(255)", (col) => col.primaryKey())
-        .addColumn("timestamp", "timestamp", (col) => col.notNull())
-        .addColumn("company_name", "varchar(255)", (col) => col.notNull())
-        .addColumn("admin_email", "varchar(255)", (col) => col.notNull())
-        .addColumn("admin_name", "varchar(255)", (col) => col.notNull())
-        .addColumn("tech_spec_version", "varchar(50)", (col) => col.notNull())
-        // keep columns present for new installs; the ALTER below handles older DBs
-        .addColumn("status", "varchar(50)")
-        .addColumn("passing_percentage", "integer")
-        .execute();
-
-      // Create test_results if not exists
-      await tx.schema
-        .createTable("test_results")
-        .ifNotExists()
-        .addColumn("test_id", "varchar(255)", (col) => col.notNull())
-        .addColumn("test_key", "varchar(255)", (col) => col.notNull())
-        .addColumn("timestamp", "timestamp", (col) => col.notNull())
-        .addColumn("result", "jsonb", (col) => col.notNull())
-        .addPrimaryKeyConstraint("test_results_pkey", ["test_id", "test_key"])
-        .addForeignKeyConstraint(
-          "test_results_test_runs_fkey",
-          ["test_id"],
-          "test_runs",
-          ["test_id"]
-        )
-        .execute();
-
-      // Create test_data if not exists
-      await tx.schema
-        .createTable("test_data")
-        .ifNotExists()
-        .addColumn("test_id", "varchar(255)", (col) => col.primaryKey())
-        .addColumn("timestamp", "timestamp", (col) => col.notNull())
-        .addColumn("data", "jsonb", (col) => col.notNull())
-        .addForeignKeyConstraint(
-          "test_data_test_runs_fkey",
-          ["test_id"],
-          "test_runs",
-          ["test_id"]
-        )
-        .execute();
-
-      // Preserve original migration step: add status & passing_percentage if they don't exist
-      await tx.executeQuery(
-        sql`
-          ALTER TABLE test_runs 
-          ADD COLUMN IF NOT EXISTS status VARCHAR(50),
-          ADD COLUMN IF NOT EXISTS passing_percentage INTEGER
-        `.compile(tx)
-      );
-    });
-
-    void trx; // not used beyond execution
+  constructor(private db: Kysely<DB>) {
   }
 
   async saveTestRun(details: SaveTestRunDetails): Promise<void> {
@@ -390,52 +281,48 @@ export class PostgresAdapter implements DatabaseInterface {
     adminEmail: string,
     limit?: number,
   ): Promise<TestRunDetails[]> {
-    const likeTerm = `%${searchTerm.trim()}%`;
-    let query = "SELECT * FROM test_runs";
-    const queryParams: any[] = [likeTerm];
 
-    if (adminEmail) {
-      query +=
-        " WHERE admin_email = $2 AND (company_name ILIKE $1 OR admin_email ILIKE $1 OR admin_name ILIKE $1)";
-      queryParams.push(adminEmail);
-    } else {
-      query +=
-        " WHERE company_name ILIKE $1 OR admin_email ILIKE $1 OR admin_name ILIKE $1";
-    }
+  try {
+      const likeTerm = `%${searchTerm.trim()}%`;
+      
+      let query = this.db
+        .selectFrom("test_runs")
+        .selectAll();
 
-    query += ` ORDER BY timestamp DESC`;
+      if (adminEmail) {
+        query = query.where("admin_email", "=", adminEmail)
+      }
 
-    if (limit) {
-      // If adminEmail is provided, it's the 3rd parameter, otherwise 2nd
-      const paramIndex = adminEmail ? 3 : 2;
-      query += ` LIMIT $${paramIndex}`;
-      queryParams.push(limit);
-    }
+      query = query.where((eb) =>
+          eb("company_name", "ilike", likeTerm)
+            .or("admin_email", "ilike", likeTerm)
+            .or("admin_name", "ilike", likeTerm)
+          );
 
-    try {
-      const result = await this.pool.query(query, queryParams);
-      console.log("RESULTS", result.rows);
-      return result.rows.map(
-        (row: any) =>
+      query = query.orderBy("timestamp", "desc");
+
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const rows = await query.execute();
+
+      return rows.map(
+        (row) =>
           ({
             testId: row.test_id,
-            timestamp: row.timestamp,
+            timestamp: row.timestamp.toISOString(),
             companyName: row.company_name,
             adminEmail: row.admin_email,
             adminName: row.admin_name,
             techSpecVersion: row.tech_spec_version,
-            status: row.status,
-            passingPercentage: row.passing_percentage,
+            status: row.status ?? undefined,
+            passingPercentage: row.passing_percentage ?? undefined,
           } as TestRunDetails)
       );
     } catch (error) {
       logger.error("Error searching test runs:", error);
       throw error;
     }
-  }
-
-  async close(): Promise<void> {
-    await this.db.destroy();
-    await this.pool.end();
   }
 }

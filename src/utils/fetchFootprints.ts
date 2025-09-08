@@ -1,4 +1,4 @@
-import { EventTypesV2, EventTypesV3, ApiVersion } from "../types/types";
+import { EventTypesV2, EventTypesV3, ApiVersion } from "../services/types";
 
 export const fetchFootprints = async (
   baseUrl: string,

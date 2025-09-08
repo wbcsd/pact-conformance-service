@@ -6,7 +6,7 @@ import {
   TestCase,
   TestResult,
   TestCaseResultStatus,
-} from "../types/types";
+} from "../services/types";
 import config from "../config";
 import logger from "./logger";
 
