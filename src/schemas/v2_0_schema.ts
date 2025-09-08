@@ -267,7 +267,6 @@ const sharedDefinitions = {
             },
           },
         },
-        minItems: 1,
         uniqueItems: true,
         description: "Product or sector specific rules applied.",
       },

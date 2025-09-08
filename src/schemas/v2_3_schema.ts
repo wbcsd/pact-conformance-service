@@ -294,7 +294,6 @@ const sharedDefinitions = {
         items: {
           $ref: "#/definitions/ProductOrSectorSpecificRule",
         },
-        minItems: 1,
         uniqueItems: true,
         description: "Rules applied for calculating or allocating emissions.",
       },
