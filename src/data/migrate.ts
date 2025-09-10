@@ -1,47 +1,85 @@
-import { db } from '.';
-import fs from 'fs';
-import path from 'path';
+import * as path from "path";
+import { promises as fs } from "fs";
+import {
+  Migrator,
+  FileMigrationProvider,
+  MigrationResultSet,
+} from "kysely";
+import { db } from ".";
 
-// Simple migration runner. Each migration must export up(db) and optionally down(db)
-async function ensureMigrationsTable() {
-  const exists = await db
-    .selectFrom('migrations')
-    .selectAll()
-    .execute()
-    .catch(() => null);
-  if (!exists) {
-    // Table created by first migration; skip.
+async function migrate(command?: string, migration?: string) {
+  try {
+
+    const migrator = new Migrator({
+      db,
+      provider: new FileMigrationProvider({
+        fs,
+        path,
+        // This needs to be an absolute path.
+        migrationFolder: path.join(__dirname, "migrations"),
+      })
+    });
+
+    let result: MigrationResultSet;
+    switch (command) {
+      case "help":
+        console.log("usage: migrate [command] [migration]");
+        console.log("commands:");
+        console.log("  (no command)   Migrate to the latest version");
+        console.log("  help           Show this help message");
+        console.log("  list           List all migrations and their status");
+        console.log("  to <name>      Migrate to a specific migration");
+        console.log("  up             Run the next pending migration");
+        console.log("  down           Rollback the last executed migration");
+        return;
+      case "list":
+        const migrations = await migrator.getMigrations();
+        console.table(migrations);
+        return;
+      case "to":
+        result = await migrator.migrateTo(migration!);
+        break;
+      case "up":
+        result = await migrator.migrateUp();
+        break;
+      case "down":
+        result = await migrator.migrateDown();
+        break;
+      case null:
+      case undefined:
+        result = await migrator.migrateToLatest();
+        break;
+      default:
+        console.error("Unknown command: ", command);
+        process.exitCode = 1;
+        return;
+    }
+    result.results?.forEach((it) => {
+      if (it.status === 'Success') {
+        console.log(`migration "${it.migrationName}" was executed successfully`)
+      } else if (it.status === 'Error') {
+        console.error(`failed to execute migration "${it.migrationName}"`)
+      } else if (it.status === 'NotExecuted') {
+        console.warn(`migration "${it.migrationName}" was not executed due to earlier failures.`)
+      } else {
+        console.info(`migration "${it.migrationName}" has status: ${it.status as string}`)
+      }
+    });
+
+    if (result.error) {
+      console.error("Failed to migrate", result.error);
+      process.exitCode = 1;
+    }
+  } catch (error) {
+    console.error("Unexpected error during migration", error);
+    process.exitCode = 1;
+  } finally {
+    // Ensure the database connection is always closed.
+    await db.destroy();
   }
 }
 
-async function getExecuted(): Promise<Set<string>> {
-  const rows = await db.selectFrom('migrations').select('name').execute().catch(()=>[]);
-  return new Set(rows.map(r => r.name));
-}
-
-async function record(name: string) {
-  await db.insertInto('migrations').values({ name, run_at: new Date() }).execute();
-}
-
-export async function migrate() {
-  const migrationsDir = path.resolve(process.cwd(), 'src/data/migrations');
-  const files = fs.readdirSync(migrationsDir).filter(f => /\.ts$/.test(f)).sort();
-  await ensureMigrationsTable();
-  const executed = await getExecuted();
-  for (const file of files) {
-    if (executed.has(file)) continue;
-    const mod = await import(path.resolve(migrationsDir, file));
-    if (!mod.up) throw new Error(`Migration ${file} missing up()`);
-    console.log(`Running migration ${file}`);
-    await mod.up(db);
-    await record(file);
-  }
-  console.log('Migrations complete');
-  await db.destroy();
-}
-
-// run().catch(async (err) => {
-//   console.error(err);
-//   await db.destroy();
-//   process.exit(1);
-// });
+migrate(process.argv[2], process.argv[3]).catch((error: unknown) => {
+  console.error("Fatal error during migration process:", error);
+  process.exitCode = 1;
+});
