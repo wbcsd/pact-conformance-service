@@ -328,12 +328,13 @@ export const generateV3TestCases = ({
     {
       name: "Test Case 13: Received Request Fulfilled Response",
       callback: true,
-      endpoint: '/3/events',
+      endpoint: "/3/events",
       method: "POST",
       schema: v3_0_EventFulfilledSchema,
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#13",
-      documentationUrl: "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
+      documentationUrl:
+        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
     },
     {
       name: "Test Case 14.A: Send Asynchronous Request to be Rejected",
@@ -348,7 +349,7 @@ export const generateV3TestCases = ({
         id: testRunId,
         source: webhookUrl,
         time: new Date().toISOString(),
-        type: EventTypesV3.CREATED,
+        type: EventTypesV3.REJECTED,
         data: {
           productId: ["urn:pact:null"], // SPs will be instructed to reject a request with null productIds,
           comment: "Please send PCF data for this year.",
@@ -356,18 +357,18 @@ export const generateV3TestCases = ({
       },
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#14.A",
-      documentationUrl: 
+      documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
     },
     {
       name: "Test Case 14.B: Handle Rejected PCF Request",
       callback: true,
-      endpoint: '/3/events',
+      endpoint: "/3/events",
       method: "POST",
       schema: v3_0_EventRejectedSchema,
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#14.B",
-      documentationUrl: 
+      documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
     },
     {
