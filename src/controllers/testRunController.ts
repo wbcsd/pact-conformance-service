@@ -32,11 +32,11 @@ export class TestRunController {
       logger.info("Getting recent test runs", { query: req.query });
 
       const adminEmail = req.query.adminEmail as string;
-      const page = req.query.page ? parseInt(req.query.page as string) : 0;
-      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : DEFAULT_PAGE_SIZE;
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.size as string) || DEFAULT_PAGE_SIZE;
       const searchTerm = (req.query.query as string || "").trim();
 
-      if (pageSize < 0 || pageSize >= MAX_PAGE_SIZE) {
+      if (pageSize < 1 || pageSize >= MAX_PAGE_SIZE) {
         res.status(400).json({
           error:
             `Invalid pageSize parameter. Must be a positive integer between 1 and ${MAX_PAGE_SIZE}.`,
