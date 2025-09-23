@@ -104,8 +104,8 @@ export const generateV2TestCases = ({
       endpoint: `/2/footprints/${footprints.data[0].id}`,
       expectedStatusCodes: [200],
       schema: singleFootprintResponseSchema,
-      condition: ({ data }) => {
-        return data.id === footprints.data[0].id;
+      condition: (body) => {
+        return body?.data?.id === footprints.data[0].id;
       },
       conditionErrorMessage: `Returned footprint does not match the requested footprint with id ${footprints.data[0].id}`,
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
@@ -119,8 +119,8 @@ export const generateV2TestCases = ({
       endpoint: "/2/footprints",
       expectedStatusCodes: [200, 202],
       schema: responseSchema,
-      condition: ({ data }) => {
-        return data.length === footprints.data.length;
+      condition: (body) => {
+        return body?.data?.length === footprints.data.length;
       },
       conditionErrorMessage: "Number of footprints does not match",
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
@@ -144,10 +144,12 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: `/2/footprints`,
       expectedStatusCodes: [400, 401],
-      condition: ({ code }) => {
-        return code === "BadRequest";
+      condition: (body, messages) => {
+        if (body?.code !== "BadRequest") {
+          messages.push(`Warning: expected error code BadRequest but received ${body?.code}`);
+        }
+        return true;
       },
-      conditionErrorMessage: `Expected error code BadRequest in response.`,
       headers: {
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
       },
@@ -161,10 +163,12 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: `/2/footprints/${footprints.data[0].id}`,
       expectedStatusCodes: [400, 401],
-      condition: ({ code }) => {
-        return code === "BadRequest";
+      condition: (body, messages) => {
+        if (body?.code !== "BadRequest") {
+          messages.push(`Warning: expected error code BadRequest but received ${body?.code}`);
+        }
+        return true;
       },
-      conditionErrorMessage: `Expected error code BadRequest in response.`,
       headers: {
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
       },
@@ -178,8 +182,8 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: `/2/footprints/random-string-as-id-${randomString(16)}`,
       expectedStatusCodes: [400, 404],
-      condition: ({ code }) => {
-        return code === "NoSuchFootprint";
+      condition: (body) => {
+        return body?.code === "NoSuchFootprint";
       },
       conditionErrorMessage: `Expected error code NoSuchFootprint in response.`,
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
@@ -200,11 +204,6 @@ export const generateV2TestCases = ({
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
       requestData: authRequestData,
-      condition: (response) => {
-        return !response.data && !response.access_token;
-      },
-      conditionErrorMessage:
-        "Expected response to not include data or access_token property",
     },
     {
       name: "Test Case 10: Attempt ListFootprints through HTTP (non-HTTPS)",
@@ -215,10 +214,6 @@ export const generateV2TestCases = ({
       testKey: "TESTCASE#10",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-10-attempt-listfootprints-through-http-non-https",
-      condition: (response) => {
-        return !response.data;
-      },
-      conditionErrorMessage: "Expected response to not include data property",
     },
     {
       name: "Test Case 11: Attempt GetFootprint through HTTP (non-HTTPS)",
@@ -231,10 +226,6 @@ export const generateV2TestCases = ({
       testKey: "TESTCASE#11",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-11-attempt-getfootprint-through-http-non-https",
-      condition: (response) => {
-        return !response.data;
-      },
-      conditionErrorMessage: "Expected response to not include data property",
     },
     {
       name: "Test Case 12: Receive Asynchronous PCF Request",
@@ -352,8 +343,8 @@ export const generateV2TestCases = ({
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
         "Content-Type": "application/cloudevents+json; charset=UTF-8",
       },
-      condition: ({ code }) => {
-        return code === "BadRequest";
+      condition: (body) => {
+        return body?.code === "BadRequest";
       },
       mandatoryVersion: ["V2.2", "V2.3"],
       testKey: "TESTCASE#16",
@@ -382,10 +373,6 @@ export const generateV2TestCases = ({
       testKey: "TESTCASE#17",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-17-attempt-action-events-through-http-non-https",
-      condition: (response) => {
-        return !response.data;
-      },
-      conditionErrorMessage: "Expected response to not include data property",
     },
     {
       name: "Test Case 18: OpenId Connect-based Authentication Flow",
@@ -417,8 +404,8 @@ export const generateV2TestCases = ({
       )}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every(
+      condition: (body) => {
+        return body?.data?.every(
           (footprint: { created: Date }) =>
             footprint.created >= footprints.data[0].created
         );

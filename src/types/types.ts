@@ -21,7 +21,7 @@ export interface TestCase {
   expectedStatusCodes?: number[];
   schema?: object;
   requestData?: any;
-  condition?: (response: any, responseHeaders: Headers) => boolean;
+  condition?: (response: any, messages: string[]) => boolean;
   conditionErrorMessage?: string;
   headers?: Record<string, string>;
   customUrl?: string;
