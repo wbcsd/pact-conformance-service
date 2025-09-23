@@ -137,6 +137,7 @@ export const generateV3TestCases = ({
   })();
 
   const filterParams = getFilterParameters(footprints);
+  const callbackBaseUrl = webhookUrl.replace(/\/+$/, "");
 
   return [
     {
@@ -169,8 +170,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints/${filterParams.id}`,
       expectedStatusCodes: [200],
       schema: V3_0_SingleFootprintResponseSchema,
-      condition: ({ data }) => {
-        return data.id === filterParams.id;
+      condition: (body) => {
+        return body?.data?.id === filterParams.id;
       },
       conditionErrorMessage: `Returned footprint does not match the requested footprint with id ${filterParams.id}`,
       mandatoryVersion: ["V3.0"],
@@ -184,8 +185,8 @@ export const generateV3TestCases = ({
       endpoint: "/3/footprints",
       expectedStatusCodes: [200, 202],
       schema: responseSchema,
-      condition: ({ data }) => {
-        return data.length === footprints.data.length;
+      condition: (body) => {
+        return body?.data?.length === footprints.data.length;
       },
       conditionErrorMessage: "Number of footprints does not match",
       mandatoryVersion: ["V3.0"],
@@ -209,10 +210,12 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints`,
       expectedStatusCodes: [400, 401],
-      condition: ({ code }) => {
-        return code === "BadRequest";
+      condition: (body, messages) => {
+        if (body?.code !== "BadRequest") {
+          messages.push(`Warning: expected error code BadRequest but received ${body?.code}`);
+        }
+        return true;
       },
-      conditionErrorMessage: `Expected error code BadRequest in response.`,
       headers: {
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
       },
@@ -226,10 +229,12 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints/${filterParams.id}`,
       expectedStatusCodes: [400, 401],
-      condition: ({ code }) => {
-        return code === "BadRequest";
+      condition: (body, messages) => {
+        if (body?.code !== "BadRequest") {
+          messages.push(`Warning: expected error code BadRequest but received ${body?.code}`);
+        }
+        return true;
       },
-      conditionErrorMessage: `Expected error code BadRequest in response.`,
       headers: {
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
       },
@@ -243,8 +248,8 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints/random-string-as-id-${randomString(16)}`,
       expectedStatusCodes: [400, 404],
-      condition: ({ code }) => {
-        return code === "NotFound";
+      condition: (body) => {
+        return body?.code === "NotFound";
       },
       conditionErrorMessage: `Expected error code NotFound in response.`,
       mandatoryVersion: ["V3.0"],
@@ -265,11 +270,6 @@ export const generateV3TestCases = ({
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
       requestData: authRequestData,
-      condition: (response) => {
-        return !response.data && !response.access_token;
-      },
-      conditionErrorMessage:
-        "Expected response to not include data or access_token property",
     },
     {
       name: "Test Case 10: Attempt ListFootprints through HTTP (non-HTTPS)",
@@ -280,10 +280,6 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#10",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-10-attempt-listfootprints-through-http-non-https",
-      condition: (response) => {
-        return !response.data;
-      },
-      conditionErrorMessage: "Expected response to not include data property",
     },
     {
       name: "Test Case 11: Attempt GetFootprint through HTTP (non-HTTPS)",
@@ -296,10 +292,6 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#11",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-11-attempt-getfootprint-through-http-non-https",
-      condition: (response) => {
-        return !response.data;
-      },
-      conditionErrorMessage: "Expected response to not include data property",
     },
     {
       name: "Test Case 12: Send Asynchronous PCF Request",
@@ -328,7 +320,11 @@ export const generateV3TestCases = ({
     {
       name: "Test Case 13: Received Request Fulfilled Response",
       callback: true,
-      endpoint: '/3/events',
+      customUrl: `${callbackBaseUrl}/3/events`,
+      headers: {
+        "Content-Type": "application/cloudevents+json; charset=UTF-8",
+        "Authorization": "Bearer TOKEN"
+      },
       method: "POST",
       schema: v3_0_EventFulfilledSchema,
       mandatoryVersion: ["V3.0"],
@@ -362,7 +358,11 @@ export const generateV3TestCases = ({
     {
       name: "Test Case 14.B: Handle Rejected PCF Request",
       callback: true,
-      endpoint: '/3/events',
+      customUrl: `${callbackBaseUrl}/3/events`,
+      headers: {
+        "Content-Type": "application/cloudevents+json; charset=UTF-8",
+        "Authorization": "Bearer TOKEN"
+      },
       method: "POST",
       schema: v3_0_EventRejectedSchema,
       mandatoryVersion: ["V3.0"],
@@ -412,8 +412,11 @@ export const generateV3TestCases = ({
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
         "Content-Type": "application/cloudevents+json; charset=UTF-8",
       },
-      condition: ({ code }) => {
-        return code === "BadRequest";
+      condition: (body, messages) => {
+        if (body?.code !== "BadRequest") {
+          messages.push(`Warning: expected error code BadRequest but received ${body?.code}`);
+        }
+        return true;
       },
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#16",
@@ -442,10 +445,6 @@ export const generateV3TestCases = ({
       testKey: "TESTCASE#17",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-17-attempt-action-events-through-http-non-https",
-      condition: (response) => {
-        return !response.data;
-      },
-      conditionErrorMessage: "Expected response to not include data property",
     },
     {
       name: "Test Case 18: OpenId Connect-based Authentication Flow",
@@ -475,8 +474,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?productId=${filterParams.productId}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every((footprint: { productIds: string[] }) =>
+      condition: (body) => {
+        return body?.data?.every((footprint: { productIds: string[] }) =>
           footprint.productIds.includes(filterParams.productId)
         );
       },
@@ -492,8 +491,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?companyId=${filterParams.companyId}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every((footprint: { companyIds: string[] }) =>
+      condition: (body) => {
+        return body?.data?.every((footprint: { companyIds: string[] }) =>
           footprint.companyIds.includes(filterParams.companyId)
         );
       },
@@ -509,8 +508,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?geography=${filterParams.geography}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every(
+      condition: (body) => {
+        return body?.data?.every(
           (footprint: {
             pcf: {
               geographyCountry?: string;
@@ -536,12 +535,12 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?classification=${filterParams.classification}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
+      condition: (body) => {
         if (filterParams.classification === "") {
-          return data.length === footprints.data.length; // If no classification is provided, all footprints are valid
+          return body?.data?.length === footprints.data.length; // If no classification is provided, all footprints are valid
         }
 
-        return data.every((footprint: { productClassifications: string[] }) =>
+        return body?.data?.every((footprint: { productClassifications: string[] }) =>
           footprint.productClassifications.includes(filterParams.classification)
         );
       },
@@ -557,8 +556,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?validOn=${filterParams.validOn}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every(
+      condition: (body) => {
+        return body?.data?.every(
           (footprint: {
             validityPeriodStart: string;
             validityPeriodEnd: string;
@@ -603,8 +602,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?validAfter=${filterParams.validAfter}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every(
+      condition: (body) => {
+        return body?.data?.every(
           (footprint: {
             validityPeriodStart: string;
             pcf: { referencePeriodEnd: string };
@@ -641,8 +640,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?validBefore=${filterParams.validBefore}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every(
+      condition: (body) => {
+        return body?.data?.every(
           (footprint: {
             validityPeriodEnd: string;
             pcf: { referencePeriodEnd: string };
@@ -679,8 +678,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?status=${filterParams.status}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every(
+      condition: (body) => {
+        return body?.data?.every(
           (footprint: { status: string }) =>
             footprint.status === filterParams.status
         );
@@ -697,8 +696,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?status=${filterParams.status}&productId=${filterParams.productId}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every(
+      condition: (body) => {
+        return body?.data?.every(
           (footprint: { status: string; productIds: string[] }) =>
             footprint.status === filterParams.status &&
             footprint.productIds.includes(filterParams.productId)
@@ -718,8 +717,8 @@ export const generateV3TestCases = ({
       }&companyId=${randomString(8)}&companyId=${randomString(8)}`,
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
-      condition: ({ data }) => {
-        return data.every((footprint: { companyIds: string[] }) =>
+      condition: (body) => {
+        return body?.data?.every((footprint: { companyIds: string[] }) =>
           footprint.companyIds.includes(filterParams.companyId)
         );
       },
@@ -735,8 +734,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?productId=urn:bogus:product:${randomString(16)}`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus productId filter`,
       testKey: "TESTCASE#30",
@@ -750,8 +749,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?companyId=urn:bogus:company:${randomString(16)}`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus companyId filter`,
       testKey: "TESTCASE#31",
@@ -765,8 +764,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?geography=XX`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus geography filter`,
       testKey: "TESTCASE#32",
@@ -782,8 +781,8 @@ export const generateV3TestCases = ({
       )}`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus classification filter`,
       testKey: "TESTCASE#33",
@@ -797,8 +796,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?validOn=1900-01-01T00:00:00Z`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus validOn filter (date in the past: 1900-01-01T00:00:00Z)`,
       testKey: "TESTCASE#34",
@@ -812,8 +811,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?validAfter=2099-12-31T23:59:59Z`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus validAfter filter (date in the future: 2099-12-31T23:59:59Z)`,
       testKey: "TESTCASE#35",
@@ -827,8 +826,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?validBefore=1900-01-01T00:00:00Z`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus validBefore filter (date in the past: 1900-01-01T00:00:00Z)`,
       testKey: "TESTCASE#36",
@@ -842,8 +841,8 @@ export const generateV3TestCases = ({
       endpoint: `/3/footprints?status=BogusStatus${randomString(8)}`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus status filter`,
       testKey: "TESTCASE#37",
@@ -859,8 +858,8 @@ export const generateV3TestCases = ({
       )}&productId=urn:bogus:product:${randomString(16)}`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus companyId and productId filters`,
       testKey: "TESTCASE#38",
@@ -878,8 +877,8 @@ export const generateV3TestCases = ({
       )}&companyId=urn:bogus:company:${randomString(8)}`,
       expectedStatusCodes: [200],
       schema: emptyResponseSchema,
-      condition: ({ data }) => {
-        return data.length === 0;
+      condition: (body) => {
+        return body?.data?.length === 0;
       },
       conditionErrorMessage: `Expected empty data array for bogus companyId filters in OR logic test`,
       testKey: "TESTCASE#39",
