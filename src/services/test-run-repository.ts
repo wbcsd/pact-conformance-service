@@ -1,13 +1,13 @@
 import { Kysely } from "kysely";
 import logger from "../utils/logger";
 import { DB } from "../data/types";
-import { 
-  TestStorage, 
-  SaveTestRunDetails, 
-  TestData, 
-  TestResult, 
-  TestRunWithResults, 
-  TestRunDetails 
+import {
+  TestStorage,
+  SaveTestRunDetails,
+  TestData,
+  TestResult,
+  TestRunWithResults,
+  TestRunDetails,
 } from "./types";
 
 /*
@@ -17,9 +17,7 @@ import {
  * Expected to be used with a Kysely instance.
  */
 export class TestRunRepository implements TestStorage {
-
-  constructor(private db: Kysely<DB>) {
-  }
+  constructor(private db: Kysely<DB>) {}
 
   async saveTestRun(details: SaveTestRunDetails): Promise<void> {
     const timestamp = new Date().toISOString();
@@ -238,22 +236,23 @@ export class TestRunRepository implements TestStorage {
     pageSize?: number
   ): Promise<TestRunDetails[]> {
     try {
-      let q = this.db
-        .selectFrom("test_runs")
-        .selectAll();
+      let q = this.db.selectFrom("test_runs").selectAll();
       if (adminEmail) {
         q = q.where("admin_email", "=", adminEmail);
       }
       if (searchTerm) {
         q = q.where((qb) =>
           qb("company_name", "ilike", `%${searchTerm}%`)
-          .or("admin_email", "ilike", `%${searchTerm}%`)
-          .or("admin_name", "ilike", `%${searchTerm}%`))
+            .or("admin_email", "ilike", `%${searchTerm}%`)
+            .or("admin_name", "ilike", `%${searchTerm}%`)
+        );
       }
-      q = q.orderBy("timestamp", "desc");
-      q = q.limit(pageSize || 50);
-      if (page)
-        q = q.offset((page - 1) * (pageSize || 50));
+
+      const size = Number.isFinite(Number(pageSize)) ? Number(pageSize) : 50;
+      const pageNum = Math.max(1, Number(page) || 1); // clamp to 1 for 1-based paging
+      const offset = (pageNum - 1) * size;
+
+      q = q.orderBy("timestamp", "desc").limit(size).offset(offset);
 
       const rows = await q.execute();
 
@@ -279,25 +278,22 @@ export class TestRunRepository implements TestStorage {
   async searchTestRuns(
     searchTerm: string,
     adminEmail: string,
-    limit?: number,
+    limit?: number
   ): Promise<TestRunDetails[]> {
-
-  try {
+    try {
       const likeTerm = `%${searchTerm.trim()}%`;
-      
-      let query = this.db
-        .selectFrom("test_runs")
-        .selectAll();
+
+      let query = this.db.selectFrom("test_runs").selectAll();
 
       if (adminEmail) {
-        query = query.where("admin_email", "=", adminEmail)
+        query = query.where("admin_email", "=", adminEmail);
       }
 
       query = query.where((eb) =>
-          eb("company_name", "ilike", likeTerm)
-            .or("admin_email", "ilike", likeTerm)
-            .or("admin_name", "ilike", likeTerm)
-          );
+        eb("company_name", "ilike", likeTerm)
+          .or("admin_email", "ilike", likeTerm)
+          .or("admin_name", "ilike", likeTerm)
+      );
 
       query = query.orderBy("timestamp", "desc");
 
