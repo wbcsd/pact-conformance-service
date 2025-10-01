@@ -253,7 +253,7 @@ export class TestRunRepository implements TestStorage {
       q = q.orderBy("timestamp", "desc");
       q = q.limit(pageSize || 50);
       if (page)
-        q = q.offset(page * (pageSize || 50));
+        q = q.offset((page - 1) * (pageSize || 50));
 
       const rows = await q.execute();
 
