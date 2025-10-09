@@ -26,7 +26,7 @@ export class TestRunRepository implements TestStorage {
       await this.db
         .insertInto("testRuns")
         .values({
-          testId: data.testRunId,
+          id: data.testRunId,
           timestamp,
           companyName: data.organizationName,
           adminEmail: data.adminEmail,
@@ -34,7 +34,7 @@ export class TestRunRepository implements TestStorage {
           techSpecVersion: data.techSpecVersion,
         })
         .onConflict((oc) =>
-          oc.column("testId").doUpdateSet({
+          oc.column("id").doUpdateSet({
             timestamp,
             companyName: data.organizationName,
             adminEmail: data.adminEmail,
@@ -63,7 +63,7 @@ export class TestRunRepository implements TestStorage {
           status,
           passingPercentage: passingPercentage,
         })
-        .where("testId", "=", testRunId)
+        .where("id", "=", testRunId)
         .executeTakeFirst();
 
       // For Postgres, res.numUpdatedRows is a BigInt-like value; coerce to number
@@ -99,7 +99,7 @@ export class TestRunRepository implements TestStorage {
           const existing = await tx
             .selectFrom("testResults")
             .select((eb) => eb.lit(1).as("one"))
-            .where("testId", "=", testRunId)
+            .where("testRunId", "=", testRunId)
             .where("testKey", "=", testResult.testKey)
             .executeTakeFirst();
 
@@ -112,7 +112,7 @@ export class TestRunRepository implements TestStorage {
         await tx
           .insertInto("testResults")
           .values({
-            testId: testRunId,
+            testRunId: testRunId,
             testKey: testResult.testKey,
             timestamp,
             // Keep behavior the same; original stored the entire result payload in JSONB.
@@ -120,7 +120,7 @@ export class TestRunRepository implements TestStorage {
             result: testResult as unknown,
           })
           .onConflict((oc) =>
-            oc.columns(["testId", "testKey"]).doUpdateSet({
+            oc.columns(["testRunId", "testKey"]).doUpdateSet({
               timestamp,
               result: testResult as unknown,
             })
@@ -160,21 +160,21 @@ export class TestRunRepository implements TestStorage {
     const resultsRows = await this.db
       .selectFrom("testResults")
       .select(["result"])
-      .where("testId", "=", testRunId)
+      .where("testRunId", "=", testRunId)
       .orderBy("testKey")
       .execute();
 
     const details = await this.db
       .selectFrom("testRuns")
       .selectAll()
-      .where("testId", "=", testRunId)
+      .where("id", "=", testRunId)
       .executeTakeFirst();
 
     const results = resultsRows.map((r) => r.result as TestResult);
 
     return {
       ...details as any,
-      testRunId: details?.testId ?? "",
+      testRunId: details?.id ?? "",
       results,
     }
   }
@@ -186,12 +186,12 @@ export class TestRunRepository implements TestStorage {
       await this.db
         .insertInto("testData")
         .values({
-          testId: testRunId,
+          testRunId: testRunId,
           timestamp,
           data: testData as unknown,
         })
         .onConflict((oc) =>
-          oc.column("testId").doUpdateSet({
+          oc.column("testRunId").doUpdateSet({
             timestamp,
             data: testData as unknown,
           })
@@ -210,7 +210,7 @@ export class TestRunRepository implements TestStorage {
       const row = await this.db
         .selectFrom("testData")
         .select(["data"])
-        .where("testId", "=", testRunId)
+        .where("testRunId", "=", testRunId)
         .executeTakeFirst();
 
       if (!row) return null;
@@ -251,7 +251,7 @@ export class TestRunRepository implements TestStorage {
       return rows.map(
         (row) =>
           ({
-            testRunId: row.testId,
+            testRunId: row.id,
             timestamp: row.timestamp as any, // preserve original shape
             organizationName: row.companyName,
             adminEmail: row.adminEmail,
@@ -298,7 +298,7 @@ export class TestRunRepository implements TestStorage {
       return rows.map(
         (row) =>
           ({
-            testRunId: row.testId,
+            testRunId: row.id,
             timestamp: row.timestamp.toISOString(),
             organizationName: row.companyName,
             adminEmail: row.adminEmail,

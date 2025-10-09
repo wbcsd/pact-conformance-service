@@ -2,7 +2,7 @@
 import { ColumnType } from "kysely";
 
 export interface TestRunsTable {
-  testId: string;
+  id: string;
   timestamp: ColumnType<Date, Date | string, Date | string>; // we accept Date|string on write to match original
   companyName: string;
   adminEmail: string;
@@ -13,7 +13,7 @@ export interface TestRunsTable {
 }
 
 export interface TestResultsTable {
-  testId: string;
+  testRunId: string;
   testKey: string;
   timestamp: ColumnType<Date, Date | string, Date | string>;
   // store whole TestResult payload as jsonb
@@ -21,7 +21,7 @@ export interface TestResultsTable {
 }
 
 export interface TestDataTable {
-  testId: string; 
+  testRunId: string; 
   timestamp: ColumnType<Date, Date | string, Date | string>;
   data: unknown; // jsonb
 }
