@@ -54,7 +54,7 @@ export class EventController {
   */
   async handleEvent(req: Request, res: Response): Promise<void> {
 
-    const db = (req.app.locals.services as Services).repository;
+    const repository = (req.app.locals.services as Services).repository;
 
     try {
       // Log the entire event for debugging
@@ -65,7 +65,7 @@ export class EventController {
         throw new Error("Request body is missing");
       }
 
-      const testData = await db.getTestData(req.body.data.requestEventId);
+      const testData = await repository.getTestData(req.body.data.requestEventId);
 
       if (!testData) {
         throw new Error(`Test data not found for requestEventId: ${req.body.data.requestEventId}`);
@@ -145,15 +145,15 @@ export class EventController {
           };
         }
 
-        await db.saveTestCaseResult(req.body.data.requestEventId, testResult, true);
+        await repository.saveTestCaseResult(req.body.data.requestEventId, testResult, true);
 
         // Load updated test results and recalculate test run status
-        const existingTestRun = await db.getTestResults(req.body.data.requestEventId);
+        const existingTestRun = await repository.getTestResults(req.body.data.requestEventId);
         if (existingTestRun?.results) {
           const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
             existingTestRun.results
           );
-          await db.updateTestRunStatus(
+          await repository.updateTestRunStatus(
             req.body.data.requestEventId,
             testRunStatus,
             passingPercentage
@@ -218,17 +218,17 @@ export class EventController {
           };
         }
 
-        await db.saveTestCaseResult(req.body.data.requestEventId, testResult, true);
+        await repository.saveTestCaseResult(req.body.data.requestEventId, testResult, true);
 
         // Load updated test results and recalculate test run status
-        const existingTestRunForRejected = await db.getTestResults(
+        const existingTestRunForRejected = await repository.getTestResults(
           req.body.data.requestEventId
         );
         if (existingTestRunForRejected?.results) {
           const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
             existingTestRunForRejected.results
           );
-          await db.updateTestRunStatus(
+          await repository.updateTestRunStatus(
             req.body.data.requestEventId,
             testRunStatus,
             passingPercentage

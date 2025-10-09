@@ -1,20 +1,15 @@
-// TODO: Implement test run service methods by moving 
-// logic from controller to here and calling.
-// All conformance test logic should be in this service, 
-// making it easier to swap out implementations later if needed.
-
 import { randomUUID } from "crypto";
+import config from "../config";
 import logger from "../utils/logger";
+import { ArgumentError } from "../utils/errors";
 import { TestRunStartParams, TestRunWithResults, TestStorage } from "./types";
 import { TestCaseResultStatus, TestResult, TestRunStatus } from "./types";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import { fetchFootprints, getLinksHeaderFromFootprints } from "../utils/fetchFootprints";
 import { getAccessToken, fetchOpenIdTokenEndpoint } from "../utils/authUtils";
-import config from "../config";
 import { generateV3TestCases } from "../test-cases/v3-test-cases";
 import { generateV2TestCases } from "../test-cases/v2-test-cases";
 import { runTestCase } from "../utils/runTestCase";
-import { ArgumentError } from "../utils/errors";
 
 
 export class TestRunWorker {
