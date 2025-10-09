@@ -63,20 +63,23 @@ export interface TestData {
   version: string;
 }
 
-// TODO: combine with TestRunDetails after fixing testId naming
-export interface SaveTestRunDetails {
-  testRunId: string;
-  companyName: string;
+export interface TestRunStartParams {
+  baseUrl: string;
+  version: ApiVersion;
+  clientId: string;
+  clientSecret: string;
+  organizationName: string;
   adminEmail: string;
   adminName: string;
-  techSpecVersion: string;
-  status: TestRunStatus;
+  customAuthBaseUrl?: string;
+  scope?: string;
+  audience?: string;
+  resource?: string;
 }
 
-// TODO: Rename testId to testRunId
-export interface TestRunDetails {
-  testId: string;
-  companyName: string;
+export interface TestRun {
+  testRunId: string;
+  organizationName: string;
   adminEmail: string;
   adminName: string;
   timestamp: string;
@@ -86,15 +89,7 @@ export interface TestRunDetails {
 }
 
 // TODO: Rename to TestRunDetailsWithResults and extend TestRunDetails after testId naming is fixed
-export interface TestRunWithResults {
-  testRunId: string;
-  companyName?: string;
-  adminEmail?: string;
-  adminName?: string;
-  timestamp?: string;
-  status?: string;
-  techSpecVersion?: string;
-  passingPercentage?: number;
+export interface TestRunWithResults extends TestRun {
   results: TestResult[];
 }
 
@@ -113,7 +108,7 @@ export interface TestStorage {
    * @param details - The details of the test run to save.
    * @returns A promise that resolves when the operation is complete.
    */
-  saveTestRun(details: SaveTestRunDetails): Promise<void>;
+  saveTestRun(details: Omit<TestRun, "timestamp">): Promise<void>;
 
   /**
    * Updates the status of a test run.
@@ -187,5 +182,5 @@ export interface TestStorage {
     searchTerm?: string,
     page?: number,
     pageSize?: number
-  ): Promise<TestRunDetails[]>;
+  ): Promise<TestRun[]>;
 }

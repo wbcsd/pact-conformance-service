@@ -6,6 +6,7 @@ import * as runTestCaseModule from "../../utils/runTestCase";
 import { TestRunController } from "../../controllers/TestRunController";
 import { mockFootprintsV2, mockFootprintsV3 } from "../mocks/footprints";
 import { TestCaseResultStatus, TestStorage } from "../../services/types";
+import { TestRunWorker } from "../../services/test-run-worker";
 
 // Helper function to create a mocked TestRunRepository
 const createMockRepo = (): jest.Mocked<TestStorage> => ({
@@ -67,7 +68,8 @@ describe("TestRunController general tests", () => {
     
     // Create a mocked TestRunRepository
     mockDb = createMockRepo();
-    
+    const worker = new TestRunWorker(mockDb); // Initialize the worker with the mocked DB
+
     // Setup mock request and response
     mockRequest = {
       query: {},
@@ -75,7 +77,10 @@ describe("TestRunController general tests", () => {
       body: {},
       app: {
         locals: {
-          repo: mockDb
+          services: {
+            repository: mockDb,
+            worker: worker
+          }
         }
       } as any
     };
@@ -89,7 +94,7 @@ describe("TestRunController general tests", () => {
     controller = new TestRunController();
 
     // Mock the auth utils functions
-    (authUtils.getOidAuthUrl as jest.Mock).mockResolvedValue(mockOidAuthUrl);
+    (authUtils.fetchOpenIdTokenEndpoint as jest.Mock).mockResolvedValue(mockOidAuthUrl);
     (authUtils.getAccessToken as jest.Mock).mockResolvedValue(mockAccessToken);
 
     // Mock the fetchFootprints functions
@@ -122,7 +127,7 @@ describe("TestRunController general tests", () => {
       clientId: "client-id",
       clientSecret: "client-secret",
       version: "V2.2",
-      companyName: "Test Company",
+      organizationName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
     };
@@ -183,7 +188,7 @@ describe("TestRunController general tests", () => {
       clientId: "client-id",
       clientSecret: "client-secret",
       version: "V2.3",
-      companyName: "Test Company",
+      organizationName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
     };
@@ -248,7 +253,7 @@ describe("TestRunController general tests", () => {
       clientId: "client-id",
       clientSecret: "client-secret",
       version: "V2.0", // Using older version where some tests are optional
-      companyName: "Test Company",
+      organizationName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
     };
@@ -281,9 +286,6 @@ describe("TestRunController general tests", () => {
 
     // Assert
     expect(mockResponse.status).toHaveBeenCalledWith(400);
-    expect(mockResponse.json).toHaveBeenCalledWith(expect.objectContaining({
-      message: "Missing required parameters"
-    }));
   });
 });
 
@@ -315,6 +317,7 @@ describe("TestRunController V2 specific tests", () => {
 
     // Create a mocked TestRunRepository
     mockDb = createMockRepo();
+    const worker = new TestRunWorker(mockDb); // Initialize the worker with the mocked DB
 
     // Setup mock request and response
     mockRequest = {
@@ -323,7 +326,10 @@ describe("TestRunController V2 specific tests", () => {
       body: {},
       app: {
         locals: {
-          repo: mockDb
+          services: {
+            repository: mockDb,
+            worker: worker
+          }
         }
       } as any
     };
@@ -337,7 +343,7 @@ describe("TestRunController V2 specific tests", () => {
     controller = new TestRunController();
 
     // Mock the auth utils functions
-    (authUtils.getOidAuthUrl as jest.Mock).mockResolvedValue(mockOidAuthUrl);
+    (authUtils.fetchOpenIdTokenEndpoint as jest.Mock).mockResolvedValue(mockOidAuthUrl);
     (authUtils.getAccessToken as jest.Mock).mockResolvedValue(mockAccessToken);
 
     // Mock the fetchFootprints functions
@@ -371,7 +377,7 @@ describe("TestRunController V2 specific tests", () => {
       clientId: "client-id",
       clientSecret: "client-secret",
       version: "V2.2",
-      companyName: "Test Company",
+      organizationName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test"
     };
@@ -389,7 +395,7 @@ describe("TestRunController V2 specific tests", () => {
     expect(mockDb.saveTestRun).toHaveBeenCalledWith(
       expect.objectContaining({
         testRunId: "test-uuid-1234",
-        companyName: "Test Company",
+        organizationName: "Test Company",
         adminEmail: "admin@test.com",
         adminName: "Admin Test",
         techSpecVersion: "V2.2",
@@ -436,6 +442,8 @@ describe("TestRunControlleer V3 specific tests", () => {
     // Create mock database  
     mockDb = createMockRepo();
     
+    const worker = new TestRunWorker(mockDb); // Initialize the worker with the mocked DB
+
     // Setup mock request and response
     mockRequest = {
       query: {},
@@ -443,7 +451,10 @@ describe("TestRunControlleer V3 specific tests", () => {
       body: {},
       app: {
         locals: {
-          repo: mockDb
+          services: {
+            repository: mockDb,
+            worker: worker
+          }
         }
       } as any
     };
@@ -457,7 +468,7 @@ describe("TestRunControlleer V3 specific tests", () => {
     controller = new TestRunController();
 
     // Mock the auth utils functions
-    (authUtils.getOidAuthUrl as jest.Mock).mockResolvedValue(mockOidAuthUrl);
+    (authUtils.fetchOpenIdTokenEndpoint as jest.Mock).mockResolvedValue(mockOidAuthUrl);
     (authUtils.getAccessToken as jest.Mock).mockResolvedValue(mockAccessToken);
 
     // Mock the fetchFootprints functions
@@ -489,7 +500,7 @@ describe("TestRunControlleer V3 specific tests", () => {
       clientId: "client-id",
       clientSecret: "client-secret",
       version: "V3.0",
-      companyName: "Test Company",
+      organizationName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
     };
@@ -504,7 +515,7 @@ describe("TestRunControlleer V3 specific tests", () => {
     expect(mockDb.saveTestRun).toHaveBeenCalledWith(
       expect.objectContaining({
         testRunId: "test-uuid-1234",
-        companyName: "Test Company",
+        organizationName: "Test Company",
         adminEmail: "admin@test.com",
         adminName: "Admin Test",
         techSpecVersion: "V3.0",

@@ -9,6 +9,7 @@ import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus } from "..
 import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import logger from "../utils/logger";
+import { Services } from '../services';
 
 // Initialize Ajv validator
 const ajv = new Ajv({ allErrors: true });
@@ -52,9 +53,9 @@ export class EventController {
    * POST /3/event - Handle callback events from the tested client API
   */
   async handleEvent(req: Request, res: Response): Promise<void> {
-    
-    const db = req.app.locals.repo as TestStorage;
-    
+
+    const db = (req.app.locals.services as Services).repository;
+
     try {
       // Log the entire event for debugging
       logger.info("Received event:", { url: req.url, body: req.body });

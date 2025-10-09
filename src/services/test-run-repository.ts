@@ -3,11 +3,10 @@ import logger from "../utils/logger";
 import { DB } from "../data/types";
 import {
   TestStorage,
-  SaveTestRunDetails,
   TestData,
   TestResult,
   TestRunWithResults,
-  TestRunDetails,
+  TestRun,
 } from "./types";
 
 /*
@@ -19,7 +18,7 @@ import {
 export class TestRunRepository implements TestStorage {
   constructor(private db: Kysely<DB>) {}
 
-  async saveTestRun(details: SaveTestRunDetails): Promise<void> {
+  async saveTestRun(details: TestRun): Promise<void> {
     const timestamp = new Date().toISOString();
 
     try {
@@ -28,7 +27,7 @@ export class TestRunRepository implements TestStorage {
         .values({
           test_id: details.testRunId,
           timestamp,
-          company_name: details.companyName,
+          company_name: details.organizationName,
           admin_email: details.adminEmail,
           admin_name: details.adminName,
           tech_spec_version: details.techSpecVersion,
@@ -36,7 +35,7 @@ export class TestRunRepository implements TestStorage {
         .onConflict((oc) =>
           oc.column("test_id").doUpdateSet({
             timestamp,
-            company_name: details.companyName,
+            company_name: details.organizationName,
             admin_email: details.adminEmail,
             admin_name: details.adminName,
             tech_spec_version: details.techSpecVersion,
@@ -177,7 +176,7 @@ export class TestRunRepository implements TestStorage {
       // We preserve that by intentionally not guarding here.
       testRunId: (details as any).test_id,
       timestamp: (details as any).timestamp,
-      companyName: (details as any).company_name,
+      organizationName: (details as any).company_name,
       adminEmail: (details as any).admin_email,
       adminName: (details as any).admin_name,
       techSpecVersion: (details as any).tech_spec_version,
@@ -234,7 +233,7 @@ export class TestRunRepository implements TestStorage {
     searchTerm?: string,
     page?: number,
     pageSize?: number
-  ): Promise<TestRunDetails[]> {
+  ): Promise<TestRun[]> {
     try {
       let q = this.db.selectFrom("test_runs").selectAll();
       if (adminEmail) {
@@ -259,15 +258,15 @@ export class TestRunRepository implements TestStorage {
       return rows.map(
         (row) =>
           ({
-            testId: row.test_id,
+            testRunId: row.test_id,
             timestamp: row.timestamp as any, // preserve original shape
-            companyName: row.company_name,
+            organizationName: row.company_name,
             adminEmail: row.admin_email,
             adminName: row.admin_name,
             techSpecVersion: row.tech_spec_version,
             status: row.status ?? undefined,
             passingPercentage: row.passing_percentage ?? undefined,
-          } as TestRunDetails)
+          } as TestRun)
       );
     } catch (error) {
       logger.error("Error retrieving recent test runs:", error);
@@ -279,7 +278,7 @@ export class TestRunRepository implements TestStorage {
     searchTerm: string,
     adminEmail: string,
     limit?: number
-  ): Promise<TestRunDetails[]> {
+  ): Promise<TestRun[]> {
     try {
       const likeTerm = `%${searchTerm.trim()}%`;
 
@@ -306,15 +305,15 @@ export class TestRunRepository implements TestStorage {
       return rows.map(
         (row) =>
           ({
-            testId: row.test_id,
+            testRunId: row.test_id,
             timestamp: row.timestamp.toISOString(),
-            companyName: row.company_name,
+            organizationName: row.company_name,
             adminEmail: row.admin_email,
             adminName: row.admin_name,
             techSpecVersion: row.tech_spec_version,
             status: row.status ?? undefined,
             passingPercentage: row.passing_percentage ?? undefined,
-          } as TestRunDetails)
+          } as TestRun)
       );
     } catch (error) {
       logger.error("Error searching test runs:", error);
