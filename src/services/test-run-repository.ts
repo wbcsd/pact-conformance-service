@@ -16,34 +16,35 @@ import {
  * Expected to be used with a Kysely instance.
  */
 export class TestRunRepository implements TestStorage {
+  
   constructor(private db: Kysely<DB>) {}
 
-  async saveTestRun(details: TestRun): Promise<void> {
+  async saveTestRun(data: TestRun): Promise<void> {
     const timestamp = new Date().toISOString();
 
     try {
       await this.db
-        .insertInto("test_runs")
+        .insertInto("testRuns")
         .values({
-          test_id: details.testRunId,
+          testId: data.testRunId,
           timestamp,
-          company_name: details.organizationName,
-          admin_email: details.adminEmail,
-          admin_name: details.adminName,
-          tech_spec_version: details.techSpecVersion,
+          companyName: data.organizationName,
+          adminEmail: data.adminEmail,
+          adminName: data.adminName,
+          techSpecVersion: data.techSpecVersion,
         })
         .onConflict((oc) =>
-          oc.column("test_id").doUpdateSet({
+          oc.column("testId").doUpdateSet({
             timestamp,
-            company_name: details.organizationName,
-            admin_email: details.adminEmail,
-            admin_name: details.adminName,
-            tech_spec_version: details.techSpecVersion,
+            companyName: data.organizationName,
+            adminEmail: data.adminEmail,
+            adminName: data.adminName,
+            techSpecVersion: data.techSpecVersion,
           })
         )
         .execute();
 
-      logger.info(`Test run ${details.testRunId} saved successfully`);
+      logger.info(`Test run ${data.testRunId} saved successfully`);
     } catch (error) {
       logger.error("Error saving test run:", error);
       throw error;
@@ -57,12 +58,12 @@ export class TestRunRepository implements TestStorage {
   ): Promise<void> {
     try {
       const res = await this.db
-        .updateTable("test_runs")
+        .updateTable("testRuns")
         .set({
           status,
-          passing_percentage: passingPercentage,
+          passingPercentage: passingPercentage,
         })
-        .where("test_id", "=", testRunId)
+        .where("testId", "=", testRunId)
         .executeTakeFirst();
 
       // For Postgres, res.numUpdatedRows is a BigInt-like value; coerce to number
@@ -96,10 +97,10 @@ export class TestRunRepository implements TestStorage {
       await this.db.transaction().execute(async (tx) => {
         if (!overwriteExisting) {
           const existing = await tx
-            .selectFrom("test_results")
+            .selectFrom("testResults")
             .select((eb) => eb.lit(1).as("one"))
-            .where("test_id", "=", testRunId)
-            .where("test_key", "=", testResult.testKey)
+            .where("testId", "=", testRunId)
+            .where("testKey", "=", testResult.testKey)
             .executeTakeFirst();
 
           if (existing) {
@@ -109,17 +110,17 @@ export class TestRunRepository implements TestStorage {
         }
 
         await tx
-          .insertInto("test_results")
+          .insertInto("testResults")
           .values({
-            test_id: testRunId,
-            test_key: testResult.testKey,
+            testId: testRunId,
+            testKey: testResult.testKey,
             timestamp,
             // Keep behavior the same; original stored the entire result payload in JSONB.
             // Using the object directly allows pg to serialize to jsonb.
             result: testResult as unknown,
           })
           .onConflict((oc) =>
-            oc.columns(["test_id", "test_key"]).doUpdateSet({
+            oc.columns(["testId", "testKey"]).doUpdateSet({
               timestamp,
               result: testResult as unknown,
             })
@@ -157,33 +158,25 @@ export class TestRunRepository implements TestStorage {
     // Keep the same “two round trips” approach and the same null handling semantics
     // as the original (which would throw if details are missing but results exist).
     const resultsRows = await this.db
-      .selectFrom("test_results")
+      .selectFrom("testResults")
       .select(["result"])
-      .where("test_id", "=", testRunId)
-      .orderBy("test_key")
+      .where("testId", "=", testRunId)
+      .orderBy("testKey")
       .execute();
 
     const details = await this.db
-      .selectFrom("test_runs")
+      .selectFrom("testRuns")
       .selectAll()
-      .where("test_id", "=", testRunId)
+      .where("testId", "=", testRunId)
       .executeTakeFirst();
 
     const results = resultsRows.map((r) => r.result as TestResult);
 
     return {
-      // Note: original code would throw if details is null when accessing properties.
-      // We preserve that by intentionally not guarding here.
-      testRunId: (details as any).test_id,
-      timestamp: (details as any).timestamp,
-      organizationName: (details as any).company_name,
-      adminEmail: (details as any).admin_email,
-      adminName: (details as any).admin_name,
-      techSpecVersion: (details as any).tech_spec_version,
-      status: (details as any).status ?? undefined,
-      passingPercentage: (details as any).passing_percentage ?? undefined,
+      ...details as any,
+      testRunId: details?.testId ?? "",
       results,
-    };
+    }
   }
 
   async saveTestData(testRunId: string, testData: TestData): Promise<void> {
@@ -191,14 +184,14 @@ export class TestRunRepository implements TestStorage {
 
     try {
       await this.db
-        .insertInto("test_data")
+        .insertInto("testData")
         .values({
-          test_id: testRunId,
+          testId: testRunId,
           timestamp,
           data: testData as unknown,
         })
         .onConflict((oc) =>
-          oc.column("test_id").doUpdateSet({
+          oc.column("testId").doUpdateSet({
             timestamp,
             data: testData as unknown,
           })
@@ -215,9 +208,9 @@ export class TestRunRepository implements TestStorage {
   async getTestData(testRunId: string): Promise<TestData | null> {
     try {
       const row = await this.db
-        .selectFrom("test_data")
+        .selectFrom("testData")
         .select(["data"])
-        .where("test_id", "=", testRunId)
+        .where("testId", "=", testRunId)
         .executeTakeFirst();
 
       if (!row) return null;
@@ -235,15 +228,15 @@ export class TestRunRepository implements TestStorage {
     pageSize?: number
   ): Promise<TestRun[]> {
     try {
-      let q = this.db.selectFrom("test_runs").selectAll();
+      let q = this.db.selectFrom("testRuns").selectAll();
       if (adminEmail) {
-        q = q.where("admin_email", "=", adminEmail);
+        q = q.where("adminEmail", "=", adminEmail);
       }
       if (searchTerm) {
         q = q.where((qb) =>
-          qb("company_name", "ilike", `%${searchTerm}%`)
-            .or("admin_email", "ilike", `%${searchTerm}%`)
-            .or("admin_name", "ilike", `%${searchTerm}%`)
+          qb("companyName", "ilike", `%${searchTerm}%`)
+            .or("adminEmail", "ilike", `%${searchTerm}%`)
+            .or("adminName", "ilike", `%${searchTerm}%`)
         );
       }
 
@@ -258,14 +251,14 @@ export class TestRunRepository implements TestStorage {
       return rows.map(
         (row) =>
           ({
-            testRunId: row.test_id,
+            testRunId: row.testId,
             timestamp: row.timestamp as any, // preserve original shape
-            organizationName: row.company_name,
-            adminEmail: row.admin_email,
-            adminName: row.admin_name,
-            techSpecVersion: row.tech_spec_version,
+            organizationName: row.companyName,
+            adminEmail: row.adminEmail,
+            adminName: row.adminName,
+            techSpecVersion: row.techSpecVersion,
             status: row.status ?? undefined,
-            passingPercentage: row.passing_percentage ?? undefined,
+            passingPercentage: row.passingPercentage ?? undefined,
           } as TestRun)
       );
     } catch (error) {
@@ -282,16 +275,16 @@ export class TestRunRepository implements TestStorage {
     try {
       const likeTerm = `%${searchTerm.trim()}%`;
 
-      let query = this.db.selectFrom("test_runs").selectAll();
+      let query = this.db.selectFrom("testRuns").selectAll();
 
       if (adminEmail) {
-        query = query.where("admin_email", "=", adminEmail);
+        query = query.where("adminEmail", "=", adminEmail);
       }
 
       query = query.where((eb) =>
-        eb("company_name", "ilike", likeTerm)
-          .or("admin_email", "ilike", likeTerm)
-          .or("admin_name", "ilike", likeTerm)
+        eb("companyName", "ilike", likeTerm)
+          .or("adminEmail", "ilike", likeTerm)
+          .or("adminName", "ilike", likeTerm)
       );
 
       query = query.orderBy("timestamp", "desc");
@@ -305,14 +298,14 @@ export class TestRunRepository implements TestStorage {
       return rows.map(
         (row) =>
           ({
-            testRunId: row.test_id,
+            testRunId: row.testId,
             timestamp: row.timestamp.toISOString(),
-            organizationName: row.company_name,
-            adminEmail: row.admin_email,
-            adminName: row.admin_name,
-            techSpecVersion: row.tech_spec_version,
+            organizationName: row.companyName,
+            adminEmail: row.adminEmail,
+            adminName: row.adminName,
+            techSpecVersion: row.techSpecVersion,
             status: row.status ?? undefined,
-            passingPercentage: row.passing_percentage ?? undefined,
+            passingPercentage: row.passingPercentage ?? undefined,
           } as TestRun)
       );
     } catch (error) {

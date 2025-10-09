@@ -1,4 +1,4 @@
-import { Kysely, sql, PostgresDialect } from 'kysely';
+import { Kysely, sql, PostgresDialect, CamelCasePlugin } from 'kysely';
 import { Pool } from "pg";
 import { DB } from './types';
 import config from '../config';
@@ -6,7 +6,8 @@ import config from '../config';
 export const db = new Kysely<DB>({
     dialect: new PostgresDialect({
         pool: new Pool({ connectionString: config.DB_CONNECTION_STRING })
-    })
+    }),
+    plugins: [new CamelCasePlugin()],
 });
 
 export async function checkConnection(): Promise<boolean> {

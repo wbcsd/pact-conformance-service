@@ -17,7 +17,10 @@ async function migrate(command?: string, migration?: string) {
         path,
         // This needs to be an absolute path.
         migrationFolder: path.join(__dirname, "migrations"),
-      })
+      }),
+      // The table that will hold the migration state
+      migrationTableName: "__migrations",
+      migrationLockTableName: "__migration_lock",
     });
 
     let result: MigrationResultSet;

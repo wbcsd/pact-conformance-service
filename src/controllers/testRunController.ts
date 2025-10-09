@@ -34,9 +34,9 @@ export class TestRunController {
         });
         return;
       }
-      
-      const db = (req.app.locals.services as Services).repository;
-      const testRuns = await db.listTestRuns(adminEmail, searchTerm, page, pageSize);
+
+      const repository = (req.app.locals.services as Services).repository;
+      const testRuns = await repository.listTestRuns(adminEmail, searchTerm, page, pageSize);
 
       logger.info("Successfully retrieved test runs", {
         count: testRuns.length,
@@ -74,8 +74,8 @@ export class TestRunController {
         return;
       }
 
-      const db = (req.app.locals.services as Services).repository;
-      const result = await db.getTestResults(testRunId);
+      const repository = (req.app.locals.services as Services).repository;
+      const result = await repository.getTestResults(testRunId);
 
       if (!result) {
         logger.warn("Test run not found", { testRunId });
