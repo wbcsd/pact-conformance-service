@@ -2,15 +2,15 @@ import express from "express";
 import config from "./config";
 import logger, { loggerMiddleware } from "./utils/logger";
 import { db } from "./data";
-import { TestRunRepository } from "./services/test-run-repository";
+import { ServiceContainer } from "./services";
 import {
   listTestRuns,
   getTestRunById,
   createTestRun
 } from "./controllers/testRunController";
-import { 
-  handleEvent, 
-  authToken 
+import {
+  handleEvent,
+  authToken
 } from "./controllers/eventController";
 
 // Create Express app
@@ -18,10 +18,10 @@ const app = express();
 const port = config.PORT || 8080;
 
 // Initialize service container
-const repo = new TestRunRepository(db);
+const services = new ServiceContainer(db);
 
 // Make services available to routes via app.locals
-app.locals.repo = repo;
+app.locals.services = services;
 
 // Middleware for parsing JSON bodies
 app.use(express.json());

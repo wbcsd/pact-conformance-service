@@ -4,6 +4,7 @@ import nock from "nock";
 import { mockFootprintsV2, mockFootprintsV3 } from "../mocks/footprints";
 import { TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
 import { TestStorage } from "../../services/types";
+import { TestRunWorker } from "../../services/test-run-worker";
 
 // Mock the environment variables
 config.CONFORMANCE_API = "https://webhook.test.url";
@@ -59,6 +60,8 @@ describe("TestRunController nock tests", () => {
       searchTestRuns: jest.fn(),
     } as jest.Mocked<TestStorage>;
 
+    const worker = new TestRunWorker(mockDb); // Initialize the worker with the mocked DB
+
     // Setup mock request and response
     mockRequest = {
       query: {},
@@ -66,7 +69,10 @@ describe("TestRunController nock tests", () => {
       body: {},
       app: {
         locals: {
-          repo: mockDb
+          services: {
+            repository: mockDb,
+            worker: worker
+          }
         }
       } as any
     };
@@ -80,7 +86,8 @@ describe("TestRunController nock tests", () => {
     controller = new TestRunController();
 
     // Mock DB utility functions
-    (mockDb.saveTestRun as jest.Mock).mockResolvedValue(undefined);
+    // (mockDb.saveTestRun as jest.Mock).mockResolvedValue(undefined);
+    (mockDb.saveTestRun as jest.Mock).mockImplementation(async (data) => data);
     (mockDb.saveTestData as jest.Mock).mockResolvedValue(undefined);
     (mockDb.saveTestCaseResults as jest.Mock).mockResolvedValue(undefined);
   });
@@ -246,7 +253,7 @@ describe("TestRunController nock tests", () => {
       clientId: mockClientId,
       clientSecret: mockClientSecret,
       version: "V2.3",
-      companyName: "Test Company",
+      organizationName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
       customAuthBaseUrl: mockAuthBaseUrl,
@@ -258,6 +265,7 @@ describe("TestRunController nock tests", () => {
     // We'll consider the test passing if the controller returns without throwing
     expect(mockResponse.status).toBeDefined();
     const body = (mockResponse.json as jest.Mock).mock.calls[0][0]
+    console.warn('Test results:', body);
 
     expect(
       body.results.filter(
@@ -538,7 +546,7 @@ describe("TestRunController nock tests", () => {
       clientId: mockClientId,
       clientSecret: mockClientSecret,
       version: "V3.0",
-      companyName: "Test Company",
+      organizationName: "Test Company",
       adminEmail: "admin@test.com",
       adminName: "Admin Test",
       customAuthBaseUrl: mockAuthBaseUrl,
