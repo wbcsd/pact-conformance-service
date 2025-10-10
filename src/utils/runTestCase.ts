@@ -122,6 +122,7 @@ export const runTestCase = async (
   if (testCase.expectHttpError) {
     if (status >= 200 && status < 300) {
       result.errorMessage = `Expected HTTP error, but got ${status}`;
+      result.status = TestCaseResultStatus.FAILURE;
     } else {
       result.status = TestCaseResultStatus.SUCCESS;
     }

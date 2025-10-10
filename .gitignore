@@ -96,9 +96,7 @@ public
 
 # VS Code
 .vscode/*
-!.vscode/settings.json
 !.vscode/tasks.json
-!.vscode/launch.json
 !.vscode/extensions.json
 
 # SvelteKit build / generate output
@@ -119,3 +117,4 @@ lambdas.zip
 
 # Exports
 exports/
+.vscode/launch.json

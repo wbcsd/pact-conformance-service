@@ -34,7 +34,9 @@ describe("EventController listening for async requests", () => {
       body: {},
       app: {
         locals: {
-          repo: mockDb
+          services: {
+            repository: mockDb
+          }
         }
       } as any
     };

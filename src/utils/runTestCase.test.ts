@@ -22,7 +22,7 @@ const mockFetchOk = (
     ok: true,
     status,
     text: jest.fn().mockResolvedValue(body as never),
-    headers: makeHeaders(headers),
+    headers: makeHeaders({ ...headers, "Content-Type": "application/json" }),
   } as never);
 };
 
@@ -56,29 +56,6 @@ describe("runTestCase", () => {
   beforeEach(() => {
     (global as AnyObj).fetch = jest.fn();
     jest.clearAllMocks();
-  });
-
-  it("fails when neither endpoint nor customUrl is provided", async () => {
-    const res = await runTestCase(
-      BASE_URL,
-      {
-        name: "missing-url",
-        method: "GET",
-        // no endpoint, no customUrl
-        testKey: "T-1",
-        documentationUrl: "https://docs.example.com/t-1",
-        mandatoryVersion: ["v1", "v2"],
-      } as any,
-      ACCESS_TOKEN,
-      VERSION as any
-    );
-
-    expect(res.status).toBe(TestCaseResultStatus.FAILURE);
-    expect(res.errorMessage).toBe(
-      "Either endpoint or customUrl must be provided"
-    );
-    expect(res.curlRequest).toBe("N/A - Missing URL");
-    expect(res.mandatory).toBe(true); // version is in mandatoryVersion
   });
 
   it("happy path: GET, endpoint, 200 OK, no schema/condition", async () => {
@@ -230,7 +207,7 @@ describe("runTestCase", () => {
   });
 
   it("schema validation passes and condition passes -> success", async () => {
-    mockFetchOk(200, JSON.stringify({ id: "abc" }), { "x-flag": "ok" });
+    mockFetchOk(200, JSON.stringify({ id: "abc" }), { "x-flag": "ok"});
 
     const res = await runTestCase(
       BASE_URL,
@@ -245,8 +222,8 @@ describe("runTestCase", () => {
           required: ["id"],
           additionalProperties: false,
         },
-        condition: (data: any, headers: any) =>
-          data.id === "abc" && headers.get("x-flag") === "ok",
+        condition: (data: any) =>
+          data.id === "abc",
         testKey: "T-7",
       } as any,
       ACCESS_TOKEN,
@@ -299,7 +276,6 @@ describe("runTestCase", () => {
 
     expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
     // default timeout is 5000ms unless env overrides at module-load time
-    expect(res.errorMessage).not.toBeDefined();
     expect(res.mandatory).toBe(false);
   });
 

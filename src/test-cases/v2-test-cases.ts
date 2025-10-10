@@ -22,8 +22,7 @@ export const generateV2TestCases = ({
   footprints,
   paginationLinks,
   baseUrl,
-  authBaseUrl,
-  oidAuthUrl,
+  authTokenUrl,
   clientId,
   clientSecret,
   authRequestData,
@@ -34,8 +33,7 @@ export const generateV2TestCases = ({
   footprints: any;
   paginationLinks: Record<string, string>;
   baseUrl: string;
-  authBaseUrl: string;
-  oidAuthUrl: string | null | undefined;
+  authTokenUrl: string;
   clientId: string;
   clientSecret: string;
   authRequestData: string;
@@ -77,7 +75,7 @@ export const generateV2TestCases = ({
     {
       name: "Test Case 1: Obtain auth token with valid credentials",
       method: "POST",
-      customUrl: oidAuthUrl || `${authBaseUrl}/auth/token`,
+      customUrl: authTokenUrl,
       requestData: authRequestData,
       expectedStatusCodes: [200],
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
@@ -89,7 +87,7 @@ export const generateV2TestCases = ({
     {
       name: "Test Case 2: Obtain auth token with invalid credentials",
       method: "POST",
-      customUrl: oidAuthUrl || `${authBaseUrl}/auth/token`,
+      customUrl: authTokenUrl,
       requestData: authRequestData,
       expectedStatusCodes: [400, 401],
       headers: getIncorrectAuthHeaders(baseUrl),
@@ -193,9 +191,7 @@ export const generateV2TestCases = ({
     },
     {
       name: "Test Case 9: Attempt Authentication through HTTP (non-HTTPS)",
-      customUrl:
-        oidAuthUrl?.replace("https", "http") ||
-        `${authBaseUrl.replace("https", "http")}/auth/token`,
+      customUrl: authTokenUrl.replace("https", "http"),
       method: "POST",
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
@@ -377,7 +373,7 @@ export const generateV2TestCases = ({
     {
       name: "Test Case 18: OpenId Connect-based Authentication Flow",
       method: "POST",
-      customUrl: oidAuthUrl || undefined,
+      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Skip if authTokenUrl is under the baseUrl, will not be an OpenID provider then
       expectedStatusCodes: [200],
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       testKey: "TESTCASE#18",
@@ -388,7 +384,7 @@ export const generateV2TestCases = ({
     {
       name: "Test Case 19: OpenId connect-based authentication flow with incorrect credentials",
       method: "POST",
-      customUrl: oidAuthUrl || undefined,
+      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Skip if authTokenUrl is under the baseUrl, will not be an OpenID provider then
       expectedStatusCodes: [400, 401],
       headers: getIncorrectAuthHeaders(baseUrl),
       testKey: "TESTCASE#19",

@@ -35,6 +35,7 @@ const logger = config.LOG_OUTPUT === "console" ? console : {
 
 const loggerMiddleware = config.LOG_OUTPUT === "console" ? 
   (req: any, res: any, next: any) => {
+    console.log(`${req.method} ${req.url}`);
     next();
   } : 
   pinoHttp({ logger: pinoInstance });
