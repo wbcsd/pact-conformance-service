@@ -55,8 +55,6 @@ export class EventHandler {
     if (authRequest.clientId !== "test_client_id" || authRequest.clientSecret !== "test_client_secret") {
       throw new UnauthorizedError("Invalid client credentials");
     }
-    console.info("Client authenticated successfully:", { clientId: authRequest.clientId });
-    console.info("JWT_SECRET is set:", !!config.JWT_SECRET);
     const token = jwt.sign({ clientId: authRequest.clientId }, config.JWT_SECRET, { expiresIn: "1h" });
 
     return { access_token: token };

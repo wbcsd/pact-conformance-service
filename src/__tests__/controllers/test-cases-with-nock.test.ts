@@ -265,7 +265,6 @@ describe("TestRunController nock tests", () => {
     // We'll consider the test passing if the controller returns without throwing
     expect(mockResponse.status).toBeDefined();
     const body = (mockResponse.json as jest.Mock).mock.calls[0][0]
-    console.warn('Test results:', body);
 
     expect(
       body.results.filter(
