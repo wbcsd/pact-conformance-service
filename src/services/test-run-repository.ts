@@ -7,7 +7,10 @@ import {
   TestResult,
   TestRunWithResults,
   TestRun,
+  TestCaseResultStatus,
+  PagingParameters,
 } from "./types";
+import { ValidationError, NotFoundError } from "../errors";
 
 /*
  * Repository for managing test runs and their results. Test runs and
@@ -17,7 +20,47 @@ import {
  */
 export class TestRunRepository implements TestStorage {
   
+  private static readonly MAX_PAGE_SIZE = 200;
+  private static readonly DEFAULT_PAGE_SIZE = 50;
+  
   constructor(private db: Kysely<DB>) {}
+
+  /**
+   * Calculate passing percentages for mandatory and non-mandatory tests
+   */
+  private calculatePassingPercentages(results: TestResult[]): {
+    passingPercentage: number;
+    nonMandatoryPassingPercentage: number;
+  } {
+    const mandatoryTests = results.filter((test) => test.mandatory);
+    const failedMandatoryTests = mandatoryTests.filter(
+      (test) => test.status !== TestCaseResultStatus.SUCCESS
+    );
+
+    const passingPercentage =
+      mandatoryTests.length > 0
+        ? Math.round(
+            ((mandatoryTests.length - failedMandatoryTests.length) /
+              mandatoryTests.length) *
+              100
+          )
+        : 0;
+
+    const nonMandatoryTests = results.filter((test) => !test.mandatory);
+    const failedNonMandatoryTests = nonMandatoryTests.filter(
+      (test) => test.status !== TestCaseResultStatus.SUCCESS
+    );
+    const nonMandatoryPassingPercentage =
+      nonMandatoryTests.length > 0
+        ? Math.round(
+            ((nonMandatoryTests.length - failedNonMandatoryTests.length) /
+              nonMandatoryTests.length) *
+              100
+          )
+        : 0;
+
+    return { passingPercentage, nonMandatoryPassingPercentage };
+  }
 
   async saveTestRun(data: TestRun): Promise<void> {
     const timestamp = new Date().toISOString();
@@ -155,8 +198,11 @@ export class TestRunRepository implements TestStorage {
   }
 
   async getTestResults(testRunId: string): Promise<TestRunWithResults | null> {
-    // Keep the same “two round trips” approach and the same null handling semantics
-    // as the original (which would throw if details are missing but results exist).
+    // Validate testRunId parameter
+    if (!testRunId || typeof testRunId !== 'string' || testRunId.trim() === '') {
+      throw new ValidationError("Missing or invalid parameter: testRunId");
+    }
+
     const resultsRows = await this.db
       .selectFrom("testResults")
       .select(["result"])
@@ -170,147 +216,116 @@ export class TestRunRepository implements TestStorage {
       .where("id", "=", testRunId)
       .executeTakeFirst();
 
+    if (!details) {
+      throw new NotFoundError(`Test run not found: ${testRunId}`);
+    }
+
     const results = resultsRows.map((r) => r.result as TestResult);
 
     return {
       ...details as any,
-      testRunId: details?.id ?? "",
+      testRunId: details.id,
       results,
+    };
+  }
+
+  /**
+   * Get test results with calculated passing percentages for both mandatory and non-mandatory tests
+   */
+  async getTestResultsWithPercentages(testRunId: string): Promise<TestRunWithResults & {
+    passingPercentage: number;
+    nonMandatoryPassingPercentage: number;
+  }> {
+    const result = await this.getTestResults(testRunId);
+    if (!result) {
+      throw new NotFoundError(`Test run not found: ${testRunId}`);
     }
+
+    const { passingPercentage, nonMandatoryPassingPercentage } = 
+      this.calculatePassingPercentages(result.results);
+
+    return {
+      ...result,
+      passingPercentage,
+      nonMandatoryPassingPercentage,
+    };
   }
 
   async saveTestData(testRunId: string, testData: TestData): Promise<void> {
     const timestamp = new Date().toISOString();
 
-    try {
-      await this.db
-        .insertInto("testData")
-        .values({
-          testRunId: testRunId,
+    await this.db
+      .insertInto("testData")
+      .values({
+        testRunId: testRunId,
+        timestamp,
+        data: testData as unknown,
+      })
+      .onConflict((oc) =>
+        oc.column("testRunId").doUpdateSet({
           timestamp,
           data: testData as unknown,
         })
-        .onConflict((oc) =>
-          oc.column("testRunId").doUpdateSet({
-            timestamp,
-            data: testData as unknown,
-          })
-        )
-        .execute();
+      )
+      .execute();
 
-      logger.info("Test data saved successfully");
-    } catch (error) {
-      logger.error("Error saving test data:", error);
-      throw error;
-    }
+    logger.info("Test data saved successfully");
   }
 
   async getTestData(testRunId: string): Promise<TestData | null> {
-    try {
-      const row = await this.db
-        .selectFrom("testData")
-        .select(["data"])
-        .where("testRunId", "=", testRunId)
-        .executeTakeFirst();
+    const row = await this.db
+      .selectFrom("testData")
+      .select(["data"])
+      .where("testRunId", "=", testRunId)
+      .executeTakeFirst();
 
-      if (!row) return null;
-      return row.data as TestData;
-    } catch (error) {
-      logger.error("Error retrieving test data:", error);
-      throw error;
-    }
+    if (!row) return null;
+    return row.data as TestData;
   }
 
   async listTestRuns(
+    paging: PagingParameters,
     adminEmail?: string,
-    searchTerm?: string,
-    page?: number,
-    pageSize?: number
   ): Promise<TestRun[]> {
-    try {
-      let q = this.db.selectFrom("testRuns").selectAll();
-      if (adminEmail) {
-        q = q.where("adminEmail", "=", adminEmail);
-      }
-      if (searchTerm) {
+
+    // Build query with optional filters
+
+    let q = this.db.selectFrom("testRuns").selectAll();
+    if (adminEmail) {
+      q = q.where("adminEmail", "=", adminEmail);
+    }
+    if (paging.query) {
+      const trimmedTerm = paging.query.trim();
+      if (trimmedTerm) {
         q = q.where((qb) =>
-          qb("companyName", "ilike", `%${searchTerm}%`)
-            .or("adminEmail", "ilike", `%${searchTerm}%`)
-            .or("adminName", "ilike", `%${searchTerm}%`)
+          qb("companyName", "ilike", `%${trimmedTerm}%`)
+            .or("adminEmail", "ilike", `%${trimmedTerm}%`)
+            .or("adminName", "ilike", `%${trimmedTerm}%`)
         );
       }
-
-      const size = Number.isFinite(Number(pageSize)) ? Number(pageSize) : 50;
-      const pageNum = Math.max(1, Number(page) || 1); // clamp to 1 for 1-based paging
-      const offset = (pageNum - 1) * size;
-
-      q = q.orderBy("timestamp", "desc").limit(size).offset(offset);
-
-      const rows = await q.execute();
-
-      return rows.map(
-        (row) =>
-          ({
-            testRunId: row.id,
-            timestamp: row.timestamp as any, // preserve original shape
-            organizationName: row.companyName,
-            adminEmail: row.adminEmail,
-            adminName: row.adminName,
-            techSpecVersion: row.techSpecVersion,
-            status: row.status ?? undefined,
-            passingPercentage: row.passingPercentage ?? undefined,
-          } as TestRun)
-      );
-    } catch (error) {
-      logger.error("Error retrieving recent test runs:", error);
-      throw error;
     }
+
+    const pageSize = paging.pageSize ? parseInt(paging.pageSize, 10) : TestRunRepository.DEFAULT_PAGE_SIZE;
+    const pageNum = Math.max(1, Number(paging.page) || 1); // clamp to 1 for 1-based paging
+    const offset = (pageNum - 1) * pageSize;
+
+    q = q.orderBy("timestamp", "desc").limit(pageSize).offset(offset);
+
+    const rows = await q.execute();
+
+    return rows.map(
+      (row) =>
+        ({
+          testRunId: row.id,
+          timestamp: row.timestamp as any, // preserve original shape
+          organizationName: row.companyName,
+          adminEmail: row.adminEmail,
+          adminName: row.adminName,
+          techSpecVersion: row.techSpecVersion,
+          status: row.status ?? undefined,
+          passingPercentage: row.passingPercentage ?? undefined,
+        } as TestRun)
+    );
   }
 
-  async searchTestRuns(
-    searchTerm: string,
-    adminEmail: string,
-    limit?: number
-  ): Promise<TestRun[]> {
-    try {
-      const likeTerm = `%${searchTerm.trim()}%`;
-
-      let query = this.db.selectFrom("testRuns").selectAll();
-
-      if (adminEmail) {
-        query = query.where("adminEmail", "=", adminEmail);
-      }
-
-      query = query.where((eb) =>
-        eb("companyName", "ilike", likeTerm)
-          .or("adminEmail", "ilike", likeTerm)
-          .or("adminName", "ilike", likeTerm)
-      );
-
-      query = query.orderBy("timestamp", "desc");
-
-      if (limit) {
-        query = query.limit(limit);
-      }
-
-      const rows = await query.execute();
-
-      return rows.map(
-        (row) =>
-          ({
-            testRunId: row.id,
-            timestamp: row.timestamp.toISOString(),
-            organizationName: row.companyName,
-            adminEmail: row.adminEmail,
-            adminName: row.adminName,
-            techSpecVersion: row.techSpecVersion,
-            status: row.status ?? undefined,
-            passingPercentage: row.passingPercentage ?? undefined,
-          } as TestRun)
-      );
-    } catch (error) {
-      logger.error("Error searching test runs:", error);
-      throw error;
-    }
-  }
 }
