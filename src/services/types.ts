@@ -93,6 +93,11 @@ export interface TestRunWithResults extends TestRun {
   results: TestResult[];
 }
 
+export interface PagingParameters {
+  query?: string;
+  page?: string;
+  pageSize?: string;
+}
 
 /**
  * Interface representing a storage mechanism for managing test runs, 
@@ -178,9 +183,7 @@ export interface TestStorage {
    * @returns A promise that resolves with an array of test run details.
    */
   listTestRuns(
-    adminEmail?: string,
-    searchTerm?: string,
-    page?: number,
-    pageSize?: number
+    paging: PagingParameters,
+    adminEmail?: string
   ): Promise<TestRun[]>;
 }

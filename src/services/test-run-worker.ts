@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import config from "../config";
 import logger from "../utils/logger";
-import { ArgumentError } from "../utils/errors";
+import { ValidationError } from "../errors";
 import { TestRunStartParams, TestRunWithResults, TestStorage } from "./types";
 import { TestCaseResultStatus, TestResult, TestRunStatus } from "./types";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
@@ -26,7 +26,7 @@ export class TestRunWorker {
    * It also handles saving and updating test run data and results in the output storage.
    *
    */
-  async execute(params: TestRunStartParams): Promise<TestRunWithResults> {
+  async startTestRun(params: TestRunStartParams): Promise<TestRunWithResults> {
     
     // Implementation of the test run execution logic goes here.
     // This would include setting up the test environment,
@@ -37,7 +37,7 @@ export class TestRunWorker {
     logger.info(`Test run parameters: ${JSON.stringify(params)}`);
 
     if (!params.baseUrl || !params.clientId || !params.clientSecret) {
-      throw new ArgumentError("Missing required parameters: baseUrl, clientId, and clientSecret are mandatory.");
+      throw new ValidationError("Missing required parameters: baseUrl, clientId, and clientSecret are mandatory.");
     }
     await this.output.saveTestRun({
       testRunId,
