@@ -104,6 +104,8 @@ export const fetchOpenIdTokenEndpoint = async (authBaseUrl: string): Promise<str
   } catch {
     // No OpenID configuration available, ignore error and return undefined
   }
+  logger.info(`No OpenID configuration found at ${authBaseUrl}/.well-known/openid-configuration`);
+  return undefined;
 };
 
 
