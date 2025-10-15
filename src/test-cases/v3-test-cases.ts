@@ -535,7 +535,7 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
       condition: (body) => {
-        if (filterParams.classification === "") {
+        if ((filterParams.classification ?? '') === '') {
           return body?.data?.length === footprints.data.length; // If no classification is provided, all footprints are valid
         }
 
