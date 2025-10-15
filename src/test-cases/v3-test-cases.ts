@@ -517,10 +517,9 @@ export const generateV3TestCases = ({
               geographyCountrySubdivision?: string;
             };
           }) =>
-            footprint.pcf.geographyCountry === filterParams.geography ||
-            footprint.pcf.geographyRegionOrSubregion ===
-              filterParams.geography ||
-            footprint.pcf.geographyCountrySubdivision === filterParams.geography
+            (footprint.pcf.geographyCountry ?? '') === (filterParams.geography ?? '') ||
+            (footprint.pcf.geographyRegionOrSubregion ?? '') === (filterParams.geography ?? '') ||
+            (footprint.pcf.geographyCountrySubdivision ?? '') === (filterParams.geography ?? '')
         );
       },
       conditionErrorMessage: `One or more footprints do not match the condition: 'pcf.geographyCountry = ${filterParams.geography}'`,
