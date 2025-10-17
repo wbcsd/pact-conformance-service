@@ -505,6 +505,9 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
       condition: (body) => {
+        if ((filterParams.geography ?? '') === '') {
+          return body?.data?.length === footprints.data.length; // If no geography is provided, all footprints are valid
+        }
         return body?.data?.every(
           (footprint: {
             pcf: {
@@ -514,8 +517,7 @@ export const generateV3TestCases = ({
             };
           }) =>
             footprint.pcf.geographyCountry === filterParams.geography ||
-            footprint.pcf.geographyRegionOrSubregion ===
-              filterParams.geography ||
+            footprint.pcf.geographyRegionOrSubregion === filterParams.geography ||
             footprint.pcf.geographyCountrySubdivision === filterParams.geography
         );
       },
@@ -532,7 +534,7 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [200],
       schema: simpleResponseSchema,
       condition: (body) => {
-        if (filterParams.classification === "") {
+        if ((filterParams.classification ?? '') === '') {
           return body?.data?.length === footprints.data.length; // If no classification is provided, all footprints are valid
         }
 
