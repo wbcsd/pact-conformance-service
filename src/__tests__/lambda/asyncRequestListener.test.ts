@@ -28,6 +28,7 @@ describe("asyncRequestListener Lambda handler", () => {
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
     };
 
     controller = new EventController();
@@ -54,7 +55,7 @@ describe("asyncRequestListener Lambda handler", () => {
       source: "https://example.com",
       time: currentTime,
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             ...mockFootprints.data[0],
@@ -75,11 +76,11 @@ describe("asyncRequestListener Lambda handler", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that getTestData was called correctly
-    expect(dbUtils.getTestData).toHaveBeenCalledWith("request-123");
+    expect(dbUtils.getTestData).toHaveBeenCalledWith("request");
 
     // Verify that saveTestCaseResult was called with the successful test result
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.SUCCESS,
@@ -111,7 +112,7 @@ describe("asyncRequestListener Lambda handler", () => {
       source: "https://example.com",
       time: currentTime,
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             ...mockFootprintsV3.data[0],
@@ -131,12 +132,12 @@ describe("asyncRequestListener Lambda handler", () => {
     // Validate the response
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
-    // Verify that getTestData was called correctly
-    expect(dbUtils.getTestData).toHaveBeenCalledWith("request-123");
+    // Verify that getTestData was called correctly, without the trailing test case number
+    expect(dbUtils.getTestData).toHaveBeenCalledWith("request");
 
     // Verify that saveTestCaseResult was called with the successful test result
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.SUCCESS,
@@ -167,7 +168,7 @@ describe("asyncRequestListener Lambda handler", () => {
       source: "https://example.com",
       time: new Date().toISOString(),
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             id: "pf-id-123",
@@ -214,7 +215,7 @@ describe("asyncRequestListener Lambda handler", () => {
 
     // Verify that saveTestCaseResult was called with a failure result
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.FAILURE,
@@ -245,7 +246,7 @@ describe("asyncRequestListener Lambda handler", () => {
       type: EventTypesV2.FULFILLED,
       source: "https://example.com",
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             // Missing most required fields
@@ -267,7 +268,7 @@ describe("asyncRequestListener Lambda handler", () => {
 
     // Verify that saveTestCaseResult was called with a failure result due to validation
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: "FAILURE",
@@ -413,7 +414,7 @@ describe("asyncRequestListener Lambda handler", () => {
       source: "https://example.com",
       time: currentTime,
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             ...mockFootprints.data[0],
@@ -435,7 +436,7 @@ describe("asyncRequestListener Lambda handler", () => {
 
     // Verify that saveTestCaseResult was called with a failure result due to path validation
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.FAILURE,
@@ -470,7 +471,7 @@ describe("asyncRequestListener Lambda handler", () => {
       source: "https://example.com",
       time: currentTime,
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             ...mockFootprintsV3.data[0],
@@ -492,7 +493,7 @@ describe("asyncRequestListener Lambda handler", () => {
 
     // Verify that saveTestCaseResult was called with a failure result due to path validation
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.FAILURE,
@@ -525,7 +526,7 @@ describe("asyncRequestListener Lambda handler", () => {
       type: "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
       source: "https://example.com",
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             // Missing most required fields
@@ -547,7 +548,7 @@ describe("asyncRequestListener Lambda handler", () => {
 
     // Verify that saveTestCaseResult was called with a failure result containing both errors
     expect(dbUtils.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: "FAILURE",
