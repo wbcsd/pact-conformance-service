@@ -303,7 +303,9 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        id: testRunId,
+        // Create a unique ID for this event which we can trace back to the test run,
+        // when a callback is received.
+        id: testRunId + "-12",  
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,
@@ -341,7 +343,9 @@ export const generateV3TestCases = ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        id: testRunId,
+        // Create a unique ID for this event which we can trace back to the test run,
+        // when a callback is received.
+        id: testRunId + "-14.A",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,
@@ -401,7 +405,7 @@ export const generateV3TestCases = ({
       requestData: {
         type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
-        id: testRunId,
+        id: testRunId + "-16",
         source: webhookUrl,
         time: new Date().toISOString(),
         data: {
@@ -429,7 +433,7 @@ export const generateV3TestCases = ({
       customUrl: `${baseUrl.replace("https", "http")}/3/events`,
       requestData: {
         specversion: "1.0",
-        id: testRunId,
+        id: testRunId + "-17",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.PUBLISHED,

@@ -237,7 +237,7 @@ export const generateV2TestCases = ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        id: testRunId,
+        id: testRunId + "-12",  // Create a unique ID for this event which we can trace back to the test run
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV2.CREATED,
@@ -274,7 +274,7 @@ export const generateV2TestCases = ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        id: testRunId,
+        id: testRunId + "-14.A",  // Create a unique ID for this event which we can trace back to the test run
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV2.CREATED,
@@ -332,7 +332,7 @@ export const generateV2TestCases = ({
       requestData: {
         type: EventTypesV2.PUBLISHED,
         specversion: "1.0",
-        id: testRunId,
+        id: testRunId + "-16",
         source: webhookUrl,
         time: new Date().toISOString(),
         data: {
@@ -357,7 +357,7 @@ export const generateV2TestCases = ({
       customUrl: `${baseUrl.replace("https", "http")}/2/events`,
       requestData: {
         specversion: "1.0",
-        id: testRunId,
+        id: testRunId + "-17",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV2.PUBLISHED,
