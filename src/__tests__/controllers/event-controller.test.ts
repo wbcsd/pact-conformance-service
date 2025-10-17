@@ -71,7 +71,7 @@ describe("EventController listening for async requests", () => {
       source: "https://example.com",
       time: currentTime,
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             ...mockFootprintsV2.data[0],
@@ -92,11 +92,11 @@ describe("EventController listening for async requests", () => {
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
     // Verify that getTestData was called correctly
-    expect(mockDb.getTestData).toHaveBeenCalledWith("request-123");
+    expect(mockDb.getTestData).toHaveBeenCalledWith("request");
 
     // Verify that saveTestCaseResult was called with the successful test result
     expect(mockDb.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.SUCCESS,
@@ -128,7 +128,7 @@ describe("EventController listening for async requests", () => {
       source: "https://example.com",
       time: currentTime,
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             ...mockFootprintsV3.data[0],
@@ -148,12 +148,12 @@ describe("EventController listening for async requests", () => {
     // Validate the response
     expect(mockResponse.status).toHaveBeenCalledWith(200);
 
-    // Verify that getTestData was called correctly
-    expect(mockDb.getTestData).toHaveBeenCalledWith("request-123");
+    // Verify that getTestData was called correctly, without the trailing test case number
+    expect(mockDb.getTestData).toHaveBeenCalledWith("request");
 
     // Verify that saveTestCaseResult was called with the successful test result
     expect(mockDb.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.SUCCESS,
@@ -184,7 +184,7 @@ describe("EventController listening for async requests", () => {
       source: "https://example.com",
       time: new Date().toISOString(),
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             id: "pf-id-123",
@@ -231,7 +231,7 @@ describe("EventController listening for async requests", () => {
 
     // Verify that saveTestCaseResult was called with a failure result
     expect(mockDb.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.FAILURE,
@@ -262,7 +262,7 @@ describe("EventController listening for async requests", () => {
       type: EventTypesV2.FULFILLED,
       source: "https://example.com",
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             // Missing most required fields
@@ -284,7 +284,7 @@ describe("EventController listening for async requests", () => {
 
     // Verify that saveTestCaseResult was called with a failure result due to validation
     expect(mockDb.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: "FAILURE",
@@ -430,7 +430,7 @@ describe("EventController listening for async requests", () => {
       source: "https://example.com",
       time: currentTime,
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             ...mockFootprintsV2.data[0],
@@ -452,7 +452,7 @@ describe("EventController listening for async requests", () => {
 
     // Verify that saveTestCaseResult was called with a failure result due to path validation
     expect(mockDb.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.FAILURE,
@@ -487,7 +487,7 @@ describe("EventController listening for async requests", () => {
       source: "https://example.com",
       time: currentTime,
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             ...mockFootprintsV3.data[0],
@@ -509,7 +509,7 @@ describe("EventController listening for async requests", () => {
 
     // Verify that saveTestCaseResult was called with a failure result due to path validation
     expect(mockDb.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: TestCaseResultStatus.FAILURE,
@@ -542,7 +542,7 @@ describe("EventController listening for async requests", () => {
       type: "org.wbcsd.pathfinder.ProductFootprintRequest.Fulfilled.v1",
       source: "https://example.com",
       data: {
-        requestEventId: "request-123",
+        requestEventId: "request-12",
         pfs: [
           {
             // Missing most required fields
@@ -564,7 +564,7 @@ describe("EventController listening for async requests", () => {
 
     // Verify that saveTestCaseResult was called with a failure result containing both errors
     expect(mockDb.saveTestCaseResult).toHaveBeenCalledWith(
-      "request-123",
+      "request",
       expect.objectContaining({
         name: "Test Case 13: Respond to Asynchronous PCF Request",
         status: "FAILURE",

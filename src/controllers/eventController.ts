@@ -65,7 +65,12 @@ export class EventController {
         throw new Error("Request body is missing");
       }
 
-      const testData = await repository.getTestData(req.body.data.requestEventId);
+      // retrieve test data using requestEventId, which has the format guid-testcaseNumber.
+      const requestEventId = req.body.data.requestEventId || "";
+      const match = requestEventId.match(/^(.+)-(.+)$/);
+      const testRunId = match ? match[1] : requestEventId;
+      const testCaseKey = match ? match[2] : "";
+      const testData = await repository.getTestData(testRunId);
 
       if (!testData) {
         throw new Error(`Test data not found for requestEventId: ${req.body.data.requestEventId}`);
@@ -95,7 +100,7 @@ export class EventController {
         const actualPath = req.url;
         const isPathValid = actualPath === expectedPath;
 
-        if (eventIsValid && isPathValid) {
+        if (eventIsValid && isPathValid && testCaseKey === "12") {
           testResult = {
             name: TEST_CASE_13_NAME,
             status: TestCaseResultStatus.SUCCESS,
@@ -145,10 +150,10 @@ export class EventController {
           };
         }
 
-        await repository.saveTestCaseResult(req.body.data.requestEventId, testResult, true);
+        await repository.saveTestCaseResult(testRunId, testResult, true);
 
         // Load updated test results and recalculate test run status
-        const existingTestRun = await repository.getTestResults(req.body.data.requestEventId);
+        const existingTestRun = await repository.getTestResults(testRunId);
         if (existingTestRun?.results) {
           const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
             existingTestRun.results
@@ -185,7 +190,7 @@ export class EventController {
         const hasValidErrorObject =
           req.body.data.error && req.body.data.error.code && req.body.data.error.message;
 
-        if (hasValidErrorObject && isPathValid) {
+        if (hasValidErrorObject && isPathValid && testCaseKey === "14.A") {
           testResult = {
             name: TEST_CASE_14_NAME,
             status: TestCaseResultStatus.SUCCESS,
@@ -218,12 +223,10 @@ export class EventController {
           };
         }
 
-        await repository.saveTestCaseResult(req.body.data.requestEventId, testResult, true);
+        await repository.saveTestCaseResult(testRunId, testResult, true);
 
         // Load updated test results and recalculate test run status
-        const existingTestRunForRejected = await repository.getTestResults(
-          req.body.data.requestEventId
-        );
+        const existingTestRunForRejected = await repository.getTestResults(testRunId);
         if (existingTestRunForRejected?.results) {
           const { testRunStatus, passingPercentage } = calculateTestRunMetrics(
             existingTestRunForRejected.results
