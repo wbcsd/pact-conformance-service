@@ -75,7 +75,9 @@ export class EventHandler {
 
     logger.info("Processing event:", { path: requestPath, type: eventPayload.type, requestEventId: eventPayload.data.requestEventId });
 
-    const testData = await this.storage.getTestData(eventPayload.data.requestEventId);
+    const match = eventPayload.data.requestEventId.match(/^(.+)-(.+)$/);
+    const testRunId = match ? match[1] : eventPayload.data.requestEventId;
+    const testData = await this.storage.getTestData(testRunId);
 
     if (!testData) {
       throw new NotFoundError(`Test data not found for requestEventId: ${eventPayload.data.requestEventId}`);
@@ -83,11 +85,11 @@ export class EventHandler {
 
     // Process fulfilled events
     if (eventPayload.type === EventTypesV2.FULFILLED || eventPayload.type === EventTypesV3.FULFILLED) {
-      await this.processFulfilledEvent(eventPayload, testData, requestPath);
+      await this.processFulfilledEvent(eventPayload, testRunId, testData, requestPath);
     }
     // Process rejected events  
     else if (eventPayload.type === EventTypesV2.REJECTED || eventPayload.type === EventTypesV3.REJECTED) {
-      await this.processRejectedEvent(eventPayload, testData, requestPath);
+      await this.processRejectedEvent(eventPayload, testRunId, testData, requestPath);
     }
     
     // Note: Other event types are silently ignored per original logic
@@ -96,7 +98,12 @@ export class EventHandler {
   /**
    * Process fulfilled events (Test Case 13)
    */
-  private async processFulfilledEvent(eventPayload: EventPayload, testData: TestData, requestPath: string): Promise<void> {
+  private async processFulfilledEvent(
+    eventPayload: EventPayload, 
+    testRunId: string,
+    testData: TestData, 
+    requestPath: string
+  ): Promise<void> {
     const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
 
     // Validate event against schema
@@ -162,13 +169,18 @@ export class EventHandler {
       }
     }
 
-    await this.saveTestResultAndUpdateStatus(eventPayload.data.requestEventId, testResult);
+    await this.saveTestResultAndUpdateStatus(testRunId, testResult);
   }
 
   /**
    * Process rejected events (Test Case 14.B)
    */
-  private async processRejectedEvent(eventPayload: EventPayload, testData: TestData, requestPath: string): Promise<void> {
+  private async processRejectedEvent(
+    eventPayload: EventPayload,
+    testRunId: string,
+    testData: TestData,
+    requestPath: string
+  ): Promise<void> {
     logger.info("Processing rejected event:", JSON.stringify(eventPayload, null, 2));
 
     const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
@@ -217,7 +229,7 @@ export class EventHandler {
       };
     }
 
-    await this.saveTestResultAndUpdateStatus(eventPayload.data.requestEventId, testResult);
+    await this.saveTestResultAndUpdateStatus(testRunId, testResult);
   }
 
   /**
