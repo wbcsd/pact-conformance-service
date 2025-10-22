@@ -220,7 +220,19 @@ export class TestRunRepository implements TestStorage {
       throw new NotFoundError(`Test run not found: ${testRunId}`);
     }
 
-    const results = resultsRows.map((r) => r.result as TestResult);
+    const results = resultsRows.map((r) => r.result as TestResult).sort((a, b) => {
+      // Sort by extracted number from name if possible
+      const extractedA = a.name.match(/\d+/);
+      const extractedB = b.name.match(/\d+/);
+
+      // Fallback to name comparison if no numbers found
+      if (!extractedA || !extractedB) {
+        return a.name.localeCompare(b.name);
+      }
+
+      // Compare extracted numbers as integers
+      return parseInt(extractedA[0], 10) - parseInt(extractedB[0], 10);
+    });
 
     return {
       ...details as any,
