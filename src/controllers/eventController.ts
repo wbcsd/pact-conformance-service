@@ -172,7 +172,7 @@ export class EventController {
             existingTestRun.results
           );
           await updateTestRunStatus(
-            req.body.data.requestEventId,
+            testRunId,
             testRunStatus,
             passingPercentage
           );
@@ -245,7 +245,7 @@ export class EventController {
             existingTestRunForRejected.results
           );
           await updateTestRunStatus(
-            req.body.data.requestEventId,
+            testRunId,
             testRunStatus,
             passingPercentage
           );
