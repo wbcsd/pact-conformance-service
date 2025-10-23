@@ -12,7 +12,12 @@ import { ValidationError, NotFoundError } from "../errors";
 import logger from "../utils/logger";
 
 // Mock dependencies
-jest.mock("../utils/logger");
+jest.mock("../utils/logger", () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+}));
 
 describe("TestRunRepository", () => {
   let repository: TestRunRepository;
@@ -47,6 +52,12 @@ describe("TestRunRepository", () => {
     jest.clearAllMocks();
     mockDb = createMockQueryBuilder() as any;
     repository = new TestRunRepository(mockDb);
+    // Mock all console methods to prevent output during tests
+    jest.spyOn(console, "log").mockImplementation(() => {});
+    jest.spyOn(console, "warn").mockImplementation(() => {});
+    jest.spyOn(console, "debug").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    jest.spyOn(console, "info").mockImplementation(() => {});
   });
 
   describe("saveTestRun", () => {
@@ -57,6 +68,8 @@ describe("TestRunRepository", () => {
         adminEmail: "admin@acme.com",
         adminName: "John Doe",
         techSpecVersion: "v1.0",
+        timestamp: "",
+        status: ""
       };
 
       const mockBuilder = createMockQueryBuilder();
@@ -87,6 +100,8 @@ describe("TestRunRepository", () => {
         adminEmail: "admin@acme.com",
         adminName: "John Doe",
         techSpecVersion: "v1.0",
+        timestamp: "",
+        status: ""
       };
 
       const error = new Error("Database error");
@@ -141,19 +156,15 @@ describe("TestRunRepository", () => {
       });
       mockDb.updateTable.mockReturnValue(mockBuilder);
 
-      const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
-
       await repository.updateTestRunStatus(
         testRunId,
         status,
         passingPercentage
       );
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         `No test run found with ID ${testRunId} to update`
       );
-
-      consoleWarnSpy.mockRestore();
     });
 
     it("should handle errors when updating test run status", async () => {
@@ -222,16 +233,12 @@ describe("TestRunRepository", () => {
       mockDb.transaction.mockReturnValue(mockTransaction as any);
       mockTx.selectFrom.mockReturnValue(mockTx);
 
-      const consoleDebugSpy = jest.spyOn(console, "debug").mockImplementation();
-
       await repository.saveTestCaseResult(testRunId, testResult, false);
 
-      expect(consoleDebugSpy).toHaveBeenCalledWith(
+      expect(console.debug).toHaveBeenCalledWith(
         "Item already exists, no action taken."
       );
       expect(mockTx.insertInto).not.toHaveBeenCalled();
-
-      consoleDebugSpy.mockRestore();
     });
 
     it("should handle errors when saving test case result", async () => {
@@ -506,7 +513,8 @@ describe("TestRunRepository", () => {
     it("should save test data successfully", async () => {
       const testRunId = "test-run-123";
       const testData: TestData = {
-        metadata: { key: "value" },
+        productIds: ["product1", "product2"],
+        version: "V2.2",
       };
 
       const mockBuilder = createMockQueryBuilder();
@@ -530,7 +538,8 @@ describe("TestRunRepository", () => {
     it("should return test data when it exists", async () => {
       const testRunId = "test-run-123";
       const testData: TestData = {
-        metadata: { key: "value" },
+        productIds: ["product1", "product2"],
+        version: "V2.2",
       };
 
       const mockBuilder = createMockQueryBuilder();
