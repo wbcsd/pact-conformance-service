@@ -42,7 +42,7 @@ export class EventController {
    * Migrated from authForAsyncListener Lambda
   */
   async authToken(req: Request, res: Response): Promise<void> {
-    const authHeader = req.headers.authorization?.[0];
+    const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Basic ")) {
       res.status(400).json({ code: "BadRequest" });
