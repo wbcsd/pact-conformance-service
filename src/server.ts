@@ -16,7 +16,7 @@ const app = express();
 const port = process.env.PORT || 8080;
 
 // Middleware for parsing JSON bodies
-app.use(express.json());
+app.use(express.json({type: ["application/json", "application/cloudevents+json"]}));
 
 // Logging middleware
 app.use(loggerMiddleware);
