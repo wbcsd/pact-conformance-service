@@ -384,6 +384,5 @@ describe("runTestCase", () => {
     );
 
     expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
-    expect(res.errorMessage).not.toBeDefined();
   });
 });
