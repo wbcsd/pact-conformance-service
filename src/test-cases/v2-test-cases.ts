@@ -11,6 +11,7 @@ import {
   v2_3_ResponseSchema,
   v2_3_SingleFootprintResponseSchema,
   simpleResponseSchema,
+  authTokenResponseSchema,
 } from "../schemas/responseSchema";
 import {
   getCorrectAuthHeaders,
@@ -200,6 +201,8 @@ export const generateV2TestCases = ({
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       expectHttpError: true,
+      expectedStatusCodes: [200],
+      schema: authTokenResponseSchema,
       testKey: "TESTCASE#9",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
@@ -211,6 +214,8 @@ export const generateV2TestCases = ({
       customUrl: `${baseUrl.replace("https", "http")}/2/footprints`,
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       expectHttpError: true,
+      expectedStatusCodes: [200, 202],
+      schema: responseSchema,
       testKey: "TESTCASE#10",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-10-attempt-listfootprints-through-http-non-https",
@@ -223,6 +228,8 @@ export const generateV2TestCases = ({
       }`,
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       expectHttpError: true,
+      expectedStatusCodes: [200],
+      schema: singleFootprintResponseSchema,
       testKey: "TESTCASE#11",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-11-attempt-getfootprint-through-http-non-https",
@@ -370,6 +377,7 @@ export const generateV2TestCases = ({
       },
       mandatoryVersion: ["V2.2", "V2.3"],
       expectHttpError: true,
+      expectedStatusCodes: [200],
       testKey: "TESTCASE#17",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-17-attempt-action-events-through-http-non-https",

@@ -57,6 +57,21 @@ export const runTestCase = async (
   version: ApiVersion
 ): Promise<TestResult> => {
 
+  // If expectHttpError then just run the test and invert the result
+  if (testCase.expectHttpError) {
+    testCase.expectHttpError = false;
+    const result = await runTestCase(baseUrl, testCase, accessToken, version);
+    testCase.expectHttpError = true;
+    if (result.status == TestCaseResultStatus.SUCCESS) {
+      result.errorMessage = "Expected failure, but request was successful.";
+      result.status = TestCaseResultStatus.FAILURE;
+    } else {
+      result.errorMessage = "Successfully tested for failure<br/>Expected error occurred:<br/><br/>" + result.errorMessage ;
+      result.status = TestCaseResultStatus.SUCCESS;
+    }
+    return result;
+  }
+
   // Determine the full URL for the request
   const url = testCase.customUrl || `${baseUrl}${testCase.endpoint}`;
 
@@ -116,25 +131,11 @@ export const runTestCase = async (
     } else {
       result.errorMessage = error.message;
     }
-    if (testCase.expectHttpError) {
-      result.status = TestCaseResultStatus.SUCCESS;
-    } else {
-      result.status = TestCaseResultStatus.FAILURE;
-    }
+    result.status = TestCaseResultStatus.FAILURE;
     return result;
   }
 
-  if (testCase.expectHttpError) {
-    if (status >= 200 && status < 300) {
-      result.errorMessage = `Expected HTTP error, but got ${status}`;
-      result.status = TestCaseResultStatus.FAILURE;
-    } else {
-      result.status = TestCaseResultStatus.SUCCESS;
-    }
-    return result;
-  }
-
-  result.apiResponse = JSON.stringify(data);
+  result.apiResponse = text;
   
   if (testCase.expectedStatusCodes && !testCase.expectedStatusCodes.includes(status)) {
     result.status = TestCaseResultStatus.FAILURE;
@@ -143,6 +144,11 @@ export const runTestCase = async (
   }
   
   if (testCase.schema) {
+    if (!data) {
+      result.status = TestCaseResultStatus.FAILURE;
+      result.errorMessage = `Expected JSON response body, but got none or non-JSON response: ${text}`;
+      return result;
+    }
     const ajv = new Ajv({ allErrors: true });
     addFormats(ajv);
     betterErrors(ajv);
@@ -166,8 +172,6 @@ export const runTestCase = async (
       if (testCase.conditionErrorMessage) {
         messages.push(testCase.conditionErrorMessage);
       }
-    } else {
-      result.status = TestCaseResultStatus.SUCCESS;
     }
     result.errorMessage = messages.join(", ");
   }

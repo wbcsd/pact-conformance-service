@@ -196,8 +196,24 @@ describe("runTestCases Lambda handler with nock", () => {
       .get(/\/2\/footprints\/random-string-as-id/)
       .reply(404, { code: "NoSuchFootprint", message: "Footprint not found" });
 
-    // Mock for Test Case 12 & 16: Events
-    persistentNock(mockBaseUrl).post("/2/events").reply(200);
+    // Mock for Event Test Cases
+    persistentNock(mockBaseUrl)
+      .post("/2/events")
+      .reply((uri, requestBody) => {
+        const body = JSON.parse(requestBody as string);
+        if (body.type === "org.wbcsd.pathfinder.ProductFootprint.Published.v1") {
+          if (body.data && body.data.pfIds) {
+            // if the first pfId is a valid uuid (test with regex), return 200
+            const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            if (uuidRegex.test(body.data.pfIds[0])) {
+              return [200, {}];
+            } else {
+              return [400, { message: "Invalid pfId format" }];
+            }
+          }
+        }
+        return [200, {}];
+      });
 
     // Mock for Test Case 19: Filtered list
     persistentNock(mockBaseUrl)
@@ -251,6 +267,12 @@ describe("runTestCases Lambda handler with nock", () => {
         (r: TestResult) => r.status === "PENDING" && r.mandatory
       )
     ).toHaveProperty("testKey", "TESTCASE#13");
+    // No mandatory test cases should have failed
+    expect(
+      body.results.filter(
+        (r: TestResult) => r.status === "FAILURE" && r.mandatory
+      )
+    ).toHaveLength(0);
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);
@@ -381,8 +403,24 @@ describe("runTestCases Lambda handler with nock", () => {
       .get(/\/3\/footprints\/random-string-as-id/)
       .reply(404, { code: "NotFound", message: "Footprint not found" });
 
-    // Mock for Test Case 12 & 16: Events
-    persistentNock(mockBaseUrl).post("/3/events").reply(200);
+    // Mock for Event Test Cases
+    persistentNock(mockBaseUrl)
+    .post("/3/events")
+    .reply((uri, requestBody) => {
+      const body = JSON.parse(requestBody as string);
+      if (body.type === "org.wbcsd.pact.ProductFootprint.PublishedEvent.3") {
+        if (body.data && body.data.pfIds) {
+          // if the first pfId is a valid uuid (test with regex), return 200
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          if (uuidRegex.test(body.data.pfIds[0])) {
+            return [200, {}];
+          } else {
+            return [400, { message: "Invalid pfId format" }];
+          }
+        }
+      }
+      return [200, {}];
+    });
 
     // Mock for V3-specific test cases
     // Mock for Test Case 19: Filtered List of Footprints by productId
@@ -536,11 +574,13 @@ describe("runTestCases Lambda handler with nock", () => {
         (r: TestResult) => r.status === "PENDING"
       )
     ).toHaveLength(2); // Only async tests should be pending (TESTCASE#13 and TESTCASE#14.B)
+    
+    // All mandatory test cases should have passed.
     expect(
-      body.results.find(
-        (r: TestResult) => r.status !== "SUCCESS" && r.mandatory
+      body.results.filter(
+        (r: TestResult) => r.status === "FAILURE" && r.mandatory
       )
-    ).toHaveProperty("testKey", "TESTCASE#13");
+    ).toHaveLength(0);
 
     // All mocks should have been called
     expect(nock.isDone()).toBe(true);
