@@ -27,7 +27,7 @@ export class EventController {
    * POST /auth/token - Authenticate client and provide JWT token
   */
   async authToken(req: Request, res: Response): Promise<void> {
-    const authHeader = req.headers.authorization?.[0];
+    const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Basic ")) {
       res.status(400).json({ code: "BadRequest" });
@@ -159,7 +159,7 @@ export class EventController {
             existingTestRun.results
           );
           await repository.updateTestRunStatus(
-            req.body.data.requestEventId,
+            testRunId,
             testRunStatus,
             passingPercentage
           );
@@ -232,7 +232,7 @@ export class EventController {
             existingTestRunForRejected.results
           );
           await repository.updateTestRunStatus(
-            req.body.data.requestEventId,
+            testRunId,
             testRunStatus,
             passingPercentage
           );

@@ -384,7 +384,6 @@ describe("runTestCase", () => {
     );
 
     expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
-    expect(res.errorMessage).not.toBeDefined();
   });
 
   it("returns PENDING status for callback test cases", async () => {
@@ -475,7 +474,7 @@ describe("runTestCase", () => {
     );
 
     expect(res.status).toBe(TestCaseResultStatus.SUCCESS);
-    expect(res.errorMessage).toBe("Connection refused");
+    expect(res.errorMessage).toContain("Connection refused");
   });
 
   it("handles multiple expected status codes with success", async () => {

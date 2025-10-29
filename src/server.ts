@@ -19,7 +19,7 @@ const services = new ServiceContainer(db);
 app.locals.services = services;
 
 // Middleware for parsing JSON bodies
-app.use(express.json());
+app.use(express.json({type: ["application/json", "application/cloudevents+json"]}));
 
 // Logging middleware
 app.use(loggerMiddleware);

@@ -25,7 +25,16 @@ import {
   v3_0_productFootprintSchema,
   v3_0_EventFulfilledSchema,
   V3_0_SingleFootprintResponseSchema,
+  v3_0_EventRejectedSchema,
 } from "./v3_0_schema";
+
+export const authTokenResponseSchema = {
+  type: "object",
+  properties: {
+    access_token: { type: "string" },
+  },
+  required: ["access_token"],
+};
 
 // Simple response schemas for general use
 export const simpleResponseSchema = {
@@ -93,4 +102,5 @@ export {
   v3_0_productFootprintSchema,
   v3_0_EventFulfilledSchema,
   V3_0_SingleFootprintResponseSchema,
+  v3_0_EventRejectedSchema,
 };
