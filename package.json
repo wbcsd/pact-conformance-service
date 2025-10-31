@@ -12,6 +12,10 @@
     "test": "jest --maxWorkers=1",
     "test:watch": "jest --watch",
     "check": "ts-node ./src/scripts/check-config.ts",
+    "db:migrate": "ts-node ./src/data/migrate.ts latest",
+    "db:migrate:down": "ts-node ./src/data/migrate.ts down",
+    "db:migrate:up": "ts-node ./src/data/migrate.ts up",
+    "db:migrate:list": "ts-node ./src/data/migrate.ts list",
     "migrate": "ts-node ./src/data/migrate.ts"
   },
   "keywords": [],

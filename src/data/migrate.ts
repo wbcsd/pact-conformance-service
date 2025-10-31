@@ -48,6 +48,7 @@ async function migrate(command?: string, migration?: string) {
       case "down":
         result = await migrator.migrateDown();
         break;
+      case "latest":
       case null:
       case undefined:
         result = await migrator.migrateToLatest();
