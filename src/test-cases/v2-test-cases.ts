@@ -254,7 +254,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.2", "V2.3"],
       testKey: "TESTCASE#12",
       documentationUrl:
-        "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-12-receive-asynchronous-pcf-request",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-12-send-pcf-creation-request-async",
     },
     {
       name: "Test Case 13: Received Request Fulfilled Response",
@@ -265,7 +265,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.2", "V2.3"],
       testKey: "TESTCASE#13",
       documentationUrl: 
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-13-call-back-with-a-request-fulfilled-event",
     },
     {
       name: "Test Case 14.A: Send Asynchronous Request to be Rejected",
@@ -291,7 +291,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.2", "V2.3"],
       testKey: "TESTCASE#14.A",
       documentationUrl: 
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14a-request-for-the-creation-of-a-pcf-to-be-rejected",
     },
     {
       name: "Test Case 14.B: Handle Rejected PCF Request",
@@ -302,7 +302,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.2", "V2.3"],
       testKey: "TESTCASE#14.B",
       documentationUrl: 
-        "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
+        "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14b-call-back-with-a-request-rejected-event",
     },
     {
       name: "Test Case 15: Receive Notification of PCF Update (Published Event)",

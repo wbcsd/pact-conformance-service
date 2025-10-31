@@ -1,4 +1,4 @@
-# PACT Tech Specs V3 Test Cases - Expected Results
+# PACT Tech Specs V3 Test Cases
 
 This document outlines the test cases used to validate PACT Tech Specs V3 implementations, their expected responses, and example payloads.
 
@@ -13,7 +13,7 @@ This test verifies the ability to obtain an authentication token using valid cre
 Request:
 
 - Method: `POST`
-- Endpoint: `{AUTH_BASE_URL}/auth/token` or OpenID Connect URL
+- Endpoint: `{AUTH_BASE_URL}/auth/token` *OR* OpenID Connect URL
 - Data: `grant_type=client_credentials`
 
 Request headers:
@@ -108,14 +108,16 @@ Example valid response body:
       "urn:eclass:0173-1#01-AAA123#005"
     ],
     "pcf": {
-      "declaredUnit": "liter",
-      "unitaryProductAmount": 1,
+      "declaredUnitOfMeasurement": "liter",
+      "declaredUnitAmount": "1",
+      "productMassPerDeclaredUnit": "25",
+      "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+      "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
       "geographyCountry": "DE",
       "boundaryProcessesDescription": "Cradle-to-gate",
-      "carbonFootprint": {
-        "value": 2.56,
-        "uom": "kg CO2e"
-      }
+      "pcfExcludingBiogenicUptake": "77.0",
+      "pcfIncludingBiogenicUptake": "77.0",
+      "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
     }
   }
 }
@@ -164,14 +166,16 @@ Example valid response body:
         "urn:eclass:0173-1#01-AAA123#005"
       ],
       "pcf": {
-        "declaredUnit": "liter",
-        "unitaryProductAmount": 1,
+        "declaredUnitOfMeasurement": "liter",
+        "declaredUnitAmount": "1",
+        "productMassPerDeclaredUnit": "25",
+        "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+        "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
         "geographyCountry": "DE",
         "boundaryProcessesDescription": "Cradle-to-gate",
-        "carbonFootprint": {
-          "value": 2.56,
-          "uom": "kg CO2e"
-        }
+        "pcfExcludingBiogenicUptake": "77.0",
+        "pcfIncludingBiogenicUptake": "77.0",
+        "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
       }
     },
     {
@@ -192,14 +196,16 @@ Example valid response body:
         "urn:eclass:0173-1#01-BBB456#005"
       ],
       "pcf": {
-        "declaredUnit": "liter",
-        "unitaryProductAmount": 1,
-        "geographyCountry": "FR",
+        "declaredUnitOfMeasurement": "liter",
+        "declaredUnitAmount": "1",
+        "productMassPerDeclaredUnit": "25",
+        "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+        "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
+        "geographyCountry": "DE",
         "boundaryProcessesDescription": "Cradle-to-gate",
-        "carbonFootprint": {
-          "value": 1.89,
-          "uom": "kg CO2e"
-        }
+        "pcfExcludingBiogenicUptake": "77.0",
+        "pcfIncludingBiogenicUptake": "77.0",
+        "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
       }
     }
   ]
@@ -279,9 +285,9 @@ host: api.example.com
 authorization: Bearer invalid-access-token
 ```
 
-Expected http status codes: `400`, `401`
+Expected http status codes: `400`, `401` (Mandatory)
 
-Example response body:
+Example response body: (Recommended)
 
 ```
 {
@@ -308,9 +314,9 @@ host: api.example.com
 authorization: Bearer invalid-access-token
 ```
 
-Expected http status codes: `400`, `401`
+Expected http status codes: `400`, `401` (Mandatory)
 
-Example response body:
+Example response body: (Recommended)
 
 ```
 {
@@ -409,11 +415,14 @@ authorization: Bearer [BearerToken]
 
 Expected behavior: Connection should be rejected or response should not include data property
 
-## Test Case #12: Receive Asynchronous PCF Request
+## Test Case #12: Send PCF Creation Request (Async)
 
 _Mandatory: V3.0_
 
-This test verifies the ability to receive asynchronous PCF requests in CloudEvents format.
+Verifies the correct handling of a PCF creation request in CloudEvents format. Test case 
+#12 works in conjunction with test case #13. This test POSTs a request for creating a PCF to 
+your API. Subseqently test case #13 will start listening for your API to POST back the 
+resulting PCF.
 
 Request:
 
@@ -443,36 +452,33 @@ Request body:
 }
 ```
 
-Expected http status code: `200`
+Expected http status code: `200` (Mandatory)
 
-Example response body:
+Example response body: empty (Recommended)
 
-```
-{
-  "status": "accepted",
-  "message": "Event successfully processed"
-}
-```
 
-## Test Case #13: Respond to PCF Request Fulfilled Event
+## Test Case #13: Call back with a Request Fulfilled Event
 
 _Mandatory: V3.0_
 
-This test verifies the ability to respond with appropriate status when receiving event notifications that fulfill a previously created PCF request.
+This test verifies that your API succesfully makes a call back with a valid PCF, answering 
+the request for creation send in test case #12. Test case #13 will listen for an incoming
+CloudEvent message to be POSTed. As long as no message has been received, it will stay in 
+PENDING state. 
 
-Request:
+Expected *incoming* Request:
 
 - Method: `POST`
-- Endpoint: `{API_BASE_URL}/3/events`
+- Endpoint: `https://conformance.services.carbon-transparency.org/3/events`
 
-Request headers:
+Expected *incoming* Request headers:
 
 ```
 Content-Type: application/cloudevents+json; charset=UTF-8
 authorization: Bearer [BearerToken]
 ```
 
-Request body:
+Expected *incoming* Request body:
 
 ```
 {
@@ -502,16 +508,16 @@ Request body:
         ],
         "productNameCompany": "Renewable Diesel",
         "pcf": {
-          "declaredUnit": "liter",
-          "unitaryProductAmount": 1,
+          "declaredUnitOfMeasurement": "liter",
+          "declaredUnitAmount": "1",
+          "productMassPerDeclaredUnit": "25",
+          "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+          "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
           "geographyCountry": "DE",
           "boundaryProcessesDescription": "Cradle-to-gate",
-          "referencePeriodStart": "2022-01-01T00:00:00Z",
-          "referencePeriodEnd": "2022-12-31T23:59:59Z",
-          "carbonFootprint": {
-            "value": 2.56,
-            "uom": "kg CO2e"
-          }
+          "pcfExcludingBiogenicUptake": "77.0",
+          "pcfIncludingBiogenicUptake": "77.0",
+          "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
         }
       }
     ]
@@ -519,22 +525,18 @@ Request body:
 }
 ```
 
-Expected http status code: `200`
 
-Example response body:
-
-```
-{
-  "status": "accepted",
-  "message": "Event successfully processed"
-}
-```
-
-## Test Case #14: Respond to PCF Request Rejected Event
+## Test Case #14.A: Request for the creation of a PCF to be rejected
 
 _Mandatory: V3.0_
 
-This test verifies the ability to respond with appropriate status when receiving event notifications that reject a previously created PCF request.
+Send a PCF creation request to be rejected later on. Test case #14.A works in conjunction with 
+test case #14.B. This test POSTs a request for the creating a PCF to your API. Subseqently test case #14.B 
+will start listening for your API to POST back the result.
+
+Because the creation request purposely contains an *non-existent* product ID, the callback POSTed by 
+your API (#14.B) should be a `RequestRejectedEvent` event.
+
 
 Request:
 
@@ -549,6 +551,52 @@ authorization: Bearer [BearerToken]
 ```
 
 Request body:
+
+```
+{
+  "specversion": "1.0",
+  "id": "test-run-id-12345",
+  "source": "https://webhook.example.com",
+  "time": "2023-05-19T10:30:00Z",
+  "type": "org.wbcsd.pact.ProductFootprint.RequestCreatedEvent.3",
+  "data": {
+    "productId": ["urn:null"],
+    "comment": "Please send PCF data for this year."
+  }
+}
+```
+
+Expected http status code: `200` (Mandatory)
+
+Example response body: empty (Recommended)
+
+
+
+## Test Case #14.B: Call back with a Request Rejected Event
+
+_Mandatory: V3.0_
+
+This test verifies that your API makes a call back with a rejection message, answering 
+the (invalid) request for creation send in test case #14.A. Test case #14.B will listen 
+for an incoming CloudEvent message to be POSTed. As long as no message has been received,
+it will stay in PENDING state. 
+
+Because the creation request (14.A) purposely contains an *non-existent* product ID, 
+the callback POSTed by your API (#14.B) should be a `RequestRejectedEvent` event.
+
+Expected *incoming* Request:
+
+- Method: `POST`
+- Endpoint: `https://conformance.services.carbon-transparency.org/3/events`
+
+Expected *incoming* Request headers:
+
+```
+Content-Type: application/cloudevents+json; charset=UTF-8
+authorization: Bearer [BearerToken]
+```
+
+Expected *incoming* Request body:
 
 ```
 {
@@ -567,16 +615,10 @@ Request body:
 }
 ```
 
-Expected http status code: `200`
+Expected http status code: `200` (Mandatory)
 
-Example response body:
+Example response body: empty (Recommended)
 
-```
-{
-  "status": "accepted",
-  "message": "Event successfully processed"
-}
-```
 
 ## Test Case #15: Receive Notification of PCF Update (Published Event)
 
@@ -611,16 +653,10 @@ Request body:
 }
 ```
 
-Expected http status code: `200`
+Expected http status code: `200` (Mandatory)
 
-Example response body:
+Example response body: empty (Recommended)
 
-```
-{
-  "status": "accepted",
-  "message": "Event successfully processed"
-}
-```
 
 ## Test Case #16: Attempt Action Events with Invalid Token
 
@@ -655,9 +691,9 @@ Request body:
 }
 ```
 
-Expected http status codes: `400`, `401`
+Expected http status codes: `400`, `401` (Mandatory)
 
-Example response body:
+Example response body: (Recommended)
 
 ```
 {
@@ -895,14 +931,16 @@ Example valid response body:
       "productDescription": "Renewable Diesel, soybean feedstock (bulk - no packaging)",
       "productIds": ["urn:gtin:1234567890123"],
       "pcf": {
-        "declaredUnit": "liter",
-        "unitaryProductAmount": 1,
+        "declaredUnitOfMeasurement": "liter",
+        "declaredUnitAmount": "1",
+        "productMassPerDeclaredUnit": "25",
+        "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+        "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
         "geographyCountry": "DE",
         "boundaryProcessesDescription": "Cradle-to-gate",
-        "carbonFootprint": {
-          "value": 2.56,
-          "uom": "kg CO2e"
-        }
+        "pcfExcludingBiogenicUptake": "77.0",
+        "pcfIncludingBiogenicUptake": "77.0",
+        "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
       }
     }
   ]
