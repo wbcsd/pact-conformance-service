@@ -646,9 +646,9 @@ Request body:
 }
 ```
 
-Expected http status codes: `400`, `401`
+Expected http status codes: `400`, `401` (Mandatory)
 
-Example response body:
+Example response body: (Recommended)
 
 ```
 {
