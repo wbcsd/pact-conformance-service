@@ -446,16 +446,10 @@ Request body:
 }
 ```
 
-Expected http status code: `200`
+Expected http status code: `200` (Mandatory)
 
-Example response body:
+Example response body: empty (Recommended)
 
-```
-{
-  "status": "accepted",
-  "message": "Event successfully processed"
-}
-```
 
 ## Test Case #13: Call back with a Request Fulfilled Event
 
@@ -566,16 +560,10 @@ Request body:
 }
 ```
 
-Expected http status code: `200`
+Expected http status code: `200` (Mandatory)
 
-Example response body:
+Example response body: empty (Recommended)
 
-```
-{
-  "status": "accepted",
-  "message": "Event successfully processed"
-}
-```
 
 
 ## Test Case #14.B: Call back with a Request Rejected Event
@@ -621,16 +609,10 @@ Expected *incoming* Request body:
 }
 ```
 
-Expected http status code: `200`
+Expected http status code: `200` (Mandatory)
 
-Example response body:
+Example response body: empty (Recommended)
 
-```
-{
-  "status": "accepted",
-  "message": "Event successfully processed"
-}
-```
 
 ## Test Case #15: Receive Notification of PCF Update (Published Event)
 
@@ -665,16 +647,10 @@ Request body:
 }
 ```
 
-Expected http status code: `200`
+Expected http status code: `200` (Mandatory)
 
-Example response body:
+Example response body: empty (Recommended)
 
-```
-{
-  "status": "accepted",
-  "message": "Event successfully processed"
-}
-```
 
 ## Test Case #16: Attempt Action Events with Invalid Token
 
