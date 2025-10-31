@@ -1,4 +1,4 @@
-# PACT Tech Specs Test Cases - Expected Results
+# PACT Tech Specs Test Cases
 
 This document outlines the test cases used to validate PACT API V2 implementations, their expected responses, and example payloads.
 
@@ -13,7 +13,7 @@ This test verifies the ability to obtain an authentication token using valid cre
 Request:
 
 - Method: `POST`
-- Endpoint: `{AUTH_BASE_URL}/auth/token` or OpenID Connect URL
+- Endpoint: `{AUTH_BASE_URL}/auth/token` *OR* OpenID Connect URL
 - Data: `grant_type=client_credentials`
 
 Request headers:
@@ -238,9 +238,9 @@ host: api.example.com
 authorization: Bearer invalid-access-token
 ```
 
-Expected http status codes: `400`, `401`
+Expected http status codes: `400`, `401` (Mandatory)
 
-Example response body:
+Example response body: (Recommended)
 
 ```
 {
@@ -267,9 +267,9 @@ host: api.example.com
 authorization: Bearer invalid-access-token
 ```
 
-Expected http status codes: `400`, `401`
+Expected http status codes: `400`, `401` (Mandatory)
 
-Example response body:
+Example response body: (Recommended)
 
 ```
 {
@@ -368,11 +368,14 @@ authorization: Bearer [BearerToken]
 
 Expected behavior: Connection should be rejected or response should not include data property
 
-## Test Case #12: Receive Asynchronous PCF Request
+## Test Case #12: Send PCF Creation Request (Async)
 
 _Mandatory: V2.2, V2.3_
 
-This test verifies the ability to receive asynchronous PCF requests in CloudEvents format.
+Verifies the correct handling of a PCF creation request in CloudEvents format. Test case 
+#12 works in conjunction with test case #13. This test POSTs a request for creating a PCF to 
+your API. Subseqently test case #13 will start listening for your API to POST back the 
+resulting PCF.
 
 Request:
 
@@ -415,25 +418,28 @@ Example response body:
 }
 ```
 
-## Test Case #13: Respond to PCF Request Fulfilled Event
+## Test Case #13: Call back with a Request Fulfilled Event
 
 _Mandatory: V2.2, V2.3_
 
-This test verifies the ability to respond with appropriate status when receiving event notifications that fulfill a previously created PCF request.
+This test verifies that your API succesfully makes a call back with a valid PCF, answering 
+the request for creation send in test case #12. Test case #13 will listen for an incoming
+CloudEvent message to be POSTed. As long as no message has been received, it will stay in 
+PENDING state. 
 
-Request:
+Expected *incoming* Request:
 
 - Method: `POST`
-- Endpoint: `{API_BASE_URL}/2/events`
+- Endpoint: `https://conformance.services.carbon-transparency.org/2/events`
 
-Request headers:
+Expected *incoming* Request headers:
 
 ```
 Content-Type: application/cloudevents+json; charset=UTF-8
 authorization: Bearer [BearerToken]
 ```
 
-Request body:
+Expected *incoming* Request body:
 
 ```
 {
@@ -447,8 +453,7 @@ Request body:
     "pfs": [
       {
         "id": "b1f8c0d2-7c4e-4e67-9a9c-2e4c12345678",
-        "specVersion": "2.0.0",
-        "version": 1,
+        "specVersion": "2.2.0",
         "created": "2023-01-15T10:15:30Z",
         "status": "Active",
         "validityPeriodStart": "2023-01-15T10:15:30Z",
@@ -482,6 +487,47 @@ Request body:
 }
 ```
 
+
+## Test Case #14.A: Request for the creation of a PCF to be rejected
+
+_Mandatory: V2.2, V2.3_
+
+Send a PCF creation request to be rejected later on. Test case #14.A works in conjunction with 
+test case #14.B. This test POSTs a request for the creating a PCF to your API. Subseqently test case #14.B 
+will start listening for your API to POST back the result.
+
+Because the creation request purposely contains an *non-existent* product ID, the callback POSTed by 
+your API (#14.B) should be a `RequestRejectedEvent` event.
+
+
+Request:
+
+- Method: `POST`
+- Endpoint: `{API_BASE_URL}/3/events`
+
+Request headers:
+
+```
+Content-Type: application/cloudevents+json; charset=UTF-8
+authorization: Bearer [BearerToken]
+```
+
+Request body:
+
+```
+{
+  "specversion": "1.0",
+  "id": "test-run-id-12345",
+  "source": "https://webhook.example.com",
+  "time": "2023-05-19T10:30:00Z",
+  "type": "org.wbcsd.pathfinder.ProductFootprintRequest.Created.v1",
+  "data": {
+    "productId": ["urn:null"],
+    "comment": "Please send PCF data for this year."
+  }
+}
+```
+
 Expected http status code: `200`
 
 Example response body:
@@ -493,25 +539,32 @@ Example response body:
 }
 ```
 
-## Test Case #14: Respond to PCF Request Rejected Event
+
+## Test Case #14.B: Call back with a Request Rejected Event
 
 _Mandatory: V2.2, V2.3_
 
-This test verifies the ability to respond with appropriate status when receiving event notifications that reject a previously created PCF request.
+This test verifies that your API makes a call back with a rejection message, answering 
+the (invalid) request for creation send in test case #14.A. Test case #14.B will listen 
+for an incoming CloudEvent message to be POSTed. As long as no message has been received,
+it will stay in PENDING state. 
 
-Request:
+Because the creation request (14.A) purposely contains an *non-existent* product ID, 
+the callback POSTed by your API (#14.B) should be a `Rejected` event.
+
+Expected *incoming* Request:
 
 - Method: `POST`
-- Endpoint: `{API_BASE_URL}/2/events`
+- Endpoint: `https://conformance.services.carbon-transparency.org/2/events`
 
-Request headers:
+Expected *incoming* Request headers:
 
 ```
 Content-Type: application/cloudevents+json; charset=UTF-8
 authorization: Bearer [BearerToken]
 ```
 
-Request body:
+Expected *incoming* Request body:
 
 ```
 {
