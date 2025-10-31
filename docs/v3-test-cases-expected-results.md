@@ -108,14 +108,16 @@ Example valid response body:
       "urn:eclass:0173-1#01-AAA123#005"
     ],
     "pcf": {
-      "declaredUnit": "liter",
-      "unitaryProductAmount": 1,
+      "declaredUnitOfMeasurement": "liter",
+      "declaredUnitAmount": "1",
+      "productMassPerDeclaredUnit": "25",
+      "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+      "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
       "geographyCountry": "DE",
       "boundaryProcessesDescription": "Cradle-to-gate",
-      "carbonFootprint": {
-        "value": 2.56,
-        "uom": "kg CO2e"
-      }
+      "pcfExcludingBiogenicUptake": "77.0",
+      "pcfIncludingBiogenicUptake": "77.0",
+      "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
     }
   }
 }
@@ -164,14 +166,16 @@ Example valid response body:
         "urn:eclass:0173-1#01-AAA123#005"
       ],
       "pcf": {
-        "declaredUnit": "liter",
-        "unitaryProductAmount": 1,
+        "declaredUnitOfMeasurement": "liter",
+        "declaredUnitAmount": "1",
+        "productMassPerDeclaredUnit": "25",
+        "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+        "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
         "geographyCountry": "DE",
         "boundaryProcessesDescription": "Cradle-to-gate",
-        "carbonFootprint": {
-          "value": 2.56,
-          "uom": "kg CO2e"
-        }
+        "pcfExcludingBiogenicUptake": "77.0",
+        "pcfIncludingBiogenicUptake": "77.0",
+        "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
       }
     },
     {
@@ -192,14 +196,16 @@ Example valid response body:
         "urn:eclass:0173-1#01-BBB456#005"
       ],
       "pcf": {
-        "declaredUnit": "liter",
-        "unitaryProductAmount": 1,
-        "geographyCountry": "FR",
+        "declaredUnitOfMeasurement": "liter",
+        "declaredUnitAmount": "1",
+        "productMassPerDeclaredUnit": "25",
+        "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+        "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
+        "geographyCountry": "DE",
         "boundaryProcessesDescription": "Cradle-to-gate",
-        "carbonFootprint": {
-          "value": 1.89,
-          "uom": "kg CO2e"
-        }
+        "pcfExcludingBiogenicUptake": "77.0",
+        "pcfIncludingBiogenicUptake": "77.0",
+        "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
       }
     }
   ]
@@ -502,16 +508,16 @@ Expected *incoming* Request body:
         ],
         "productNameCompany": "Renewable Diesel",
         "pcf": {
-          "declaredUnit": "liter",
-          "unitaryProductAmount": 1,
+          "declaredUnitOfMeasurement": "liter",
+          "declaredUnitAmount": "1",
+          "productMassPerDeclaredUnit": "25",
+          "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+          "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
           "geographyCountry": "DE",
           "boundaryProcessesDescription": "Cradle-to-gate",
-          "referencePeriodStart": "2022-01-01T00:00:00Z",
-          "referencePeriodEnd": "2022-12-31T23:59:59Z",
-          "carbonFootprint": {
-            "value": 2.56,
-            "uom": "kg CO2e"
-          }
+          "pcfExcludingBiogenicUptake": "77.0",
+          "pcfIncludingBiogenicUptake": "77.0",
+          "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
         }
       }
     ]
@@ -925,14 +931,16 @@ Example valid response body:
       "productDescription": "Renewable Diesel, soybean feedstock (bulk - no packaging)",
       "productIds": ["urn:gtin:1234567890123"],
       "pcf": {
-        "declaredUnit": "liter",
-        "unitaryProductAmount": 1,
+        "declaredUnitOfMeasurement": "liter",
+        "declaredUnitAmount": "1",
+        "productMassPerDeclaredUnit": "25",
+        "referencePeriodStart": "2024-02-28T00:00:00+00:00",
+        "referencePeriodEnd": "2024-09-30T00:00:00+00:00",
         "geographyCountry": "DE",
         "boundaryProcessesDescription": "Cradle-to-gate",
-        "carbonFootprint": {
-          "value": 2.56,
-          "uom": "kg CO2e"
-        }
+        "pcfExcludingBiogenicUptake": "77.0",
+        "pcfIncludingBiogenicUptake": "77.0",
+        "fossilCarbonContent": "11.72","ipccCharacterizationFactors": ["AR6"]
       }
     }
   ]
