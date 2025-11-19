@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import config from "../../config";
 import nock from "nock";
 import { mockFootprintsV2, mockFootprintsV3 } from "../mocks/footprints";
-import { TestRunController } from "../../controllers/TestRunController"; // Adjust the path as needed
+import { TestRunController } from "../../controllers/testRunController";
 import { TestStorage } from "../../services/types";
 import { TestRunWorker } from "../../services/test-run-worker";
 

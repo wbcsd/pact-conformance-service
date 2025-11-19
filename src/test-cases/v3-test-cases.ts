@@ -4,9 +4,7 @@ import { randomString } from "../utils/authUtils";
 import {
   simpleResponseSchema,
   emptyResponseSchema,
-  v3_0_ResponseSchema,
-  V3_0_SingleFootprintResponseSchema,
-  v3_0_EventFulfilledSchema,
+  schemas,
 } from "../schemas/responseSchema";
 import {
   getCorrectAuthHeaders,
@@ -128,9 +126,9 @@ export const generateV3TestCases = ({
   const responseSchema = (() => {
     switch (version) {
       case "V3.0":
-        return v3_0_ResponseSchema;
+        return schemas['3.0'].listFootprintsResponse;
       default:
-        return v3_0_ResponseSchema; // Default to latest if unknown
+        return schemas['3.0'].listFootprintsResponse; // Default to latest if unknown
     }
   })();
 
@@ -167,7 +165,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints/${filterParams.id}`,
       expectedStatusCodes: [200],
-      schema: V3_0_SingleFootprintResponseSchema,
+      schema: schemas['3.0'].singleFootprintResponse,
       condition: (body) => {
         return body?.data?.id === filterParams.id;
       },
@@ -324,7 +322,7 @@ export const generateV3TestCases = ({
         "Authorization": "Bearer TOKEN"
       },
       method: "POST",
-      schema: v3_0_EventFulfilledSchema,
+      schema: schemas['3.0'].events?.fulfilled,
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#13",
       documentationUrl: "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",

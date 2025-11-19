@@ -201,9 +201,9 @@ describe("EventController listening for async requests", () => {
             productIds: ["urn:product-123"], // Different from mockTestData
             pcf: {
               declaredUnit: "kg",
-              unitaryProductAmount: 1,
+              unitaryProductAmount: "1",
               carbonFootprint: {
-                value: 10,
+                value: "10",
               },
             },
             footprint: {

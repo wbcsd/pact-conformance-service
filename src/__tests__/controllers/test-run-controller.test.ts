@@ -3,7 +3,7 @@ import config from "../../config";
 import * as authUtils from "../../utils/authUtils";
 import * as fetchFootprints from "../../utils/fetchFootprints";
 import * as runTestCaseModule from "../../utils/runTestCase";
-import { TestRunController } from "../../controllers/TestRunController";
+import { TestRunController } from "../../controllers/testRunController";
 import { mockFootprintsV2, mockFootprintsV3 } from "../mocks/footprints";
 import { TestCaseResultStatus, TestStorage } from "../../services/types";
 import { TestRunWorker } from "../../services/test-run-worker";

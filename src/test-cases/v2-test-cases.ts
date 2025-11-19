@@ -2,14 +2,7 @@ import { ApiVersion, TestCase, EventTypesV2 } from "../services/types";
 import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
 import {
-  v2_0_ResponseSchema,
-  v2_0_SingleFootprintResponseSchema,
-  v2_1_ResponseSchema,
-  v2_1_SingleFootprintResponseSchema,
-  v2_2_ResponseSchema,
-  v2_2_SingleFootprintResponseSchema,
-  v2_3_ResponseSchema,
-  v2_3_SingleFootprintResponseSchema,
+  schemas,
   simpleResponseSchema,
 } from "../schemas/responseSchema";
 import {
@@ -44,30 +37,30 @@ export const generateV2TestCases = ({
   const responseSchema = (() => {
     switch (version) {
       case "V2.0":
-        return v2_0_ResponseSchema;
+        return schemas['2.0'].listFootprintsResponse;
       case "V2.1":
-        return v2_1_ResponseSchema;
+        return schemas['2.1'].listFootprintsResponse;
       case "V2.2":
-        return v2_2_ResponseSchema;
+        return schemas['2.2'].listFootprintsResponse;
       case "V2.3":
-        return v2_3_ResponseSchema;
+        return schemas['2.3'].listFootprintsResponse;
       default:
-        return v2_3_ResponseSchema; // Default to latest if unknown
+        return schemas['2.3'].listFootprintsResponse; // Default to latest if unknown
     }
   })();
 
   const singleFootprintResponseSchema = (() => {
     switch (version) {
       case "V2.0":
-        return v2_0_SingleFootprintResponseSchema;
+        return schemas['2.0'].singleFootprintResponse;
       case "V2.1":
-        return v2_1_SingleFootprintResponseSchema;
+        return schemas['2.1'].singleFootprintResponse;
       case "V2.2":
-        return v2_2_SingleFootprintResponseSchema;
+        return schemas['2.2'].singleFootprintResponse;
       case "V2.3":
-        return v2_3_SingleFootprintResponseSchema;
+        return schemas['2.3'].singleFootprintResponse;
       default:
-        return v2_3_SingleFootprintResponseSchema; // Default to latest if unknown
+        return schemas['2.3'].singleFootprintResponse; // Default to latest if unknown
     }
   })();
 

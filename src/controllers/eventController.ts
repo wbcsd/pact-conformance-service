@@ -6,7 +6,7 @@ import betterErrors from "ajv-errors";
 import config from "../config";
 import { TestStorage } from "../services/types";
 import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus } from "../services/types";
-import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
+import { schemas } from "../schemas/responseSchema";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import logger from "../utils/logger";
 import { Services } from '../services';
@@ -88,8 +88,8 @@ export class EventController {
 
         const validateEvent = ajv.compile(
           testData.version.startsWith("V2")
-            ? eventFulfilledSchema
-            : v3_0_EventFulfilledSchema
+            ? schemas['2.3'].events?.fulfilled
+            : schemas['3.0'].events?.fulfilled
         );
         const eventIsValid = validateEvent(req.body);
 
@@ -167,6 +167,31 @@ export class EventController {
             `Updated test run status: ${testRunStatus}, passing percentage: ${passingPercentage}%`
           );
         }
+      } else if (
+        req.body.type === EventTypesV2.PUBLISHED ||
+        req.body.type === EventTypesV3.PUBLISHED
+      ) {
+        // Validate Published Events to catch malformed requests
+        const validateEvent = ajv.compile(
+          testData.version.startsWith("V2")
+            ? schemas['2.3'].events?.published
+            : schemas['3.0'].events?.published
+        );
+        const eventIsValid = validateEvent(req.body);
+
+        if (!eventIsValid) {
+          // This is a malformed Published Event - return 400 as expected by the test
+          logger.error("Published event validation failed:", validateEvent.errors);
+          res.status(400).json({
+            code: "BadRequest",
+            message: "Malformed Published Event",
+            errors: validateEvent.errors
+          });
+          return;
+        }
+        
+        // If the event is valid, we could process it here if needed
+        // For now, just return success
       } else if (
         req.body.type === EventTypesV2.REJECTED ||
         req.body.type === EventTypesV3.REJECTED
