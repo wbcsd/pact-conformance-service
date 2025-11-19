@@ -5,7 +5,7 @@ import betterErrors from "ajv-errors";
 import config from "../config";
 import { TestStorage } from "./types";
 import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus, TestData } from "./types";
-import { eventFulfilledSchema, v3_0_EventFulfilledSchema } from "../schemas/responseSchema";
+import { schemas } from "../schemas/responseSchema";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import logger from "../utils/logger";
 import { BadRequestError, UnauthorizedError, NotFoundError } from "../errors";
@@ -108,7 +108,7 @@ export class EventHandler {
 
     // Validate event against schema
     const validateEvent = ajv.compile(
-      testData.version.startsWith("V2") ? eventFulfilledSchema : v3_0_EventFulfilledSchema
+      testData.version.startsWith("V2") ? schemas['2.3'].events?.fulfilled : schemas['3.0'].events?.fulfilled
     );
     const eventIsValid = validateEvent(eventPayload);
 
