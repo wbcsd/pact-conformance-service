@@ -1,5 +1,5 @@
 // Product Footprint and Response Schema for v2.1
-export const v2_1_productFootprintSchema = {
+export const productFootprintSchema = {
   type: "object",
   title: "ProductFootprint",
   required: [
@@ -114,7 +114,7 @@ export const v2_1_productFootprintSchema = {
 };
 
 const sharedDefinitions = {
-  ProductFootprint: v2_1_productFootprintSchema,
+  ProductFootprint: productFootprintSchema,
   NonEmptyString: {
     type: "string",
     minLength: 1,
@@ -499,7 +499,7 @@ const sharedDefinitions = {
   },
 };
 
-export const v2_1_ResponseSchema = {
+export const ResponseSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   title: "ListFootprintsResponse",
   type: "object",
@@ -515,7 +515,7 @@ export const v2_1_ResponseSchema = {
   definitions: sharedDefinitions,
 };
 
-export const v2_1_SingleFootprintResponseSchema = {
+export const SingleFootprintResponseSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   title: "SingleFootprintResponse",
   type: "object",

@@ -5,7 +5,7 @@ import {
   schemas,
   simpleResponseSchema,
   authTokenResponseSchema,
-} from "../schemas/responseSchema";
+} from "../schemas";
 import {
   getCorrectAuthHeaders,
   getIncorrectAuthHeaders,

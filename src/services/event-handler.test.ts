@@ -141,7 +141,7 @@ describe("EventHandler", () => {
         specversion: "1.0",
         id: "event-xyz",
         time: "2024-01-01T00:00:00Z",
-        source: "pact-conformance-service",
+        source: "urn:pact-conformance-service",
         data: {
           requestEventId: "run123-abc",
           pfs: [{ 
@@ -205,7 +205,7 @@ describe("EventHandler", () => {
         specversion: "1.0",
         id: "event-xyz",
         time: "2024-01-01T00:00:00Z",
-        source: "pact-conformance-service",
+        source: "http://pact-conformance-service",
         data: {
           requestEventId: "run123-abc",
           pfs: [{ 
@@ -284,7 +284,7 @@ describe("EventHandler", () => {
         specversion: "1.0",
         id: "event-xyz",
         time: "2024-01-01T00:00:00Z",
-        source: "pact-conformance-service",
+        source: "https://pact-conformance-service",
         data: {
           requestEventId: "run123-abc",
           pfs: [{

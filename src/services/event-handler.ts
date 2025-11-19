@@ -5,7 +5,7 @@ import betterErrors from "ajv-errors";
 import config from "../config";
 import { TestStorage } from "./types";
 import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus, TestData } from "./types";
-import { schemas } from "../schemas/responseSchema";
+import { schemas } from "../schemas";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import logger from "../utils/logger";
 import { BadRequestError, UnauthorizedError, NotFoundError } from "../errors";

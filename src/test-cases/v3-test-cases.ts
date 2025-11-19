@@ -4,13 +4,13 @@ import { randomString } from "../utils/authUtils";
 import {
   simpleResponseSchema,
   emptyResponseSchema,
+  authTokenResponseSchema,
   schemas,
-} from "../schemas/responseSchema";
+} from "../schemas";
 import {
   getCorrectAuthHeaders,
   getIncorrectAuthHeaders,
 } from "../utils/authUtils";
-import { v3_0_EventRejectedSchema } from "../schemas/v3_0_schema";
 
 interface Footprint {
   id: string;
@@ -369,7 +369,7 @@ export const generateV3TestCases = ({
         "Authorization": "Bearer TOKEN"
       },
       method: "POST",
-      schema: v3_0_EventRejectedSchema,
+      schema: schemas["3.0"].events?.rejected,
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#14.B",
       documentationUrl: 

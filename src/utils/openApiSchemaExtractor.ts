@@ -16,7 +16,7 @@ export class OpenApiSchemaExtractor {
   private spec: OpenAPISpec;
   private resolvedRefs: Map<string, any> = new Map();
   
-  constructor(yamlFilePath: string = '/home/gertjan/Projects/pact/pact-conformance-service/src/schemas/openapi_v3.yaml') {
+  constructor(yamlFilePath: string) {
     const yamlContent = fs.readFileSync(yamlFilePath, 'utf8');
     this.spec = yaml.load(yamlContent) as OpenAPISpec;
   }
@@ -281,8 +281,3 @@ export class OpenApiSchemaExtractor {
     return current;
   }
 }
-
-// Create and export singleton instance for easy use
-const openApiExtractor = new OpenApiSchemaExtractor();
-
-export default openApiExtractor;
