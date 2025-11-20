@@ -95,25 +95,6 @@ export class OpenApiSchemaExtractor {
 
     const converted = { ...schema };
 
-    // Remove OpenAPI-specific keywords that AJV doesn't understand
-    const openApiOnlyKeywords = [
-      'summary', 
-      'example', 
-      'examples', 
-      'externalDocs',
-      'discriminator', 
-      'xml', 
-      'deprecated', 
-      'writeOnly', 
-      'readOnly',
-      'note', // Custom documentation field
-      'comment', // Another documentation field
-      'Advisement' // PACT-specific documentation field
-    ];
-    
-    openApiOnlyKeywords.forEach(keyword => {
-      delete converted[keyword];
-    });
 
     // Handle custom x-* extensions (remove all for AJV compatibility)
     Object.keys(converted).forEach(key => {
