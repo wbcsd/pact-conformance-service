@@ -4,12 +4,12 @@ import { OpenApiSchemaExtractor } from '../utils/openApiSchemaExtractor';
 // Define the schema structure for each version
 export interface VersionSchema {
   productFootprint: any;
-  listFootprintsResponse: any;
-  singleFootprintResponse: any;
-  authTokenResponseSchema: any;
-  simpleResponseSchema: any;
-  emptyResponseSchema: any;
-  simpleSingleFootprintResponseSchema: any;
+  listFootprintResponse: any;
+  getFootprintResponse: any;
+  authTokenResponse: any;
+  simpleListFootprintResponse: any;
+  simpleGetFootprintResponse: any;
+  emptyResponse: any;
   events?: {
     fulfilled: any;
     rejected: any;
@@ -31,62 +31,6 @@ const getExtractor = (version: string): OpenApiSchemaExtractor => {
   return extractorCache.get(version)!;
 };
 
-
-// Simple response schemas for general use (not version-specific)
-const authTokenResponseSchema = {
-  type: "object",
-  properties: {
-    access_token: { type: "string" },
-  },
-  required: ["access_token"],
-};
-
-const simpleResponseSchema = {
-  type: "object",
-  properties: {
-    data: {
-      type: "array",
-      minItems: 1,
-      items: {
-        type: "object",
-        properties: {
-          id: { type: "string" },
-        },
-        required: ["id"],
-      },
-    },
-  },
-  required: ["data"],
-};
-
-const emptyResponseSchema = {
-  type: "object",
-  properties: {
-    data: {
-      type: "array",
-      maxItems: 0,
-      items: {
-        type: "object",
-      },
-    },
-  },
-  required: ["data"],
-};
-
-const simpleSingleFootprintResponseSchema = {
-  type: "object",
-  properties: {
-    data: {
-      type: "object",
-      properties: {
-        id: { type: "string" },
-      },
-      required: ["id"],
-    },  
-  },
-  required: ["data"],
-};
-
 // Get schemas for certain version
 export function getSchema(version: string): VersionSchema {
   // Use a regex to obtain just  major.minor version ('v1.2.3' => '1.2')
@@ -100,11 +44,57 @@ export function getSchema(version: string): VersionSchema {
   const allSchemas = extractor.getAllSchemas();
   return {
     productFootprint: extractor.createJsonSchemaWithDefinitions('ProductFootprint'),
-    authTokenResponseSchema,
-    simpleResponseSchema,
-    emptyResponseSchema,
-    simpleSingleFootprintResponseSchema,
-    listFootprintsResponse: {
+    authTokenResponse: {
+      type: "object",
+      properties: {
+        access_token: { type: "string" },
+      },
+      required: ["access_token"],
+    },
+    simpleListFootprintResponse: {
+      type: "object",
+      properties: {
+        data: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string" },
+            },
+            required: ["id"],
+          },
+        },
+      },
+      required: ["data"],
+    },
+    emptyResponse: {
+      type: "object",
+      properties: {
+        data: {
+          type: "array",
+          maxItems: 0,
+          items: {
+            type: "object",
+          },
+        },
+      },
+      required: ["data"],
+    },
+    simpleGetFootprintResponse: {
+      type: "object",
+      properties: {
+        data: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+          },
+          required: ["id"],
+        },  
+      },
+      required: ["data"],
+    },
+    listFootprintResponse: {
       $schema: "http://json-schema.org/draft-07/schema#",
       title: "ListFootprintsResponse",
       type: "object",
@@ -119,7 +109,7 @@ export function getSchema(version: string): VersionSchema {
       },
       definitions: allSchemas
     },
-    singleFootprintResponse: {
+    getFootprintResponse: {
       $schema: "http://json-schema.org/draft-07/schema#",
       title: "SingleFootprintResponse", 
       type: "object",

@@ -153,7 +153,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints/${filterParams.id}`,
       expectedStatusCodes: [200],
-      schema: schema.singleFootprintResponse,
+      schema: schema.getFootprintResponse,
       condition: (body) => {
         return body?.data?.id === filterParams.id;
       },
@@ -168,7 +168,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: "/3/footprints",
       expectedStatusCodes: [200, 202],
-      schema: schema.listFootprintsResponse,
+      schema: schema.listFootprintResponse,
       condition: (body) => {
         return body?.data?.length === footprints.data.length;
       },
@@ -183,7 +183,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: Object.values(paginationLinks)[0]?.replace(baseUrl, ""),
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       mandatoryVersion: ["V3.0"],
       testKey: "TESTCASE#5",
       documentationUrl:
@@ -249,7 +249,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       expectHttpError: true,
       expectedStatusCodes: [200],
-      schema: schema.authTokenResponseSchema,
+      schema: schema.authTokenResponse,
       testKey: "TESTCASE#9",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
@@ -262,7 +262,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       expectHttpError: true,
       expectedStatusCodes: [200, 202],
-      schema: schema.listFootprintsResponse,
+      schema: schema.listFootprintResponse,
       testKey: "TESTCASE#10",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-10-attempt-listfootprints-through-http-non-https",
@@ -276,7 +276,7 @@ export const generateV3TestCases = ({
       mandatoryVersion: ["V3.0"],
       expectHttpError: true,
       expectedStatusCodes: [200],
-      schema: schema.singleFootprintResponse,
+      schema: schema.getFootprintResponse,
       testKey: "TESTCASE#11",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-11-attempt-getfootprint-through-http-non-https",
@@ -467,7 +467,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?productId=${filterParams.productId}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         return body?.data?.every((footprint: { productIds: string[] }) =>
           footprint.productIds.includes(filterParams.productId)
@@ -484,7 +484,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?companyId=${filterParams.companyId}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         return body?.data?.every((footprint: { companyIds: string[] }) =>
           footprint.companyIds.includes(filterParams.companyId)
@@ -501,7 +501,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?geography=${filterParams.geography}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         if ((filterParams.geography ?? '') === '') {
           return body?.data?.length === footprints.data.length; // If no geography is provided, all footprints are valid
@@ -530,7 +530,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?classification=${filterParams.classification}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         if ((filterParams.classification ?? '') === '') {
           return body?.data?.length === footprints.data.length; // If no classification is provided, all footprints are valid
@@ -551,7 +551,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?validOn=${filterParams.validOn}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         return body?.data?.every(
           (footprint: {
@@ -597,7 +597,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?validAfter=${filterParams.validAfter}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         return body?.data?.every(
           (footprint: {
@@ -635,7 +635,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?validBefore=${filterParams.validBefore}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         return body?.data?.every(
           (footprint: {
@@ -673,7 +673,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?status=${filterParams.status}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         return body?.data?.every(
           (footprint: { status: string }) =>
@@ -691,7 +691,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?status=${filterParams.status}&productId=${filterParams.productId}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         return body?.data?.every(
           (footprint: { status: string; productIds: string[] }) =>
@@ -712,7 +712,7 @@ export const generateV3TestCases = ({
         filterParams.companyId
       }&companyId=${randomString(8)}&companyId=${randomString(8)}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         return body?.data?.every((footprint: { companyIds: string[] }) =>
           footprint.companyIds.includes(filterParams.companyId)
@@ -729,7 +729,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?productId=urn:bogus:product:${randomString(16)}`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },
@@ -744,7 +744,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?companyId=urn:bogus:company:${randomString(16)}`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },
@@ -759,7 +759,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?geography=XX`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },
@@ -776,7 +776,7 @@ export const generateV3TestCases = ({
         16
       )}`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },
@@ -791,7 +791,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?validOn=1900-01-01T00:00:00Z`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },
@@ -806,7 +806,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?validAfter=2099-12-31T23:59:59Z`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },
@@ -821,7 +821,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?validBefore=1900-01-01T00:00:00Z`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },
@@ -836,7 +836,7 @@ export const generateV3TestCases = ({
       method: "GET",
       endpoint: `/3/footprints?status=BogusStatus${randomString(8)}`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },
@@ -853,7 +853,7 @@ export const generateV3TestCases = ({
         8
       )}&productId=urn:bogus:product:${randomString(16)}`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },
@@ -872,7 +872,7 @@ export const generateV3TestCases = ({
         8
       )}&companyId=urn:bogus:company:${randomString(8)}`,
       expectedStatusCodes: [200],
-      schema: schema.emptyResponseSchema,
+      schema: schema.emptyResponse,
       condition: (body) => {
         return body?.data?.length === 0;
       },

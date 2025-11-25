@@ -64,7 +64,7 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: `/2/footprints/${footprints.data[0].id}`,
       expectedStatusCodes: [200],
-      schema: schema.singleFootprintResponse,
+      schema: schema.getFootprintResponse,
       condition: (body) => {
         return body?.data?.id === footprints.data[0].id;
       },
@@ -79,7 +79,7 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: "/2/footprints",
       expectedStatusCodes: [200, 202],
-      schema: schema.listFootprintsResponse,
+      schema: schema.listFootprintResponse,
       condition: (body) => {
         return body?.data?.length === footprints.data.length;
       },
@@ -94,7 +94,7 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: Object.values(paginationLinks)[0]?.replace(baseUrl, ""),
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       testKey: "TESTCASE#5",
       documentationUrl:
@@ -160,7 +160,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       expectHttpError: true,
       expectedStatusCodes: [200],
-      schema: schema.authTokenResponseSchema,
+      schema: schema.authTokenResponse,
       testKey: "TESTCASE#9",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
@@ -173,7 +173,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       expectHttpError: true,
       expectedStatusCodes: [200, 202],
-      schema: schema.listFootprintsResponse,
+      schema: schema.listFootprintResponse,
       testKey: "TESTCASE#10",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-10-attempt-listfootprints-through-http-non-https",
@@ -187,7 +187,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       expectHttpError: true,
       expectedStatusCodes: [200],
-      schema: schema.singleFootprintResponse,
+      schema: schema.getFootprintResponse,
       testKey: "TESTCASE#11",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-11-attempt-getfootprint-through-http-non-https",
@@ -369,7 +369,7 @@ export const generateV2TestCases = ({
         `created ge '${footprints.data[0].created}'`
       )}`,
       expectedStatusCodes: [200],
-      schema: schema.simpleResponseSchema,
+      schema: schema.simpleListFootprintResponse,
       condition: (body) => {
         return body?.data?.every(
           (footprint: { created: Date }) =>
