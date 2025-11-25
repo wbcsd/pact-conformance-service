@@ -5,7 +5,7 @@ import betterErrors from "ajv-errors";
 import config from "../config";
 import { TestStorage } from "./types";
 import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus, TestData } from "./types";
-import { schemas } from "../schemas";
+import { getSchema } from "../schemas";
 import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import logger from "../utils/logger";
 import { BadRequestError, UnauthorizedError, NotFoundError } from "../errors";
@@ -107,9 +107,8 @@ export class EventHandler {
     const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
 
     // Validate event against schema
-    const validateEvent = ajv.compile(
-      testData.version.startsWith("V2") ? schemas['2.3'].events?.fulfilled : schemas['3.0'].events?.fulfilled
-    );
+    const schemas = getSchema(testData.version);
+    const validateEvent = ajv.compile(schemas.events?.fulfilled);
     const eventIsValid = validateEvent(eventPayload);
 
     // Validate request path

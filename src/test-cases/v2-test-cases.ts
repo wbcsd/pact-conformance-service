@@ -1,11 +1,7 @@
 import { ApiVersion, TestCase, EventTypesV2 } from "../services/types";
 import { randomUUID } from "crypto";
 import { randomString } from "../utils/authUtils";
-import {
-  schemas,
-  simpleResponseSchema,
-  authTokenResponseSchema,
-} from "../schemas";
+import { getSchema } from "../schemas";
 import {
   getCorrectAuthHeaders,
   getIncorrectAuthHeaders,
@@ -34,36 +30,9 @@ export const generateV2TestCases = ({
   version: ApiVersion;
   webhookUrl: string;
 }): TestCase[] => {
-  // Get the correct response schema based on the version
-  const responseSchema = (() => {
-    switch (version) {
-      case "V2.0":
-        return schemas['2.0'].listFootprintsResponse;
-      case "V2.1":
-        return schemas['2.1'].listFootprintsResponse;
-      case "V2.2":
-        return schemas['2.2'].listFootprintsResponse;
-      case "V2.3":
-        return schemas['2.3'].listFootprintsResponse;
-      default:
-        return schemas['2.3'].listFootprintsResponse; // Default to latest if unknown
-    }
-  })();
-
-  const singleFootprintResponseSchema = (() => {
-    switch (version) {
-      case "V2.0":
-        return schemas['2.0'].singleFootprintResponse;
-      case "V2.1":
-        return schemas['2.1'].singleFootprintResponse;
-      case "V2.2":
-        return schemas['2.2'].singleFootprintResponse;
-      case "V2.3":
-        return schemas['2.3'].singleFootprintResponse;
-      default:
-        return schemas['2.3'].singleFootprintResponse; // Default to latest if unknown
-    }
-  })();
+  
+  // Get the schema based on the version
+  const schema = getSchema(version);
 
   return [
     {
@@ -95,7 +64,7 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: `/2/footprints/${footprints.data[0].id}`,
       expectedStatusCodes: [200],
-      schema: singleFootprintResponseSchema,
+      schema: schema.singleFootprintResponse,
       condition: (body) => {
         return body?.data?.id === footprints.data[0].id;
       },
@@ -110,7 +79,7 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: "/2/footprints",
       expectedStatusCodes: [200, 202],
-      schema: responseSchema,
+      schema: schema.listFootprintsResponse,
       condition: (body) => {
         return body?.data?.length === footprints.data.length;
       },
@@ -125,7 +94,7 @@ export const generateV2TestCases = ({
       method: "GET",
       endpoint: Object.values(paginationLinks)[0]?.replace(baseUrl, ""),
       expectedStatusCodes: [200],
-      schema: simpleResponseSchema,
+      schema: schema.simpleResponseSchema,
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       testKey: "TESTCASE#5",
       documentationUrl:
@@ -191,7 +160,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       expectHttpError: true,
       expectedStatusCodes: [200],
-      schema: authTokenResponseSchema,
+      schema: schema.authTokenResponseSchema,
       testKey: "TESTCASE#9",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
@@ -204,7 +173,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       expectHttpError: true,
       expectedStatusCodes: [200, 202],
-      schema: responseSchema,
+      schema: schema.listFootprintsResponse,
       testKey: "TESTCASE#10",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-10-attempt-listfootprints-through-http-non-https",
@@ -218,7 +187,7 @@ export const generateV2TestCases = ({
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
       expectHttpError: true,
       expectedStatusCodes: [200],
-      schema: singleFootprintResponseSchema,
+      schema: schema.singleFootprintResponse,
       testKey: "TESTCASE#11",
       documentationUrl:
         "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-11-attempt-getfootprint-through-http-non-https",
@@ -400,7 +369,7 @@ export const generateV2TestCases = ({
         `created ge '${footprints.data[0].created}'`
       )}`,
       expectedStatusCodes: [200],
-      schema: simpleResponseSchema,
+      schema: schema.simpleResponseSchema,
       condition: (body) => {
         return body?.data?.every(
           (footprint: { created: Date }) =>

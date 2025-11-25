@@ -1,23 +1,15 @@
-/**
- * Unified Schema Registry
- * 
- * This file provides a structured way to access all schemas by version.
- * Instead of importing version-specific schema names, you can access them
- * through the schemas object: schemas['3.0'].singleFootprintResponse
- */
-
-// Import all version-specific schemas
-import * as v2_0 from "./v2_0_schema";
-import * as v2_1 from "./v2_1_schema";
-import * as v2_2 from "./v2_2_schema";
-import * as v2_3 from "./v2_3_schema";
-import * as v3_0 from "./v3_0_schema";
+import path from 'path';
+import { OpenApiSchemaExtractor } from '../utils/openApiSchemaExtractor';
 
 // Define the schema structure for each version
-interface VersionSchema {
+export interface VersionSchema {
   productFootprint: any;
   listFootprintsResponse: any;
   singleFootprintResponse: any;
+  authTokenResponseSchema: any;
+  simpleResponseSchema: any;
+  emptyResponseSchema: any;
+  simpleSingleFootprintResponseSchema: any;
   events?: {
     fulfilled: any;
     rejected: any;
@@ -26,7 +18,22 @@ interface VersionSchema {
   };
 }
 
-export const authTokenResponseSchema = {
+// Cache for loaded extractors to avoid reloading YAML files
+const extractorCache = new Map<string, OpenApiSchemaExtractor>();
+
+// Helper function to get or create an extractor for a version
+const getExtractor = (version: string): OpenApiSchemaExtractor => {
+  if (!extractorCache.has(version)) {
+    // Use path relative to the source directory since YAML files are not copied to dist
+    const yamlPath = path.resolve(__dirname, '..', '..', 'src', 'schemas', `openapi_v${version.replace('.', '_')}.yaml`);
+    extractorCache.set(version, new OpenApiSchemaExtractor(yamlPath));
+  }
+  return extractorCache.get(version)!;
+};
+
+
+// Simple response schemas for general use (not version-specific)
+const authTokenResponseSchema = {
   type: "object",
   properties: {
     access_token: { type: "string" },
@@ -34,8 +41,7 @@ export const authTokenResponseSchema = {
   required: ["access_token"],
 };
 
-// Simple response schemas for general use
-export const simpleResponseSchema = {
+const simpleResponseSchema = {
   type: "object",
   properties: {
     data: {
@@ -53,7 +59,7 @@ export const simpleResponseSchema = {
   required: ["data"],
 };
 
-export const emptyResponseSchema = {
+const emptyResponseSchema = {
   type: "object",
   properties: {
     data: {
@@ -67,7 +73,7 @@ export const emptyResponseSchema = {
   required: ["data"],
 };
 
-export const simpleSingleFootprintResponseSchema = {
+const simpleSingleFootprintResponseSchema = {
   type: "object",
   properties: {
     data: {
@@ -81,80 +87,55 @@ export const simpleSingleFootprintResponseSchema = {
   required: ["data"],
 };
 
-// Define the schemas object with version-based access
-export const schemas: Record<string, VersionSchema> = {
-  '2.0': {
-    productFootprint: v2_0.productFootprintSchema,
-    listFootprintsResponse: v2_0.ResponseSchema,
-    singleFootprintResponse: v2_0.SingleFootprintResponseSchema,
-  },
-  '2.1': {
-    productFootprint: v2_1.productFootprintSchema,
-    listFootprintsResponse: v2_1.ResponseSchema,
-    singleFootprintResponse: v2_1.SingleFootprintResponseSchema,
-  },
-  '2.2': {
-    productFootprint: v2_2.productFootprintSchema,
-    listFootprintsResponse: v2_2.ResponseSchema,
-    singleFootprintResponse: v2_2.SingleFootprintResponseSchema,
-  },
-  '2.3': {
-    productFootprint: v2_3.productFootprintSchema,
-    listFootprintsResponse: v2_3.ResponseSchema,
-    singleFootprintResponse: v2_3.SingleFootprintResponseSchema,
-    events: {
-      fulfilled: v2_3.EventFulfilledSchema,
-      rejected: v2_3.EventRejectedSchema,
-      created: v2_3.EventCreatedSchema,
-      published: v2_3.EventPublishedSchema,
-    },
-  },
-  '3.0': {
-    productFootprint: v3_0.productFootprintSchema,
-    listFootprintsResponse: v3_0.ResponseSchema,
-    singleFootprintResponse: v3_0.SingleFootprintResponseSchema,
-    events: {
-      fulfilled: v3_0.EventFulfilledSchema,
-      rejected: v3_0.EventRejectedSchema,
-      created: v3_0.EventCreatedSchema,
-      published: v3_0.EventPublishedSchema
-    },
-  },
-};
-
-// Helper function to get schema by version
-export const getSchemaForVersion = (version: string): VersionSchema => {
-  const normalizedVersion = version.replace(/^v/i, ''); // Remove 'v' prefix if present
-  const schema = schemas[normalizedVersion];
-  if (!schema) {
-    throw new Error(`Schema for version ${version} not found. Available versions: ${Object.keys(schemas).join(', ')}`);
+// Get schemas for certain version
+export function getSchema(version: string): VersionSchema {
+  // Use a regex to obtain just  major.minor version ('v1.2.3' => '1.2')
+  const match = version.match(/^v?(\d+\.\d+)/i)
+  if (match) { 
+    version = match[1];
+  } else {
+    throw new Error(`Invalid version format: ${version}`);
   }
-  return schema;
-};
-
-// Helper functions for common schema access patterns
-export const getProductFootprintSchema = (version: string) => {
-  return getSchemaForVersion(version).productFootprint;
-};
-
-export const getListFootprintsResponseSchema = (version: string) => {
-  return getSchemaForVersion(version).listFootprintsResponse;
-};
-
-export const getSingleFootprintResponseSchema = (version: string) => {
-  return getSchemaForVersion(version).singleFootprintResponse;
-};
-
-export const getEventSchema = (version: string, eventType: 'fulfilled' | 'rejected' | 'created' | 'published') => {
-  const schema = getSchemaForVersion(version);
-  if (!schema.events) {
-    throw new Error(`Events are not supported for version ${version}`);
-  }
-  return schema.events[eventType];
-};
-
-// Export type for TypeScript users
-export type { VersionSchema };
-
-// Export available versions
-export const SUPPORTED_VERSIONS = Object.keys(schemas);
+  const extractor = getExtractor(version);
+  const allSchemas = extractor.getAllSchemas();
+  return {
+    productFootprint: extractor.createJsonSchemaWithDefinitions('ProductFootprint'),
+    authTokenResponseSchema,
+    simpleResponseSchema,
+    emptyResponseSchema,
+    simpleSingleFootprintResponseSchema,
+    listFootprintsResponse: {
+      $schema: "http://json-schema.org/draft-07/schema#",
+      title: "ListFootprintsResponse",
+      type: "object",
+      required: ["data"],
+      properties: {
+        data: {
+          type: "array",
+          items: {
+            $ref: "#/definitions/ProductFootprint"
+          }
+        }
+      },
+      definitions: allSchemas
+    },
+    singleFootprintResponse: {
+      $schema: "http://json-schema.org/draft-07/schema#",
+      title: "SingleFootprintResponse", 
+      type: "object",
+      required: ["data"],
+      properties: {
+        data: {
+          $ref: "#/definitions/ProductFootprint"
+        }
+      },
+      definitions: allSchemas
+    },
+    events: {
+      fulfilled: extractor.createJsonSchemaWithDefinitions('RequestFulfilledEvent'),
+      rejected: extractor.createJsonSchemaWithDefinitions('RequestRejectedEvent'),
+      created: extractor.createJsonSchemaWithDefinitions('RequestCreatedEvent'),
+      published: extractor.createJsonSchemaWithDefinitions('PublishedEvent')
+    }
+  };
+}
