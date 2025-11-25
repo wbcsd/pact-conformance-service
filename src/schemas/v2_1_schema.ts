@@ -1,5 +1,5 @@
 /**
- * V2.3 Schema Definitions
+ * V2.1 Schema Definitions
  * 
  * This file extracts and converts OpenAPI v2.1 schemas to AJV-compatible JSON schemas.
  * The schemas are sourced from the authoritative OpenAPI specification file.
