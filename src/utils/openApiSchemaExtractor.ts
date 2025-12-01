@@ -1,6 +1,5 @@
 import * as yaml from 'js-yaml';
 import * as fs from 'fs';
-import * as path from 'path';
 
 interface OpenAPISpec {
   components?: {
@@ -14,7 +13,6 @@ interface OpenAPISpec {
  */
 export class OpenApiSchemaExtractor {
   private spec: OpenAPISpec;
-  private resolvedRefs: Map<string, any> = new Map();
   
   constructor(yamlFilePath: string) {
     const yamlContent = fs.readFileSync(yamlFilePath, 'utf8');
