@@ -7,7 +7,7 @@ import {
   getIncorrectAuthHeaders,
 } from "../utils/authUtils";
 
-export const generateV2TestCases = ({
+export const generateV2TestCases = async ({
   testRunId,
   footprints,
   paginationLinks,
@@ -29,10 +29,10 @@ export const generateV2TestCases = ({
   authRequestData: string;
   version: ApiVersion;
   webhookUrl: string;
-}): TestCase[] => {
+}): Promise<TestCase[]> => {
   
   // Get the schema based on the version
-  const schema = getSchema(version);
+  const schema = await getSchema(version);
 
   return [
     {

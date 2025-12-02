@@ -95,7 +95,7 @@ const getFilterParameters = (footprints: FootprintsData) => {
   };
 };
 
-export const generateV3TestCases = ({
+export const generateV3TestCases = async ({
   testRunId,
   footprints,
   paginationLinks,
@@ -117,9 +117,9 @@ export const generateV3TestCases = ({
   authRequestData: string;
   version: ApiVersion;
   webhookUrl: string;
-}): TestCase[] => {
+}): Promise<TestCase[]> => {
   
-  const schema = getSchema(version);
+  const schema = await getSchema(version);
   const filterParams = getFilterParameters(footprints);
   const callbackBaseUrl = webhookUrl.replace(/\/+$/, "");
 

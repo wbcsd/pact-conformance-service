@@ -22,17 +22,17 @@ export interface VersionSchema {
 const extractorCache = new Map<string, OpenApiSchemaExtractor>();
 
 // Helper function to get or create an extractor for a version
-const getExtractor = (version: string): OpenApiSchemaExtractor => {
+const getExtractor = async (version: string): Promise<OpenApiSchemaExtractor> => {
   if (!extractorCache.has(version)) {
     // Use path relative to the source directory since YAML files are not copied to dist
     const yamlPath = path.resolve(__dirname, '..', '..', 'src', 'schemas', `openapi_v${version.replace('.', '_')}.yaml`);
-    extractorCache.set(version, new OpenApiSchemaExtractor(yamlPath));
+    extractorCache.set(version, await OpenApiSchemaExtractor.create(yamlPath));
   }
   return extractorCache.get(version)!;
 };
 
 // Get schemas for certain version
-export function getSchema(version: string): VersionSchema {
+export async function getSchema(version: string): Promise<VersionSchema> {
   // Use a regex to obtain just  major.minor version ('v1.2.3' => '1.2')
   const match = version.match(/^v?(\d+\.\d+)/i)
   if (match) { 
@@ -40,7 +40,7 @@ export function getSchema(version: string): VersionSchema {
   } else {
     throw new Error(`Invalid version format: ${version}`);
   }
-  const extractor = getExtractor(version);
+  const extractor = await getExtractor(version);
   const allSchemas = extractor.getAllSchemas();
   return {
     productFootprint: extractor.createJsonSchemaWithDefinitions('ProductFootprint'),

@@ -96,8 +96,8 @@ export class TestRunWorker {
 
     // Generate test cases based on the version
     const testCases = params.version.startsWith("V2")
-      ? generateV2TestCases(testRunParams)
-      : generateV3TestCases(testRunParams);
+      ? await generateV2TestCases(testRunParams)
+      : await generateV3TestCases(testRunParams);
 
     const results: TestResult[] = [];
 

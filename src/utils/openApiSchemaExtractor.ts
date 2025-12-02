@@ -1,5 +1,5 @@
 import * as yaml from 'js-yaml';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 
 interface OpenAPISpec {
   components?: {
@@ -13,10 +13,15 @@ interface OpenAPISpec {
  */
 export class OpenApiSchemaExtractor {
   private spec: OpenAPISpec;
-  
-  constructor(yamlFilePath: string) {
-    const yamlContent = fs.readFileSync(yamlFilePath, 'utf8');
-    this.spec = yaml.load(yamlContent) as OpenAPISpec;
+
+  constructor(spec: OpenAPISpec) {
+    this.spec = spec;
+  }
+
+  static async create(yamlFilePath: string): Promise<OpenApiSchemaExtractor> {
+    const yamlContent = await fs.readFile(yamlFilePath, 'utf8');
+    const spec = yaml.load(yamlContent) as OpenAPISpec;
+    return new OpenApiSchemaExtractor(spec);
   }
 
   /**

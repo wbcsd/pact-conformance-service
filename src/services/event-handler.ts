@@ -107,7 +107,7 @@ export class EventHandler {
     const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
 
     // Validate event against schema
-    const schemas = getSchema(testData.version);
+    const schemas = await getSchema(testData.version);
     const validateEvent = ajv.compile(schemas.events?.fulfilled);
     const eventIsValid = validateEvent(eventPayload);
 
