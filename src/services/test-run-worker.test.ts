@@ -92,7 +92,7 @@ describe('TestRunWorker', () => {
       (getAccessToken as jest.Mock).mockResolvedValue(mockAccessToken);
       (fetchFootprints as jest.Mock).mockResolvedValue(mockFootprints);
       (getLinksHeaderFromFootprints as jest.Mock).mockResolvedValue(mockPaginationLinks);
-      (generateV3TestCases as jest.Mock).mockReturnValue(mockTestCases);
+      (generateV3TestCases as jest.Mock).mockResolvedValue(mockTestCases);
       (runTestCase as jest.Mock).mockResolvedValue(mockResults[0]);
       (testStorage.getTestResults as jest.Mock).mockResolvedValue({ results: mockResults });
       (calculateTestRunMetrics as jest.Mock).mockReturnValue({
@@ -128,7 +128,7 @@ describe('TestRunWorker', () => {
       (getAccessToken as jest.Mock).mockResolvedValue('token');
       (fetchFootprints as jest.Mock).mockResolvedValue(mockFootprints);
       (getLinksHeaderFromFootprints as jest.Mock).mockResolvedValue({});
-      (generateV2TestCases as jest.Mock).mockReturnValue(mockTestCases);
+      (generateV2TestCases as jest.Mock).mockResolvedValue(mockTestCases);
       (runTestCase as jest.Mock).mockResolvedValue({ status: TestCaseResultStatus.SUCCESS });
       (testStorage.getTestResults as jest.Mock).mockResolvedValue({ results: [] });
       (calculateTestRunMetrics as jest.Mock).mockReturnValue({
@@ -155,7 +155,7 @@ describe('TestRunWorker', () => {
       (getAccessToken as jest.Mock).mockResolvedValue('token');
       (fetchFootprints as jest.Mock).mockResolvedValue({ data: [{ productIds: ['prod-1'] }] });
       (getLinksHeaderFromFootprints as jest.Mock).mockResolvedValue({});
-      (generateV3TestCases as jest.Mock).mockReturnValue([]);
+      (generateV3TestCases as jest.Mock).mockResolvedValue([]);
       (testStorage.getTestResults as jest.Mock).mockResolvedValue({ results: [] });
       (calculateTestRunMetrics as jest.Mock).mockReturnValue({
         testRunStatus: TestRunStatus.PASS,
@@ -183,7 +183,7 @@ describe('TestRunWorker', () => {
       (getAccessToken as jest.Mock).mockResolvedValue('token');
       (fetchFootprints as jest.Mock).mockResolvedValue({ data: [{ productIds: ['prod-1'] }] });
       (getLinksHeaderFromFootprints as jest.Mock).mockResolvedValue({});
-      (generateV3TestCases as jest.Mock).mockReturnValue([]);
+      (generateV3TestCases as jest.Mock).mockResolvedValue([]);
       (testStorage.getTestResults as jest.Mock).mockResolvedValue({ results: [] });
       (calculateTestRunMetrics as jest.Mock).mockReturnValue({
         testRunStatus: TestRunStatus.PASS,
