@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { Services } from '../services';
+import { ServiceContainer } from '../services';
 import logger from '../utils/logger';
 
 /**
@@ -8,7 +8,9 @@ import logger from '../utils/logger';
  * @property services - An instance of the Services class, 
  *                      providing access to application services.
  */
-type ContextRequest = Request & { services: Services };
+export interface ContextRequest extends Request {
+  services: ServiceContainer;
+}
 
 /**
  * Represents an asynchronous request handler function for API routes.
@@ -35,7 +37,17 @@ export const context = (handler: Handler) => async (req: Request, res: Response,
       res.status(200).send();
     }
   } catch (error) {
-    logger.error(error);
+    // Log full error details including stack trace
+    logger.error({
+      err: error,
+      requestId: (req as any).id,
+      method: req.method,
+      url: req.url,
+      body: req.body,
+      query: req.query,
+      params: req.params,
+      stack: error instanceof Error ? error.stack : undefined
+    }, 'Request handler error');
     next(error);
   }
 };
