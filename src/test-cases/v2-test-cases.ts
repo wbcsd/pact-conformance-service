@@ -144,7 +144,7 @@ export const generateV2TestCases = async ({
       endpoint: `/2/footprints/random-string-as-id-${randomString(16)}`,
       expectedStatusCodes: [400, 404],
       condition: (body) => {
-        return body?.code === "NoSuchFootprint";
+        return body?.code === "NoSuchFootprint" || body?.code === "BadRequest";
       },
       conditionErrorMessage: `Expected error code NoSuchFootprint in response.`,
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],

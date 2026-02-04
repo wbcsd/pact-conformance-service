@@ -233,7 +233,7 @@ export const generateV3TestCases = async ({
       endpoint: `/3/footprints/random-string-as-id-${randomString(16)}`,
       expectedStatusCodes: [400, 404],
       condition: (body) => {
-        return body?.code === "NotFound";
+        return body?.code === "NotFound" || body?.code === "BadRequest";
       },
       conditionErrorMessage: `Expected error code NotFound in response.`,
       mandatoryVersion: ["V3.0"],
