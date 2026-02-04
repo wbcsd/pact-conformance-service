@@ -141,7 +141,7 @@ export const generateV2TestCases = async ({
     {
       name: "Test Case 8: Attempt GetFootprint with Non-Existent PfId",
       method: "GET",
-      endpoint: `/2/footprints/random-string-as-id-${randomString(16)}`,
+      endpoint: "/2/footprints/00000000-0000-0000-0000-000000000000",
       expectedStatusCodes: [400, 404],
       condition: (body) => {
         return body?.code === "NoSuchFootprint" || body?.code === "BadRequest";
