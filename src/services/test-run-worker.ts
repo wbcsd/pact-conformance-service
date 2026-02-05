@@ -39,6 +39,10 @@ export class TestRunWorker {
     if (!params.baseUrl || !params.clientId || !params.clientSecret) {
       throw new ValidationError("Missing required parameters: baseUrl, clientId, and clientSecret are mandatory.");
     }
+    // Remove trailing slashes from URLs, and lowercase protocol part for http/https tests to work correctly
+    params.baseUrl = params.baseUrl.replace(/\/+$/, "").replace(/^https:/i, "https:");
+    params.customAuthBaseUrl = params.customAuthBaseUrl?.replace(/\/+$/, "").replace(/^https:/i, "https:");
+    
     await this.output.saveTestRun({
       testRunId,
       ...params,
