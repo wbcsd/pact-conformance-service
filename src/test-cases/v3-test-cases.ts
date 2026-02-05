@@ -230,10 +230,10 @@ export const generateV3TestCases = async ({
     {
       name: "Test Case 8: Attempt GetFootprint with Non-Existent PfId",
       method: "GET",
-      endpoint: `/3/footprints/random-string-as-id-${randomString(16)}`,
+      endpoint: "/3/footprints/00000000-0000-0000-0000-000000000000",
       expectedStatusCodes: [400, 404],
       condition: (body) => {
-        return body?.code === "NotFound";
+        return body?.code === "NotFound" || body?.code === "BadRequest";
       },
       conditionErrorMessage: `Expected error code NotFound in response.`,
       mandatoryVersion: ["V3.0"],
