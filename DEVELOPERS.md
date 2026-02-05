@@ -167,7 +167,7 @@ npm test -- --coverage
 Run a specific test file:
 
 ```bash
-npm test -- services/test-run-repository.test.ts
+npm test -- src/services/test-run-repository.test.ts
 ```
 
 ### Test Files
