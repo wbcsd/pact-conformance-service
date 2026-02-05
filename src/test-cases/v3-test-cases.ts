@@ -443,7 +443,8 @@ export const generateV3TestCases = async ({
     {
       name: "Test Case 18: OpenId Connect-based Authentication Flow",
       method: "POST",
-      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Skip if authTokenUrl is under the baseUrl, will not be an OpenID provider then
+      endpoint: "/auth/token",
+      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Fall back to using endpoint (/auth/token) if authTokenUrl is under the baseUrl.
       expectedStatusCodes: [200],
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       testKey: "TESTCASE#18",
@@ -454,7 +455,8 @@ export const generateV3TestCases = async ({
     {
       name: "Test Case 19: OpenId connect-based authentication flow with incorrect credentials",
       method: "POST",
-      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Skip if authTokenUrl is under the baseUrl, will not be an OpenID provider then
+      endpoint: "/auth/token",
+      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Fall back to using endpoint (/auth/token) if authTokenUrl is under the baseUrl.
       expectedStatusCodes: [400, 401],
       headers: getIncorrectAuthHeaders(baseUrl),
       testKey: "TESTCASE#19",
