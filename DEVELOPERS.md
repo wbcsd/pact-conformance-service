@@ -56,6 +56,12 @@ This installs all required packages including:
 
 ### 3. Start Local Database
 
+Copy the example environment file and edit if necessary.
+
+```bash
+cp .env.example .env
+```
+
 Start the PostgreSQL database using Docker Compose:
 
 ```bash
@@ -97,8 +103,7 @@ src/
 ├── middleware/          # Express middleware
 ├── config.ts            # Configuration management
 ├── server.ts            # Express server
-├── errors.ts            # Error definitions
-└── index.ts             # Entry point
+└── errors.ts            # Error definitions
 ```
 
 ### Available Scripts
@@ -106,7 +111,7 @@ src/
 ```bash
 # Development
 npm start               # Start local development server
-npm run dev             # Start with auto-reload (if nodemon available)
+npm run dev             # Start with auto-reload using ts-node-dev
 npm run build           # Compile TypeScript to JavaScript
 
 # Testing
@@ -130,11 +135,11 @@ The server runs on `http://localhost:8004` (or the port specified in your enviro
 
 **Available endpoints** (see [routes.rest](routes.rest) for examples):
 
-- `POST /test-runs` - Create and run test cases
-- `GET /test-runs/:id` - Get test run results
-- `GET /test-runs` - List test runs
-- `POST /events/v2` - v2 webhook events
-- `POST /events/v3` - v3 webhook events
+- `POST /testruns` - Create and run test cases
+- `GET /testruns/:id` - Get test run results
+- `GET /testruns` - List test runs
+- `POST /2/events` - v2 webhook events
+- `POST /2/events` - v3 webhook events
 - `POST /auth/token` - Generate authentication tokens
 
 ## Testing Strategy
@@ -225,12 +230,7 @@ npx tsc --noEmit
 
 ### PostgreSQL
 
-The project uses PostgreSQL for data storage. Configuration is handled in [src/config.ts](src/config.ts):
-
-```typescript
-const dbConnectionString = process.env.DB_CONNECTION_STRING 
-  || "postgres://postgres:postgres@localhost:5433/pact-conformance-db";
-```
+The project uses PostgreSQL for data storage. Configuration is handled in [src/config.ts](src/config.ts), see `.env.example` for relevant environment variables.
 
 ### Database Schema
 
@@ -247,10 +247,9 @@ npm run migrate
 
 ### Key Tables
 
-- `test_runs` - Test execution records
-- `test_results` - Individual test results
-- `organizations` - Organization/provider information
-- `event_log` - Event history
+- `test_runs` - Test runs, contain multiple test case results.
+- `test_results` - Individual test case results, all linked to a test run.
+- `test_data` - Additional test data linked to a test run.
 
 ## Development Workflow
 
@@ -322,7 +321,7 @@ SELECT * FROM test_runs;
 Use the [routes.rest](routes.rest) file with VS Code REST Client extension, or use curl:
 
 ```bash
-curl -X POST http://localhost:8004/test-runs \
+curl -X POST http://localhost:8004/testruns \
   -H "Content-Type: application/json" \
   -d '{"provider": "example", "consumer": "test"}'
 ```
