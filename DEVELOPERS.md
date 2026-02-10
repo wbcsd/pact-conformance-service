@@ -118,10 +118,67 @@ npm run build           # Compile TypeScript to JavaScript
 npm test                # Run all tests
 npm test -- --watch     # Run tests in watch mode
 npm test -- --coverage  # Run tests with coverage report
+npm run test:cli        # Run conformance tests from CLI (see below)
 
 # Database
 npm run migrate         # Run pending database migrations
 ```
+
+### Running Conformance Tests from Command Line
+
+You can run conformance tests directly from the command line without starting the server or using a database. Results are displayed in the console with colored output:
+
+```bash
+npm run test:cli -- \
+  --baseUrl https://api.example.com \
+  --clientId myClientId \
+  --clientSecret mySecret \
+  --version V3.0 \
+  --organizationName "My Company"
+```
+
+**Required arguments:**
+- `--baseUrl` - Base URL of the API to test
+- `--clientId` - OAuth client ID
+- `--clientSecret` - OAuth client secret
+- `--version` - PACT version (V2.0, V2.1, V2.2, V2.3, or V3.0)
+- `--organizationName` - Name of the organization being tested
+
+**Optional arguments:**
+- `--customAuthBaseUrl` - Custom auth base URL (if different from baseUrl)
+- `--scope` - OAuth scope
+- `--audience` - OAuth audience
+- `--resource` - OAuth resource
+- `--adminEmail` - Admin email address
+- `--adminName` - Admin name
+
+**Example with all options:**
+
+```bash
+npm run test:cli -- \
+  --baseUrl https://api.example.com \
+  --customAuthBaseUrl https://auth.example.com \
+  --clientId myClientId \
+  --clientSecret mySecret \
+  --version V2.2 \
+  --organizationName "My Company" \
+  --scope "read:footprints" \
+  --adminEmail admin@example.com \
+  --adminName "Admin User"
+```
+
+The CLI will:
+1. Execute all test cases for the specified version
+2. Display progress and results in real-time with colored output
+3. Show a summary of passed/failed tests
+4. Exit with code 0 if all mandatory tests pass, or code 1 if any fail
+
+This is useful for:
+- Quick testing during development
+- CI/CD pipelines
+- Testing without database setup
+- One-off conformance checks
+
 
 ### Local Development Server
 
