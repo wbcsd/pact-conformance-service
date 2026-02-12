@@ -31,16 +31,15 @@ export class TestRunWorker {
       throw new ValidationError("Missing required parameters: baseUrl, clientId, and clientSecret are mandatory.");
     }
 
-    // Initialize the test run in the storage with status "PENDING" and then update it 
-    // to "PASS" or "FAIL" based on the results after execution.
-
+    // Initialize the test run in the storage with status "FAIL" and then update it 
+    // to "PASS" or "FAIL" or "PENDING" based on the results after execution.
     const testRun: TestRun = {
       testRunId: randomUUID(),
       ...params,
       timestamp: new Date().toISOString(),
       techSpecVersion: params.version,
-      status: TestRunStatus.FAIL, // Default to FAIL, will be updated later based on test results
-      data: null, // Initialize data as null, will be updated later with productIds and other info } const testRunId = randomUUID(); logger.info(`Executing test run ${testRunId} for organization ${params.organizationName}`); logger.info(`Test run parameters: ${JSON.stringify(params)}`); if (!params.baseUrl || !params.clientId || !params.clientSecret) { throw new ValidationError("Missing required parameters: baseUrl, clientId, and clientSecret are mandatory.");
+      status: TestRunStatus.FAIL, 
+      data: null, // Initialize data as null, will be updated later with productIds
     }
 
     logger.info(`Executing test run ${testRun.testRunId} for organization ${params.organizationName}`);
