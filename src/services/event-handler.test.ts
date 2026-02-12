@@ -98,20 +98,20 @@ describe("EventHandler", () => {
 
     test("throws NotFoundError when test run not found", async () => {
       storageMock.getTestRun.mockRejectedValue(new NotFoundError("Test run not found"));
-      const payload = { type: EventTypesV2.FULFILLED, data: { requestEventId: "run123-abc" } };
+      const payload = { type: EventTypesV2.FULFILLED, data: { requestEventId: "run123/abc" } };
       await expect((handler as any).processEvent(payload, "/2/events")).rejects.toThrow(
         NotFoundError
       );
       expect(storageMock.getTestRun).toHaveBeenCalledWith("run123");
     });
 
-    test("extracts test run ID from requestEventId by splitting on first dash", async () => {
+    test("extracts test run ID from requestEventId by splitting on last slash", async () => {
       storageMock.getTestRun.mockRejectedValue(new NotFoundError("Test run not found"));
-      const payload = { type: EventTypesV2.FULFILLED, data: { requestEventId: "run123-abc-def" } };
+      const payload = { type: EventTypesV2.FULFILLED, data: { requestEventId: "run123-abc/def" } };
       await expect((handler as any).processEvent(payload, "/2/events")).rejects.toThrow(
         NotFoundError
       );
-      expect(storageMock.getTestRun).toHaveBeenCalledWith("run123");
+      expect(storageMock.getTestRun).toHaveBeenCalledWith("run123-abc");
     });
 
     test("delegates to processFulfilledEvent for FULFILLED events", async () => {
@@ -121,7 +121,7 @@ describe("EventHandler", () => {
         .spyOn(EventHandler.prototype as any, "processFulfilledEvent")
         .mockResolvedValue(undefined);
 
-      const payload = { type: EventTypesV2.FULFILLED, data: { requestEventId: "run123-abc" } };
+      const payload = { type: EventTypesV2.FULFILLED, data: { requestEventId: "run123/abc" } };
       await (handler as any).processEvent(payload, "/2/events");
 
       expect(spy).toHaveBeenCalledWith(payload, "run123", testRun, "/2/events");
@@ -132,7 +132,7 @@ describe("EventHandler", () => {
       storageMock.getTestRun.mockResolvedValue(testRun);
       const payload = {
         type: EventTypesV2.REJECTED,
-        data: { requestEventId: "run123-abc", error: { code: "ERR", message: "failed" } },
+        data: { requestEventId: "run123/abc", error: { code: "ERR", message: "failed" } },
       };
 
       await (handler as any).processEvent(payload, "/2/events");
@@ -186,7 +186,7 @@ describe("EventHandler", () => {
         time: "2024-01-01T00:00:00Z",
         source: "urn:pact-conformance-service",
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           pfs: [{
               productIds: ["urn:product1"],
               id: "b1f8c0d2-7c4e-4e67-9a9c-2e4c12345678",
@@ -250,7 +250,7 @@ describe("EventHandler", () => {
         time: "2024-01-01T00:00:00Z",
         source: "http://pact-conformance-service",
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           pfs: [{
               productIds: ["urn:product1"],
               id: "b1f8c0d2-7c4e-4e67-9a9c-2e4c12345678",
@@ -305,7 +305,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.FULFILLED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           pfs: [{ productIds: ["product1"] }],
         },
       };
@@ -334,7 +334,7 @@ describe("EventHandler", () => {
         time: "2024-01-01T00:00:00Z",
         source: "https://pact-conformance-service",
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           pfs: [
             {
               productIds: ["urn:wrongProduct"],
@@ -392,7 +392,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.FULFILLED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           pfs: [{ productIds: ["product1"] }],
         },
       };
@@ -417,7 +417,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.FULFILLED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           pfs: [{ productIds: ["product1"] }],
         },
       };
@@ -439,7 +439,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.REJECTED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           error: { code: "INVALID_REQUEST", message: "Request validation failed" },
         },
       };
@@ -468,7 +468,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV3.REJECTED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           error: { code: "TIMEOUT", message: "Request timed out" },
         },
       };
@@ -491,7 +491,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.REJECTED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
         },
       };
 
@@ -515,7 +515,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.REJECTED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           error: { code: "ERR" },
         },
       };
@@ -540,7 +540,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.REJECTED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           error: { code: "ERR", message: "Error occurred" },
         },
       };
@@ -565,7 +565,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.REJECTED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
         },
       };
 
@@ -592,7 +592,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.REJECTED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           error: { code: "ERR", message: "Error" },
         },
       };
@@ -618,7 +618,7 @@ describe("EventHandler", () => {
       const payload = {
         type: EventTypesV2.REJECTED,
         data: {
-          requestEventId: "run123-abc",
+          requestEventId: "run123/abc",
           error: { code: "ERR", message: "Error" },
         },
       };

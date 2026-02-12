@@ -74,10 +74,10 @@ export class EventHandler {
 
     logger.info("Processing event:", { path: requestPath, type: eventPayload.type, requestEventId: eventPayload.data.requestEventId });
 
-    const dashIndex = eventPayload.data.requestEventId.indexOf("-");
-    const testRunId = dashIndex === -1
+    const slashIndex = eventPayload.data.requestEventId.lastIndexOf("/");
+    const testRunId = slashIndex === -1
       ? eventPayload.data.requestEventId
-      : eventPayload.data.requestEventId.slice(0, dashIndex);
+      : eventPayload.data.requestEventId.slice(0, slashIndex);
 
     // Will throw an error if not found
     const testRun = await this.storage.getTestRun(testRunId);
