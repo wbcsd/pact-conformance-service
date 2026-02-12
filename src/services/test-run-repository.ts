@@ -32,12 +32,15 @@ export class TestRunRepository implements TestStorage {
       await this.db
         .insertInto("testRuns")
         .values({
-          id: data.testRunId,
           timestamp,
+          id: data.testRunId,
           companyName: data.organizationName,
           adminEmail: data.adminEmail,
           adminName: data.adminName,
           techSpecVersion: data.techSpecVersion,
+          status: data.status,
+          passingPercentage: data.passingPercentage,
+          data: data.data as any
         })
         .onConflict((oc) =>
           oc.column("id").doUpdateSet({
@@ -46,6 +49,9 @@ export class TestRunRepository implements TestStorage {
             adminEmail: data.adminEmail,
             adminName: data.adminName,
             techSpecVersion: data.techSpecVersion,
+            status: data.status,
+            passingPercentage: data.passingPercentage,
+            data: data.data as any
           })
         )
         .execute();
@@ -113,15 +119,18 @@ export class TestRunRepository implements TestStorage {
   }
 
   async updateTestRunStatus(testRunId: string): Promise<void> {
+    // Retrieve all test results for the test run
     const rows = await this.db.selectFrom("testResults")
       .select(["testKey", "result"])
       .where("testRunId", "=", testRunId)
       .execute();
     const results = rows.map((r) => r.result as TestResult);
     
+    // Determine the total amount of mandatory tests
     const mandatoryTests = results.filter(
       (test) => test.mandatory
     );
+    // Determine the amount of failed and pending mandatory tests
     const failedMandatoryTests = mandatoryTests.filter(
       (test) => test.status === TestCaseResultStatus.FAILURE
     );
@@ -129,6 +138,11 @@ export class TestRunRepository implements TestStorage {
       (test) => test.status === TestCaseResultStatus.PENDING
     );
     
+    // If there are no mandatory tests, we do not update the status
+    // If there are mandatory tests, we determine the status based on the results of those tests
+    // - If all mandatory tests pass, the test run is a PASS
+    // - If any mandatory test fails, the test run is a FAIL
+    // - If there are pending mandatory tests and no failures, the test run is PENDING
     let updates = null;
     if (mandatoryTests.length > 0 && failedMandatoryTests.length === 0 && pendingMandatoryTests.length === 0) {
       updates = { status: TestRunStatus.PASS, passingPercentage: 100 };
@@ -138,6 +152,7 @@ export class TestRunRepository implements TestStorage {
       updates = { status: TestRunStatus.PENDING, passingPercentage: Math.round(((mandatoryTests.length - pendingMandatoryTests.length) / mandatoryTests.length) * 100) };
     }
 
+    // Only perform the update if we have a status to set
     if (updates) {
       const res = await this.db
           .updateTable("testRuns")
