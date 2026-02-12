@@ -2,9 +2,8 @@ import { randomUUID } from "crypto";
 import config from "../config";
 import logger from "../utils/logger";
 import { ValidationError } from "../errors";
-import { TestRunStartParams, TestRunWithResults, TestStorage } from "./types";
+import { TestRunStartParams, TestRun, TestRunWithResults, TestStorage } from "./types";
 import { TestCaseResultStatus, TestResult, TestRunStatus } from "./types";
-import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import { fetchFootprints, getLinksHeaderFromFootprints } from "../utils/fetchFootprints";
 import { getAccessToken, fetchOpenIdTokenEndpoint } from "../utils/authUtils";
 import { generateV3TestCases } from "../test-cases/v3-test-cases";
@@ -28,28 +27,30 @@ export class TestRunWorker {
    */
   async startTestRun(params: TestRunStartParams): Promise<TestRunWithResults> {
     
-    // Implementation of the test run execution logic goes here.
-    // This would include setting up the test environment,
-    // running the tests, collecting results, and updating the test run status.
-
-    const testRunId = randomUUID();
-    logger.info(`Executing test run ${testRunId} for organization ${params.organizationName}`);
-    logger.info(`Test run parameters: ${JSON.stringify(params)}`);
-
     if (!params.baseUrl || !params.clientId || !params.clientSecret) {
       throw new ValidationError("Missing required parameters: baseUrl, clientId, and clientSecret are mandatory.");
     }
+
+    // Initialize the test run in the storage with status "PENDING" and then update it 
+    // to "PASS" or "FAIL" based on the results after execution.
+
+    const testRun: TestRun = {
+      testRunId: randomUUID(),
+      ...params,
+      timestamp: new Date().toISOString(),
+      techSpecVersion: params.version,
+      status: TestRunStatus.FAIL, // Default to FAIL, will be updated later based on test results
+      data: null, // Initialize data as null, will be updated later with productIds and other info } const testRunId = randomUUID(); logger.info(`Executing test run ${testRunId} for organization ${params.organizationName}`); logger.info(`Test run parameters: ${JSON.stringify(params)}`); if (!params.baseUrl || !params.clientId || !params.clientSecret) { throw new ValidationError("Missing required parameters: baseUrl, clientId, and clientSecret are mandatory.");
+    }
+
+    logger.info(`Executing test run ${testRun.testRunId} for organization ${params.organizationName}`);
+    logger.info(`Test run parameters: ${JSON.stringify(params)}`);
+
     // Remove trailing slashes from URLs, and lowercase protocol part for http/https tests to work correctly
     params.baseUrl = params.baseUrl.replace(/\/+$/, "").replace(/^https:/i, "https:");
     params.customAuthBaseUrl = params.customAuthBaseUrl?.replace(/\/+$/, "").replace(/^https:/i, "https:");
     
-    await this.output.saveTestRun({
-      testRunId,
-      ...params,
-      organizationName: params.organizationName,
-      techSpecVersion: params.version, 
-      status: TestRunStatus.FAIL,
-    });
+    await this.output.saveTestRun(testRun);
 
     // Obtain token endpoint from .well-known if available
     const authTokenUrl = await fetchOpenIdTokenEndpoint(params.customAuthBaseUrl ?? params.baseUrl) ??
@@ -82,14 +83,11 @@ export class TestRunWorker {
       accessToken,
       params.version
     );
-
-    this.output.saveTestData(testRunId, {
-      productIds: footprints.data[0].productIds,
-      version: params.version,
-    });
+    testRun.data = { productIds: footprints.data[0].productIds } 
+    await this.output.saveTestRun(testRun);
 
     const testRunParams = {
-      testRunId,
+      testRunId: testRun.testRunId,
       footprints,
       paginationLinks,
       ...params,
@@ -124,37 +122,12 @@ export class TestRunWorker {
       results.push(result);
     }
 
-    // Store test cases results.
-    await this.output.saveTestCaseResults(testRunId, results);
+    // Save the test case results and then update the overall test run status accordingly.   
+    await this.output.saveTestCaseResults(testRun.testRunId, results, false);
+    await this.output.updateTestRunStatus(testRun.testRunId);
 
     // Load existing test results from database to get the most up-to-date state, also 
     // from the asynchronous webhook updates.
-    const latestResults = (await this.output.getTestResults(testRunId))?.results;
-
-    const testRun: TestRunWithResults = {
-      testRunId,
-      organizationName: params.organizationName,
-      adminEmail: params.adminEmail,
-      adminName: params.adminName,
-      timestamp: new Date().toISOString(),
-      status: TestRunStatus.FAIL,
-      techSpecVersion: params.version,
-      results: latestResults ?? results
-    }
-
-    // Calculate test run status and passing percentage from loaded results
-    const { testRunStatus, passingPercentage, failedMandatoryTests } =
-      calculateTestRunMetrics(testRun.results);
-
-    // Save the test run status and passing percentage to the database
-    await this.output.updateTestRunStatus(
-      testRunId,
-      testRunStatus,
-      passingPercentage
-    );
-
-    testRun.status = testRunStatus;
-    testRun.passingPercentage = passingPercentage;
-    return testRun;
+    return await this.output.getTestRunWithResults(testRun.testRunId); 
   }
 }

@@ -49,7 +49,7 @@ app.get("/testruns", context(async (req) => {
 
 // Get a test run
 app.get("/testruns/:id", context(async (req) => {
-  return await req.services.repository.getTestResultsWithPercentages(req.params.id);
+  return await req.services.repository.getTestRunWithResults(req.params.id);
 }));
 
 // Start a new test run

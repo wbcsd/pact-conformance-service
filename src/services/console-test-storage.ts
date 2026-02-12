@@ -1,12 +1,13 @@
+import { NotFoundError } from "../errors";
 import logger from "../utils/logger";
 import {
   TestStorage,
-  TestData,
   TestResult,
   TestRunWithResults,
   TestRun,
   TestCaseResultStatus,
   PagingParameters,
+  TestRunStatus,
 } from "./types";
 
 /**
@@ -17,13 +18,8 @@ import {
 export class ConsoleTestStorage implements TestStorage {
   private testRunData: Map<string, TestRun> = new Map();
   private testResults: Map<string, TestResult[]> = new Map();
-  private testData: Map<string, TestData> = new Map();
 
-  async saveTestRun(details: Omit<TestRun, "timestamp">): Promise<void> {
-    const testRun: TestRun = {
-      ...details,
-      timestamp: new Date().toISOString(),
-    };
+  async saveTestRun(testRun: TestRun): Promise<void> {
     this.testRunData.set(testRun.testRunId, testRun);
     
     logger.info("=".repeat(80));
@@ -33,55 +29,63 @@ export class ConsoleTestStorage implements TestStorage {
     logger.info("=".repeat(80));
   }
 
-  async updateTestRunStatus(
-    testRunId: string,
-    status: string,
-    passingPercentage: number
-  ): Promise<void> {
+  async getTestRun(testRunId: string): Promise<TestRun> {
     const testRun = this.testRunData.get(testRunId);
-    if (testRun) {
-      testRun.status = status;
-      testRun.passingPercentage = passingPercentage;
-    }
     
-    logger.info("\n" + "=".repeat(80));
-    logger.info(`Test Run Completed: ${status}`);
-    logger.info(`Passing Percentage: ${passingPercentage}%`);
-    logger.info("=".repeat(80));
+    if (!testRun) {
+      throw new NotFoundError(`Test run with ID ${testRunId} not found`);
+    }
+    return testRun;
   }
 
-  async saveTestCaseResult(
-    testRunId: string,
-    testResult: TestResult,
-    overwriteExisting: boolean
-  ): Promise<void> {
-    const results = this.testResults.get(testRunId) || [];
-    
-    if (!overwriteExisting) {
-      const existing = results.find((r) => r.testKey === testResult.testKey);
-      if (existing) {
-        return;
-      }
-    } else {
-      const index = results.findIndex((r) => r.testKey === testResult.testKey);
-      if (index >= 0) {
-        results[index] = testResult;
-        this.testResults.set(testRunId, results);
-        return;
-      }
+  async updateTestRunStatus(testRunId: string): Promise<void> {
+    const testRun = await this.getTestRunWithResults(testRunId);
+    const mandatoryTests = testRun.results.filter(
+      (test) => test.mandatory
+    );
+    const failedMandatoryTests = mandatoryTests.filter(
+      (test) => test.status === TestCaseResultStatus.FAILURE
+    );
+    const pendingMandatoryTests = mandatoryTests.filter(
+      (test) => test.status === TestCaseResultStatus.PENDING
+    );
+    if (mandatoryTests.length > 0 && failedMandatoryTests.length === 0 && pendingMandatoryTests.length === 0) {
+      testRun.status = TestRunStatus.PASS;
+      testRun.passingPercentage = 100;
+    } else if (failedMandatoryTests.length > 0) {
+      testRun.status = TestRunStatus.FAIL;
+      testRun.passingPercentage = Math.round(((mandatoryTests.length - failedMandatoryTests.length - pendingMandatoryTests.length) / mandatoryTests.length) * 100);
+    } else if (pendingMandatoryTests.length > 0) {
+      testRun.status = TestRunStatus.PENDING;
+      testRun.passingPercentage = Math.round(((mandatoryTests.length - pendingMandatoryTests.length) / mandatoryTests.length) * 100);
     }
-    
-    results.push(testResult);
-    this.testResults.set(testRunId, results);
   }
 
   async saveTestCaseResults(
     testRunId: string,
-    testResults: TestResult[]
+    testResults: TestResult[],
+    overwriteExisting: boolean
   ): Promise<void> {
+    const results = this.testResults.get(testRunId) || [];
+    
     for (const testResult of testResults) {
-      await this.saveTestCaseResult(testRunId, testResult, false);
+      if (!overwriteExisting) {
+        const existing = results.find((r) => r.testKey === testResult.testKey);
+        if (existing) {
+          continue;
+        }
+      } else {
+        const index = results.findIndex((r) => r.testKey === testResult.testKey);
+        if (index >= 0) {
+          results[index] = testResult;
+          continue;
+        }
+      }
+      
+      results.push(testResult);
     }
+    
+    this.testResults.set(testRunId, results);
     
     // Display results summary
     this.displayTestResults(testResults);
@@ -156,27 +160,18 @@ export class ConsoleTestStorage implements TestStorage {
     }
   }
 
-  async getTestResults(testRunId: string): Promise<TestRunWithResults | null> {
+  async getTestRunWithResults(testRunId: string): Promise<TestRunWithResults> {
     const testRun = this.testRunData.get(testRunId);
     const results = this.testResults.get(testRunId) || [];
     
     if (!testRun) {
-      return null;
+      throw new NotFoundError(`Test run with ID ${testRunId} not found`);
     }
     
     return {
       ...testRun,
       results,
     };
-  }
-
-  async saveTestData(testRunId: string, testData: TestData): Promise<void> {
-    this.testData.set(testRunId, testData);
-    logger.info(`Test data saved for product IDs: ${testData.productIds.join(", ")}`);
-  }
-
-  async getTestData(testRunId: string): Promise<TestData | null> {
-    return this.testData.get(testRunId) || null;
   }
 
   async listTestRuns(

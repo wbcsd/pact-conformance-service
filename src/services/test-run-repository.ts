@@ -1,14 +1,14 @@
-import { Kysely } from "kysely";
+import { Kysely, sql } from "kysely";
 import logger from "../utils/logger";
 import { DB } from "../data/types";
 import {
   TestStorage,
-  TestData,
   TestResult,
   TestRunWithResults,
   TestRun,
   TestCaseResultStatus,
   PagingParameters,
+  TestRunStatus,
 } from "./types";
 import { ValidationError, NotFoundError } from "../errors";
 
@@ -24,43 +24,6 @@ export class TestRunRepository implements TestStorage {
   private static readonly DEFAULT_PAGE_SIZE = 50;
   
   constructor(private db: Kysely<DB>) {}
-
-  /**
-   * Calculate passing percentages for mandatory and non-mandatory tests
-   */
-  private calculatePassingPercentages(results: TestResult[]): {
-    passingPercentage: number;
-    nonMandatoryPassingPercentage: number;
-  } {
-    const mandatoryTests = results.filter((test) => test.mandatory);
-    const failedMandatoryTests = mandatoryTests.filter(
-      (test) => test.status !== TestCaseResultStatus.SUCCESS
-    );
-
-    const passingPercentage =
-      mandatoryTests.length > 0
-        ? Math.round(
-            ((mandatoryTests.length - failedMandatoryTests.length) /
-              mandatoryTests.length) *
-              100
-          )
-        : 0;
-
-    const nonMandatoryTests = results.filter((test) => !test.mandatory);
-    const failedNonMandatoryTests = nonMandatoryTests.filter(
-      (test) => test.status !== TestCaseResultStatus.SUCCESS
-    );
-    const nonMandatoryPassingPercentage =
-      nonMandatoryTests.length > 0
-        ? Math.round(
-            ((nonMandatoryTests.length - failedNonMandatoryTests.length) /
-              nonMandatoryTests.length) *
-              100
-          )
-        : 0;
-
-    return { passingPercentage, nonMandatoryPassingPercentage };
-  }
 
   async saveTestRun(data: TestRun): Promise<void> {
     const timestamp = new Date().toISOString();
@@ -94,97 +57,50 @@ export class TestRunRepository implements TestStorage {
     }
   }
 
-  async updateTestRunStatus(
-    testRunId: string,
-    status: string,
-    passingPercentage: number
-  ): Promise<void> {
-    try {
-      const res = await this.db
-        .updateTable("testRuns")
-        .set({
-          status,
-          passingPercentage: passingPercentage,
-        })
-        .where("id", "=", testRunId)
-        .executeTakeFirst();
-
-      // For Postgres, res.numUpdatedRows is a BigInt-like value; coerce to number
-      const updated =
-        typeof res.numUpdatedRows === "bigint"
-          ? Number(res.numUpdatedRows)
-          : // SQLite/others may return undefined; fallback to 0/1 check
-            (res as any)?.numUpdatedRows ?? 0;
-
-      if (updated === 0) {
-        console.warn(`No test run found with ID ${testRunId} to update`);
-      } else {
-        logger.info(
-          `Test run ${testRunId} status updated to ${status} with ${passingPercentage}% passing`
-        );
-      }
-    } catch (error) {
-      logger.error("Error updating test run status:", error);
-      throw error;
-    }
-  }
-
-  async saveTestCaseResult(
-    testRunId: string,
-    testResult: TestResult,
-    overwriteExisting: boolean
-  ): Promise<void> {
-    const timestamp = new Date().toISOString();
-
-    try {
-      await this.db.transaction().execute(async (tx) => {
-        if (!overwriteExisting) {
-          const existing = await tx
-            .selectFrom("testResults")
-            .select((eb) => eb.lit(1).as("one"))
-            .where("testRunId", "=", testRunId)
-            .where("testKey", "=", testResult.testKey)
-            .executeTakeFirst();
-
-          if (existing) {
-            console.debug("Item already exists, no action taken.");
-            return;
-          }
-        }
-
-        await tx
-          .insertInto("testResults")
-          .values({
-            testRunId: testRunId,
-            testKey: testResult.testKey,
-            timestamp,
-            // Keep behavior the same; original stored the entire result payload in JSONB.
-            // Using the object directly allows pg to serialize to jsonb.
-            result: testResult as unknown,
-          })
-          .onConflict((oc) =>
-            oc.columns(["testRunId", "testKey"]).doUpdateSet({
-              timestamp,
-              result: testResult as unknown,
-            })
-          )
-          .execute();
-      });
-    } catch (error) {
-      logger.error(`Error saving test case: ${testResult.name}`, error);
-      throw error;
-    }
-  }
-
   async saveTestCaseResults(
     testRunId: string,
-    testResults: TestResult[]
+    testResults: TestResult[],
+    overwriteExisting: boolean
   ): Promise<void> {
     logger.info(`Saving ${testResults.length} test cases...`);
+    const timestamp = new Date().toISOString();
 
     for (const testResult of testResults) {
       try {
-        await this.saveTestCaseResult(testRunId, testResult, false);
+        if (!overwriteExisting) {
+          await this.db
+            .insertInto("testResults")
+            .values({
+              testRunId: testRunId,
+              testKey: testResult.testKey,
+              timestamp,
+              // Keep behavior the same; original stored the entire result payload in JSONB.
+              // Using the object directly allows pg to serialize to jsonb.
+              result: testResult as unknown,
+            })
+            .onConflict((oc) =>
+              oc.columns(["testRunId", "testKey"]).doNothing()
+            )
+            .execute();
+        } else {
+          await this.db
+            .insertInto("testResults")
+            .values({
+              testRunId: testRunId,
+              testKey: testResult.testKey,
+              timestamp,
+              // Keep behavior the same; original stored the entire result payload in JSONB.
+              // Using the object directly allows pg to serialize to jsonb.
+              result: testResult as unknown,
+            })
+            .onConflict((oc) =>
+              oc.columns(["testRunId", "testKey"]).doUpdateSet({
+                timestamp,
+                result: testResult as unknown,
+              })
+            )
+            .execute();
+        }
       } catch (error) {
         logger.error(
           `Failed to save test case ${testResult.name}:`,
@@ -193,34 +109,84 @@ export class TestRunRepository implements TestStorage {
         throw error;
       }
     }
-
-    logger.info(`All ${testResults.length} test cases saved successfully`);
+    logger.info(`Saved ${testResults.length} test cases successfully.`);
   }
 
-  async getTestResults(testRunId: string): Promise<TestRunWithResults | null> {
+  async updateTestRunStatus(testRunId: string): Promise<void> {
+    const rows = await this.db.selectFrom("testResults")
+      .select(["testKey", "result"])
+      .where("testRunId", "=", testRunId)
+      .execute();
+    const results = rows.map((r) => r.result as TestResult);
+    
+    const mandatoryTests = results.filter(
+      (test) => test.mandatory
+    );
+    const failedMandatoryTests = mandatoryTests.filter(
+      (test) => test.status === TestCaseResultStatus.FAILURE
+    );
+    const pendingMandatoryTests = mandatoryTests.filter(
+      (test) => test.status === TestCaseResultStatus.PENDING
+    );
+    
+    let updates = null;
+    if (mandatoryTests.length > 0 && failedMandatoryTests.length === 0 && pendingMandatoryTests.length === 0) {
+      updates = { status: TestRunStatus.PASS, passingPercentage: 100 };
+    } else if (failedMandatoryTests.length > 0) {
+      updates = { status: TestRunStatus.FAIL, passingPercentage: Math.round(((mandatoryTests.length - failedMandatoryTests.length - pendingMandatoryTests.length) / mandatoryTests.length) * 100) }; 
+    } else if (pendingMandatoryTests.length > 0) {
+      updates = { status: TestRunStatus.PENDING, passingPercentage: Math.round(((mandatoryTests.length - pendingMandatoryTests.length) / mandatoryTests.length) * 100) };
+    }
+
+    if (updates) {
+      const res = await this.db
+          .updateTable("testRuns")
+          .set(updates)
+          .where("id", "=", testRunId)
+          .executeTakeFirst();
+      if (Number(res.numUpdatedRows) == 0) {
+        console.warn(`No test run found with ID ${testRunId} to update`);
+      }
+    }
+  }
+
+  async getTestRun(testRunId: string): Promise<TestRun> {
     // Validate testRunId parameter
     if (!testRunId || typeof testRunId !== 'string' || testRunId.trim() === '') {
       throw new ValidationError("Missing or invalid parameter: testRunId");
     }
 
-    const resultsRows = await this.db
+    const testRun = await this.db
+      .selectFrom("testRuns")
+      .selectAll()
+      .where("id", "=", testRunId)
+      .executeTakeFirst();
+
+    if (!testRun) {
+      throw new NotFoundError(`Test run not found: ${testRunId}`);
+    }
+  
+    return {
+      ...testRun as any,
+      testRunId: testRun.id,
+      organizationName: testRun.companyName,
+    } as TestRun;
+  }
+
+  async getTestRunWithResults(testRunId: string): Promise<TestRunWithResults> {
+    
+    // Get test run details, will throw NotFoundError if not found
+    const testRun = await this.getTestRun(testRunId);
+
+    // Obtain test case results for the test run, sorted by testKey to maintain consistent order.
+    const rows = await this.db
       .selectFrom("testResults")
       .select(["result"])
       .where("testRunId", "=", testRunId)
       .orderBy("testKey")
       .execute();
 
-    const details = await this.db
-      .selectFrom("testRuns")
-      .selectAll()
-      .where("id", "=", testRunId)
-      .executeTakeFirst();
-
-    if (!details) {
-      throw new NotFoundError(`Test run not found: ${testRunId}`);
-    }
-
-    const results = resultsRows.map((r) => r.result as TestResult).sort((a, b) => {
+    const results = rows.map((r) => r.result as TestResult).sort((a, b) => {
       // Sort by extracted number from name if possible
       const extractedA = a.name.match(/\d+/);
       const extractedB = b.name.match(/\d+/);
@@ -235,64 +201,9 @@ export class TestRunRepository implements TestStorage {
     });
 
     return {
-      ...details as any,
-      testRunId: details.id,
+      ...testRun as any,
       results,
-    };
-  }
-
-  /**
-   * Get test results with calculated passing percentages for both mandatory and non-mandatory tests
-   */
-  async getTestResultsWithPercentages(testRunId: string): Promise<TestRunWithResults & {
-    passingPercentage: number;
-    nonMandatoryPassingPercentage: number;
-  }> {
-    const result = await this.getTestResults(testRunId);
-    if (!result) {
-      throw new NotFoundError(`Test run not found: ${testRunId}`);
-    }
-
-    const { passingPercentage, nonMandatoryPassingPercentage } = 
-      this.calculatePassingPercentages(result.results);
-
-    return {
-      ...result,
-      passingPercentage,
-      nonMandatoryPassingPercentage,
-    };
-  }
-
-  async saveTestData(testRunId: string, testData: TestData): Promise<void> {
-    const timestamp = new Date().toISOString();
-
-    await this.db
-      .insertInto("testData")
-      .values({
-        testRunId: testRunId,
-        timestamp,
-        data: testData as unknown,
-      })
-      .onConflict((oc) =>
-        oc.column("testRunId").doUpdateSet({
-          timestamp,
-          data: testData as unknown,
-        })
-      )
-      .execute();
-
-    logger.info("Test data saved successfully");
-  }
-
-  async getTestData(testRunId: string): Promise<TestData | null> {
-    const row = await this.db
-      .selectFrom("testData")
-      .select(["data"])
-      .where("testRunId", "=", testRunId)
-      .executeTakeFirst();
-
-    if (!row) return null;
-    return row.data as TestData;
+    } as TestRunWithResults;
   }
 
   async listTestRuns(
@@ -322,7 +233,7 @@ export class TestRunRepository implements TestStorage {
     const offset = (pageNum - 1) * pageSize;
 
     q = q.orderBy("timestamp", "desc").limit(pageSize).offset(offset);
-
+    logger.debug(`pagesize: ${pageSize}, pageNum: ${pageNum}, offset: ${offset}`); // Log the generated SQL query for debugging
     const rows = await q.execute();
 
     return rows.map(
