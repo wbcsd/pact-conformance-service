@@ -5,7 +5,7 @@
 Run V3.0 conformance tests:
 
 ```bash
-npm run test:cli -- \
+npm run cli -- \
   --baseUrl https://api.example.com \
   --clientId your-client-id \
   --clientSecret your-client-secret \
@@ -16,7 +16,7 @@ npm run test:cli -- \
 ## V2.2 Tests with Custom Auth
 
 ```bash
-npm run test:cli -- \
+npm run cli -- \
   --baseUrl https://api.example.com \
   --customAuthBaseUrl https://auth.example.com \
   --clientId your-client-id \
@@ -28,7 +28,7 @@ npm run test:cli -- \
 ## With OAuth Parameters
 
 ```bash
-npm run test:cli -- \
+npm run cli -- \
   --baseUrl https://api.example.com \
   --clientId your-client-id \
   --clientSecret your-client-secret \
@@ -54,7 +54,7 @@ npx ts-node src/scripts/run-tests-cli.ts \
 ## Help
 
 ```bash
-npm run test:cli -- --help
+npm run cli -- --help
 ```
 
 ## Notes
