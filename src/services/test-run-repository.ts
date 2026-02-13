@@ -1,4 +1,4 @@
-import { Kysely, sql } from "kysely";
+import { Kysely } from "kysely";
 import logger from "../utils/logger";
 import { DB } from "../data/types";
 import {
@@ -25,38 +25,35 @@ export class TestRunRepository implements TestStorage {
   
   constructor(private db: Kysely<DB>) {}
 
-  async saveTestRun(data: TestRun): Promise<void> {
-    const timestamp = new Date().toISOString();
+  async saveTestRun(testRun: TestRun): Promise<void> {
 
     try {
       await this.db
         .insertInto("testRuns")
         .values({
-          timestamp,
-          id: data.testRunId,
-          companyName: data.organizationName,
-          adminEmail: data.adminEmail,
-          adminName: data.adminName,
-          techSpecVersion: data.techSpecVersion,
-          status: data.status,
-          passingPercentage: data.passingPercentage,
-          data: data.data as any
+          id: testRun.testRunId,
+          timestamp: testRun.timestamp,
+          status: testRun.status,
+          companyName: testRun.organizationName,
+          adminEmail: testRun.adminEmail,
+          adminName: testRun.adminName,
+          techSpecVersion: testRun.techSpecVersion,
+          data: testRun.data as any
         })
         .onConflict((oc) =>
           oc.column("id").doUpdateSet({
-            timestamp,
-            companyName: data.organizationName,
-            adminEmail: data.adminEmail,
-            adminName: data.adminName,
-            techSpecVersion: data.techSpecVersion,
-            status: data.status,
-            passingPercentage: data.passingPercentage,
-            data: data.data as any
+            timestamp: testRun.timestamp,
+            status: testRun.status,
+            companyName: testRun.organizationName,
+            adminEmail: testRun.adminEmail,
+            adminName: testRun.adminName,
+            techSpecVersion: testRun.techSpecVersion,
+            data: testRun.data as any
           })
         )
         .execute();
 
-      logger.info(`Test run ${data.testRunId} saved successfully`);
+      logger.info(`Test run ${testRun.testRunId} saved successfully`);
     } catch (error) {
       logger.error("Error saving test run:", error);
       throw error;
