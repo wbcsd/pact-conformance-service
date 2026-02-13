@@ -9,6 +9,7 @@
     "dev": "ts-node-dev ./src/server.ts",
     "dev:run": "ts-node-dev --respawn --transpile-only src/",
     "start": "NODE_ENV=production node ./dist/server.js",
+    "cli": "ts-node ./src/scripts/run-tests-cli.ts",
     "test": "jest --maxWorkers=1",
     "test:watch": "jest --watch",
     "check": "ts-node ./src/scripts/check-config.ts",
