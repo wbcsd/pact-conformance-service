@@ -32,6 +32,27 @@ import { ConsoleTestStorage } from "../services/console-test-storage";
 import { ApiVersion, TestRunStartParams } from "../services/types";
 import logger from "../utils/logger";
 
+/**
+ * Parses a comma-separated list of test case numbers and ranges (e.g. "1-2,9" -> [1, 2, 9]).
+ */
+function parseTestCaseList(raw: string): number[] {
+  const result: number[] = [];
+  for (const part of raw.split(",").map((s) => s.trim()).filter(Boolean)) {
+    const dash = part.indexOf("-");
+    if (dash >= 0) {
+      const lo = parseInt(part.slice(0, dash).trim(), 10);
+      const hi = parseInt(part.slice(dash + 1).trim(), 10);
+      if (!Number.isNaN(lo) && !Number.isNaN(hi) && lo <= hi) {
+        for (let n = lo; n <= hi; n++) result.push(n);
+      }
+    } else {
+      const n = parseInt(part, 10);
+      if (!Number.isNaN(n)) result.push(n);
+    }
+  }
+  return [...new Set(result)].sort((a, b) => a - b);
+}
+
 function parseArgs(): TestRunStartParams {
   const args = process.argv.slice(2);
   const params: Partial<TestRunStartParams> = {
@@ -88,6 +109,12 @@ function parseArgs(): TestRunStartParams {
         params.adminName = value;
         i++;
         break;
+      case "--testCases": {
+        const raw = value ?? "";
+        params.testCaseNumbers = parseTestCaseList(raw);
+        i++;
+        break;
+      }
       case "--help":
       case "-h":
         printHelp();
@@ -135,6 +162,7 @@ Optional Options:
   --resource <resource>        OAuth resource
   --adminEmail <email>         Admin email address (default: cli@example.com)
   --adminName <name>           Admin name (default: CLI User)
+  --testCases <list>           Comma-separated numbers and ranges (e.g. 1-2,9). Omit to run all.
   --help, -h                   Show this help message
 
 Examples:
@@ -155,6 +183,15 @@ Examples:
     --version V2.2 \\
     --organizationName "My Company" \\
     --scope "read:footprints"
+
+  # Run only test cases 1, 2, and 9
+  npx tsx src/scripts/run-tests-cli.ts \\
+    --baseUrl https://api.example.com \\
+    --clientId myClientId \\
+    --clientSecret mySecret \\
+    --version V3.0 \\
+    --organizationName "My Company" \\
+    --testCases 1-2,9
   `);
 }
 

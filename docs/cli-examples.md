@@ -13,6 +13,19 @@ npm run cli -- \
   --organizationName "Your Organization"
 ```
 
+During initial development, it's helpful to be able to assert that certain test
+cases are covered with the `--testCases` command line option:
+
+```bash
+npm run cli -- \
+  --baseUrl https://api.example.com \
+  --clientId your-client-id \
+  --clientSecret your-client-secret \
+  --version V3.0 \
+  --organizationName "Your Organization" \
+  --testCases 1-2,9                          # only test authentication flow
+```
+
 ## V2.2 Tests with Custom Auth
 
 ```bash
