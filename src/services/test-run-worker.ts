@@ -99,9 +99,20 @@ export class TestRunWorker {
     };
 
     // Generate test cases based on the version
-    const testCases = params.version.startsWith("V2")
+    let testCases = params.version.startsWith("V2")
       ? await generateV2TestCases(testRunParams)
       : await generateV3TestCases(testRunParams);
+
+    // Filter to specific test case numbers if requested (e.g. testKey "TESTCASE#1" -> 1)
+    if (params.testCaseNumbers?.length) {
+      const allowed = new Set(params.testCaseNumbers);
+      testCases = testCases.filter((tc) => {
+        const match = tc.testKey.match(/^TESTCASE#(\d+)/);
+        const num = match ? parseInt(match[1], 10) : null;
+        return num !== null && allowed.has(num);
+      });
+      logger.info(`Filtered to test cases: ${params.testCaseNumbers.join(", ")} (${testCases.length} cases)`);
+    }
 
     const results: TestResult[] = [];
 
