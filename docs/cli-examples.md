@@ -5,7 +5,7 @@
 Run V3.0 conformance tests:
 
 ```bash
-npm run test:cli -- \
+npm run cli -- \
   --baseUrl https://api.example.com \
   --clientId your-client-id \
   --clientSecret your-client-secret \
@@ -13,10 +13,23 @@ npm run test:cli -- \
   --organizationName "Your Organization"
 ```
 
+During initial development, it's helpful to be able to assert that certain test
+cases are covered with the `--testCases` command line option:
+
+```bash
+npm run cli -- \
+  --baseUrl https://api.example.com \
+  --clientId your-client-id \
+  --clientSecret your-client-secret \
+  --version V3.0 \
+  --organizationName "Your Organization" \
+  --testCases 1-2,9                          # only test authentication flow
+```
+
 ## V2.2 Tests with Custom Auth
 
 ```bash
-npm run test:cli -- \
+npm run cli -- \
   --baseUrl https://api.example.com \
   --customAuthBaseUrl https://auth.example.com \
   --clientId your-client-id \
@@ -28,7 +41,7 @@ npm run test:cli -- \
 ## With OAuth Parameters
 
 ```bash
-npm run test:cli -- \
+npm run cli -- \
   --baseUrl https://api.example.com \
   --clientId your-client-id \
   --clientSecret your-client-secret \
@@ -54,7 +67,7 @@ npx ts-node src/scripts/run-tests-cli.ts \
 ## Help
 
 ```bash
-npm run test:cli -- --help
+npm run cli -- --help
 ```
 
 ## Notes

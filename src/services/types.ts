@@ -70,6 +70,7 @@ export interface TestRunStartParams {
   scope?: string;
   audience?: string;
   resource?: string;
+  testCaseNumbers?: number[];
 }
 
 export interface TestRun {

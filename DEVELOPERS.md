@@ -113,12 +113,12 @@ src/
 npm start               # Start local development server
 npm run dev             # Start with auto-reload using ts-node-dev
 npm run build           # Compile TypeScript to JavaScript
+npm run cli             # Run conformance tests from CLI (see below)
 
 # Testing
 npm test                # Run all tests
 npm test -- --watch     # Run tests in watch mode
 npm test -- --coverage  # Run tests with coverage report
-npm run test:cli        # Run conformance tests from CLI (see below)
 
 # Database
 npm run migrate         # Run pending database migrations
@@ -129,7 +129,7 @@ npm run migrate         # Run pending database migrations
 You can run conformance tests directly from the command line without starting the server or using a database. Results are displayed in the console with colored output:
 
 ```bash
-npm run test:cli -- \
+npm run cli -- \
   --baseUrl https://api.example.com \
   --clientId myClientId \
   --clientSecret mySecret \
@@ -155,7 +155,7 @@ npm run test:cli -- \
 **Example with all options:**
 
 ```bash
-npm run test:cli -- \
+npm run cli -- \
   --baseUrl https://api.example.com \
   --customAuthBaseUrl https://auth.example.com \
   --clientId myClientId \

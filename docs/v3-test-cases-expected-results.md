@@ -478,6 +478,8 @@ Content-Type: application/cloudevents+json; charset=UTF-8
 authorization: Bearer [BearerToken]
 ```
 
+> NOTE: The BearerToken for the incoming request should be obtained from the PACT Conformance Testing Service. See [FAQ](./FAQ) for more details.
+
 Expected *incoming* Request body:
 
 ```
@@ -595,6 +597,8 @@ Expected *incoming* Request headers:
 Content-Type: application/cloudevents+json; charset=UTF-8
 authorization: Bearer [BearerToken]
 ```
+
+> NOTE: The BearerToken for the incoming request should be obtained from the PACT Conformance Testing Service. See [FAQ](./FAQ) for more details.
 
 Expected *incoming* Request body:
 
