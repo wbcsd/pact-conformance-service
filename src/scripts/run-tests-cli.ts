@@ -215,6 +215,9 @@ async function main() {
     // Display final results
     logger.info("\n" + "=".repeat(80));
     logger.info("TEST RUN COMPLETE");
+    if (params.testCaseNumbers?.length) {
+      logger.info("WARNING: Some test cases may have been excluded (see --testCases argument)");
+    }
     logger.info("=".repeat(80));
     logger.info(`Status: ${result.status}`);
     logger.info(`Passing Percentage: ${result.passingPercentage}%`);
