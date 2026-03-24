@@ -4,6 +4,7 @@ import { DB } from "../data/types";
 import {
   TestRun,
   TestResult,
+  TestRunStatus,
   TestCaseResultStatus,
   PagingParameters,
 } from "./types";
@@ -68,7 +69,7 @@ describe("TestRunRepository", () => {
         adminName: "John Doe",
         techSpecVersion: "v1.0",
         timestamp: "",
-        status: "",
+        status: TestRunStatus.PENDING,
         data: null
       };
 
@@ -101,7 +102,7 @@ describe("TestRunRepository", () => {
         adminName: "John Doe",
         techSpecVersion: "v1.0",
         timestamp: "",
-        status: "",
+        status: TestRunStatus.PENDING,
         data: null
       };
 
@@ -156,7 +157,7 @@ describe("TestRunRepository", () => {
       expect(mockDb.selectFrom).toHaveBeenCalledWith("testResults");
       expect(mockDb.updateTable).toHaveBeenCalledWith("testRuns");
       expect(mockUpdateBuilder.set).toHaveBeenCalledWith({
-        status: "PASS",
+        status: TestRunStatus.PASS,
         passingPercentage: 100,
       });
     });
