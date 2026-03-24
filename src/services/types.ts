@@ -58,11 +58,6 @@ export interface TestResult {
   documentationUrl?: string;
 }
 
-export interface TestData {
-  productIds: string[];
-  version: string;
-}
-
 export interface TestRunStartParams {
   baseUrl: string;
   version: ApiVersion;
@@ -84,9 +79,10 @@ export interface TestRun {
   adminEmail: string;
   adminName: string;
   timestamp: string;
-  status: string;
+  status: TestRunStatus;
   techSpecVersion: string;
   passingPercentage?: number;
+  data: unknown; // jsonb, flexible field to store additional data like productIds;
 }
 
 // TODO: Rename to TestRunDetailsWithResults and extend TestRunDetails after testId naming is fixed
@@ -110,77 +106,50 @@ export interface PagingParameters {
  */
 export interface TestStorage {
   /**
-   * Saves the details of a test run.
+   * Save a test run.
    * @param details - The details of the test run to save.
    * @returns A promise that resolves when the operation is complete.
    */
-  saveTestRun(details: Omit<TestRun, "timestamp">): Promise<void>;
+  saveTestRun(testRun: TestRun): Promise<void>;
 
   /**
-   * Updates the status of a test run.
+   * Retrieves a test run by its ID.
    * @param testRunId - The unique identifier of the test run.
-   * @param status - The new status of the test run.
-   * @param passingPercentage - The percentage of tests that passed in the test run.
+   * @returns A promise that resolves with the test run details, or an exception if not found.
+   */
+  getTestRun(testRunId: string): Promise<TestRun>;
+
+  /**
+   * Updates the status of a test run based on its test case results.
+   * @param testRunId - The unique identifier of the test run.
    * @returns A promise that resolves when the operation is complete.
    */
-  updateTestRunStatus(
-    testRunId: string,
-    status: string,
-    passingPercentage: number
-  ): Promise<void>;
+  updateTestRunStatus(testRunId: string): Promise<void>;
 
   /**
-   * Saves the result of a single test case.
-   * @param testRunId - The unique identifier of the test run.
-   * @param testResult - The result of the test case to save.
-   * @param overwriteExisting - Whether to overwrite an existing result for the same test case.
-   * @returns A promise that resolves when the operation is complete.
-   */
-  saveTestCaseResult(
-    testRunId: string,
-    testResult: TestResult,
-    overwriteExisting: boolean
-  ): Promise<void>;
-
-  /**
-   * Saves the results of multiple test cases.
+   * Saves the results of test cases.
    * @param testRunId - The unique identifier of the test run.
    * @param testResults - An array of test case results to save.
+   * @param overwriteExisting - Whether to overwrite existing results for the same test cases.
    * @returns A promise that resolves when the operation is complete.
    */
   saveTestCaseResults(
     testRunId: string,
-    testResults: TestResult[]
+    testResults: TestResult[],
+    overwriteExisting: boolean
   ): Promise<void>;
 
   /**
-   * Retrieves the test results for a specific test run.
+   * Retrieves the test run and its test case results.
    * @param testRunId - The unique identifier of the test run.
-   * @returns A promise that resolves with the test run and its results, or null if not found.
+   * @returns A promise that resolves with the test run and its results or an exception if not found.
    */
-  getTestResults(testRunId: string): Promise<TestRunWithResults | null>;
-
-  /**
-   * Saves additional data associated with a test run.
-   * @param testRunId - The unique identifier of the test run.
-   * @param testData - The test data to save.
-   * @returns A promise that resolves when the operation is complete.
-   */
-  saveTestData(testRunId: string, testData: TestData): Promise<void>;
-
-  /**
-   * Retrieves additional data associated with a test run.
-   * @param testRunId - The unique identifier of the test run.
-   * @returns A promise that resolves with the test data, or null if not found.
-   */
-  getTestData(testRunId: string): Promise<TestData | null>;
+  getTestRunWithResults(testRunId: string): Promise<TestRunWithResults>;
 
   /**
    * Lists test runs with optional filtering and pagination.
+   * @param paging - The pagination parameters, including page number and page size.
    * @param adminEmail - (Optional) The email of the admin to filter test runs by.
-   * @param searchTerm - (Optional) A search term to filter test runs by.
-   * @param page - (Optional) The page number for pagination.
-   * @param pageSize - (Optional) The number of test runs per page.
    * @returns A promise that resolves with an array of test run details.
    */
   listTestRuns(
