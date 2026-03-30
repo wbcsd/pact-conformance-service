@@ -1,20 +1,17 @@
 import { TestRunWorker } from './test-run-worker';
-import { TestStorage, TestRunStartParams, TestRunStatus, TestCaseResultStatus, TestRun } from './types';
+import { TestStorage, TestRunStartParams, TestRunStatus, TestCaseResultStatus, TestResult } from './types';
 import { ValidationError } from '../errors';
 import { fetchOpenIdTokenEndpoint, getAccessToken } from '../utils/authUtils';
 import { fetchFootprints, getLinksHeaderFromFootprints } from '../utils/fetchFootprints';
 import { generateV2TestCases } from '../test-cases/v2-test-cases';
 import { generateV3TestCases } from '../test-cases/v3-test-cases';
 import { runTestCase } from '../utils/runTestCase';
-import { calculateTestRunMetrics } from '../utils/testRunMetrics';
-import config from '../config';
 
 jest.mock('../utils/authUtils');
 jest.mock('../utils/fetchFootprints');
 jest.mock('../test-cases/v2-test-cases');
 jest.mock('../test-cases/v3-test-cases');
 jest.mock('../utils/runTestCase');
-jest.mock('../utils/testRunMetrics');
 jest.mock('crypto', () => ({
   randomUUID: jest.fn(() => 'test-run-id-123'),
 }));
@@ -37,10 +34,10 @@ describe('TestRunWorker', () => {
 
     testStorage = {
       saveTestRun: jest.fn(),
-      saveTestData: jest.fn(),
-      saveTestCaseResults: jest.fn(),
-      getTestResults: jest.fn(),
       updateTestRunStatus: jest.fn(),
+      saveTestCaseResults: jest.fn(),
+      getTestRun: jest.fn(),
+      getTestRunWithResults: jest.fn(),
     } as any;
 
     worker = new TestRunWorker(testStorage);
@@ -83,9 +80,9 @@ describe('TestRunWorker', () => {
       const mockPaginationLinks = { next: 'http://next.link' };
       const mockAccessToken = 'access-token-123';
       const mockTestCases = [{ name: 'Test Case 1' }, { name: 'Test Case 2' }];
-      const mockResults = [
-        { status: TestCaseResultStatus.SUCCESS, name: 'Test Case 1' },
-        { status: TestCaseResultStatus.SUCCESS, name: 'Test Case 2' },
+      const mockResults: TestResult[] = [
+        { status: TestCaseResultStatus.SUCCESS, name: 'Test Case 1', testKey: 'TEST-1', mandatory: true },
+        { status: TestCaseResultStatus.SUCCESS, name: 'Test Case 2', testKey: 'TEST-2', mandatory: true },
       ];
 
       (fetchOpenIdTokenEndpoint as jest.Mock).mockResolvedValue('https://auth.example.com/token');
@@ -94,13 +91,18 @@ describe('TestRunWorker', () => {
       (getLinksHeaderFromFootprints as jest.Mock).mockResolvedValue(mockPaginationLinks);
       (generateV3TestCases as jest.Mock).mockResolvedValue(mockTestCases);
       (runTestCase as jest.Mock).mockResolvedValue(mockResults[0]);
-      (testStorage.getTestResults as jest.Mock).mockResolvedValue({ results: mockResults });
-      (calculateTestRunMetrics as jest.Mock).mockReturnValue({
-        testRunStatus: TestRunStatus.PASS,
+      testStorage.getTestRunWithResults.mockResolvedValue({
+        testRunId: 'test-run-id-123',
+        organizationName: 'Test Org',
+        adminEmail: 'test@example.com',
+        adminName: 'Test Admin',
+        timestamp: '2024-01-01T00:00:00Z',
+        techSpecVersion: 'V3.0',
+        status: TestRunStatus.PASS,
         passingPercentage: 100,
-        failedMandatoryTests: [],
+        data: null,
+        results: mockResults,
       });
-
       const result = await worker.startTestRun(baseParams);
 
       expect(testStorage.saveTestRun).toHaveBeenCalledWith(
@@ -114,7 +116,7 @@ describe('TestRunWorker', () => {
       expect(fetchFootprints).toHaveBeenCalledWith(baseParams.baseUrl, mockAccessToken, 'V3.0');
       expect(generateV3TestCases).toHaveBeenCalled();
       expect(runTestCase).toHaveBeenCalledTimes(2);
-      expect(testStorage.saveTestCaseResults).toHaveBeenCalledWith('test-run-id-123', expect.any(Array));
+      expect(testStorage.saveTestCaseResults).toHaveBeenCalledWith('test-run-id-123', expect.any(Array), false);
       expect(result.status).toBe(TestRunStatus.PASS);
       expect(result.passingPercentage).toBe(100);
     });
@@ -130,17 +132,24 @@ describe('TestRunWorker', () => {
       (getLinksHeaderFromFootprints as jest.Mock).mockResolvedValue({});
       (generateV2TestCases as jest.Mock).mockResolvedValue(mockTestCases);
       (runTestCase as jest.Mock).mockResolvedValue({ status: TestCaseResultStatus.SUCCESS });
-      (testStorage.getTestResults as jest.Mock).mockResolvedValue({ results: [] });
-      (calculateTestRunMetrics as jest.Mock).mockReturnValue({
-        testRunStatus: TestRunStatus.PASS,
+      (testStorage.getTestRunWithResults as jest.Mock).mockResolvedValue({
+        testRunId: 'test-run-id-123',
+        organizationName: 'Test Org',
+        adminEmail: 'test@example.com',
+        adminName: 'Test Admin',
+        timestamp: '2024-01-01T00:00:00Z',
+        techSpecVersion: 'V2.2',
+        status: TestRunStatus.PASS,
         passingPercentage: 100,
-        failedMandatoryTests: [],
+        data: null,
+        results: []
       });
-
-      await worker.startTestRun(v2Params);
+      const result = await worker.startTestRun(v2Params);
 
       expect(generateV2TestCases).toHaveBeenCalled();
       expect(generateV3TestCases).not.toHaveBeenCalled();
+      expect(result.status).toBe(TestRunStatus.PASS);
+      expect(result.passingPercentage).toBe(100);
     });
 
     it('should include optional auth parameters when provided', async () => {
@@ -156,13 +165,7 @@ describe('TestRunWorker', () => {
       (fetchFootprints as jest.Mock).mockResolvedValue({ data: [{ productIds: ['prod-1'] }] });
       (getLinksHeaderFromFootprints as jest.Mock).mockResolvedValue({});
       (generateV3TestCases as jest.Mock).mockResolvedValue([]);
-      (testStorage.getTestResults as jest.Mock).mockResolvedValue({ results: [] });
-      (calculateTestRunMetrics as jest.Mock).mockReturnValue({
-        testRunStatus: TestRunStatus.PASS,
-        passingPercentage: 100,
-        failedMandatoryTests: [],
-      });
-
+      (testStorage.getTestRunWithResults as jest.Mock).mockResolvedValue({ results: [] });
       await worker.startTestRun(paramsWithOptional);
 
       expect(getAccessToken).toHaveBeenCalledWith(
@@ -184,13 +187,7 @@ describe('TestRunWorker', () => {
       (fetchFootprints as jest.Mock).mockResolvedValue({ data: [{ productIds: ['prod-1'] }] });
       (getLinksHeaderFromFootprints as jest.Mock).mockResolvedValue({});
       (generateV3TestCases as jest.Mock).mockResolvedValue([]);
-      (testStorage.getTestResults as jest.Mock).mockResolvedValue({ results: [] });
-      (calculateTestRunMetrics as jest.Mock).mockReturnValue({
-        testRunStatus: TestRunStatus.PASS,
-        passingPercentage: 100,
-        failedMandatoryTests: [],
-      });
-
+      (testStorage.getTestRunWithResults as jest.Mock).mockResolvedValue({ results: [] });
       await worker.startTestRun(paramsWithCustomAuth);
 
       expect(fetchOpenIdTokenEndpoint).toHaveBeenCalledWith('https://custom-auth.example.com');

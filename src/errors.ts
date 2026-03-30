@@ -3,93 +3,75 @@
  * These errors are handled by the error middleware in middleware/context.ts
  */
 
-export class NotFoundError extends Error {
-  code = 404;
-  constructor(message: string) {
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
     super(message);
-    this.name = 'NotFoundError';
-    this.message = message;
+    this.status = status;
+    this.name = new.target.name;
+    // Ensure instanceof works reliably across transpilation targets.
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 
-export class BadRequestError extends Error {
-  code = 400;
+export class NotFoundError extends ApiError {
   constructor(message: string) {
-    super(message);
-    this.name = 'BadRequestError';
-    this.message = message;
+    super(404, message);
   }
 }
 
-export class ValidationError extends Error {
-  code = 400;
+export class BadRequestError extends ApiError {
   constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-    this.message = message;
+    super(400, message);
   }
 }
 
-export class UnauthorizedError extends Error {
-  code = 401;
+export class ValidationError extends ApiError {
   constructor(message: string) {
-    super(message);
-    this.name = 'UnauthorizedError';
-    this.message = message;
+    super(400, message);
   }
 }
 
-export class ForbiddenError extends Error {
-  code = 403;
+export class UnauthorizedError extends ApiError {
   constructor(message: string) {
-    super(message);
-    this.name = 'ForbiddenError';
-    this.message = message;
+    super(401, message);
   }
 }
 
-export class RequestTimeoutError extends Error {
-  code = 408;
+export class ForbiddenError extends ApiError {
   constructor(message: string) {
-    super(message);
-    this.name = 'RequestTimeoutError';
-    this.message = message;
+    super(403, message);
   }
 }
 
-export class ConflictError extends Error {
-  code = 409;
+export class RequestTimeoutError extends ApiError {
   constructor(message: string) {
-    super(message);
-    this.name = 'ConflictRequestError';
-    this.message = message;
-  }
-} 
-
-export class TooManyRequestsError extends Error {
-  code = 429;
-  constructor(message: string) {
-    super(message);
-    this.name = 'TooManyRequestsError';
-    this.message = message;
+    super(408, message);
   }
 }
 
-export class InternalServerError extends Error {
-  code = 500;
+export class ConflictError extends ApiError {
   constructor(message: string) {
-    super(message);
-    this.name = 'InternalServerError';
-    this.message = message;
+    super(409, message);
   }
 }
 
-export class ServiceUnavailableError extends Error {
-  code = 503
+export class TooManyRequestsError extends ApiError {
   constructor(message: string) {
-    super(message);
-    this.name = 'ServiceUnavailableError';
-    this.message = message;
+    super(429, message);
+  }
+}
+
+export class InternalServerError extends ApiError {
+  constructor(message: string) {
+    super(500, message);
+  }
+}
+
+export class ServiceUnavailableError extends ApiError {
+  constructor(message: string) {
+    super(503, message);
   }
 }
 

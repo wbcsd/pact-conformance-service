@@ -293,7 +293,7 @@ export const generateV3TestCases = async ({
         specversion: "1.0",
         // Create a unique ID for this event which we can trace back to the test run,
         // when a callback is received.
-        id: testRunId + "-12",  
+        id: testRunId + "/12",  
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,
@@ -334,7 +334,7 @@ export const generateV3TestCases = async ({
         specversion: "1.0",
         // Create a unique ID for this event which we can trace back to the test run,
         // when a callback is received.
-        id: testRunId + "-14.A",
+        id: testRunId + "/14.A",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,
@@ -394,7 +394,7 @@ export const generateV3TestCases = async ({
       requestData: {
         type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
-        id: testRunId + "-16",
+        id: testRunId + "/16",
         source: webhookUrl,
         time: new Date().toISOString(),
         data: {
@@ -422,7 +422,7 @@ export const generateV3TestCases = async ({
       customUrl: `${baseUrl.replace("https", "http")}/3/events`,
       requestData: {
         specversion: "1.0",
-        id: testRunId + "-17",
+        id: testRunId + "/17",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.PUBLISHED,
