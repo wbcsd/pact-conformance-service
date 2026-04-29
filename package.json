@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "tsc",
+    "build": "tsc --build tsconfig.prod.json",
     "dev": "ts-node-dev ./src/server.ts",
     "dev:run": "ts-node-dev --respawn --transpile-only src/",
     "start": "NODE_ENV=production node ./dist/server.js",
