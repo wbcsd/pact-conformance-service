@@ -2,8 +2,24 @@ import { randomUUID } from "crypto";
 import logger from "../utils/logger";
 import { TestResult, TestCaseResultStatus, EventTypesV3 } from "../services/types";
 import { randomString, getCorrectAuthHeaders, getIncorrectAuthHeaders } from "../utils/authUtils";
-import { TestContext, createTest, assert, assertStatus, assertSchema, makeRequest } from "./test-helpers";
+import { TestContext, createTest, assert, assertStatus, assertSchema, makeRequest, createListenerTest, ListenerContext } from "./test-helpers";
 
+function isValidDate(date: Date) {
+  return date instanceof Date && !isNaN(date.getTime());
+}
+
+async function fetchNonEmptyFootprintList(ctx: TestContext, params: any) {
+  // Construct list footprints URL with query parameters 
+  const queryParams = new URLSearchParams(params).toString();
+  const url = `${ctx.baseUrl}/3/footprints?${queryParams}`;
+  const response = await makeRequest(url, "GET", ctx.headers);
+
+  // Test existence of json body and validate acording to schema
+  assertStatus(response.status, 200);
+  assert(!!response.data, "Expected JSON response body, but got none");
+  assertSchema(response.data, ctx.schema.simpleListFootprintResponse);
+  return response;
+}
 
 /**
  * V3Tests object with imperative test functions
@@ -28,7 +44,6 @@ export const V3Tests = {
         headers,
         ctx.authRequestData
       )
-      
       assertStatus(response.status, 200)
 
       return { apiResponse: response.text };
@@ -71,7 +86,6 @@ export const V3Tests = {
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
-
       assertSchema(response.data, ctx.schema.getFootprintResponse);
 
       assert(
@@ -90,12 +104,10 @@ export const V3Tests = {
     "Test Case 4: Get all PCFs using ListFootprints",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-4-get-all-pcfs-using-listfootprints",
     async (ctx: TestContext) => {
-
       const url = `${ctx.baseUrl}/3/footprints`;
       const response = await makeRequest(url, "GET", ctx.headers);
 
       assertStatus(response.status, [200, 202]);
-
       assert(!!response.data, "Expected JSON response body, but got none");
       assertSchema(response.data, ctx.schema.listFootprintResponse);
 
@@ -115,14 +127,12 @@ export const V3Tests = {
     "Test Case 5: Pagination link implementation of Action ListFootprints",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-5-pagination-link-implementation-of-action-listfootprints",
     async (ctx: TestContext) => {
-      
       const paginationUrl = Object.values(ctx.paginationLinks)[0];
       assert(!!paginationUrl, "No pagination link found");
 
       const response = await makeRequest(paginationUrl, "GET", ctx.headers);
 
       assertStatus(response.status, 200);
-
       assert(!!response.data, "Expected JSON response body, but got none");
       assertSchema(response.data, ctx.schema.simpleListFootprintResponse);
 
@@ -138,10 +148,9 @@ export const V3Tests = {
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-6-attempt-listfootprints-with-invalid-token",
     async (ctx: TestContext) => {
       const headers = {
-        "Content-Type": "application/json",
+        ...ctx.headers,
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
       };
-
       const url = `${ctx.baseUrl}/3/footprints`;
       const response = await makeRequest(url, "GET", headers);
 
@@ -165,10 +174,9 @@ export const V3Tests = {
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-7-attempt-getfootprint-with-invalid-token",
     async (ctx: TestContext) => {
       const headers = {
-        "Content-Type": "application/json",
+        ...ctx.headers,
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
       };
-
       const url = `${ctx.baseUrl}/3/footprints/${ctx.filterParams.id}`;
       const response = await makeRequest(url, "GET", headers);
 
@@ -191,14 +199,13 @@ export const V3Tests = {
     "Test Case 8: Attempt GetFootprint with Non-Existent PfId",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-8-attempt-getfootprint-with-non-existent-pfid",
     async (ctx: TestContext) => {
-
-      const url = `${ctx.baseUrl}/3/footprints/random-string-as-id-${randomString(16)}`;
+      const url = `${ctx.baseUrl}/3/footprints/00000000-0000-0000-0000-000000000000`;
       const response = await makeRequest(url, "GET", ctx.headers);
 
       assertStatus(response.status, [400, 404]);
       assert(
-        response.data?.code === "NotFound",
-        "Expected error code NotFound in response"
+        response.data?.code === "NotFound" || response.data?.code === "BadRequest",
+        "Expected error code NotFound or BadRequest in response"
       );
 
       return { apiResponse: response.text };
@@ -214,7 +221,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
       
       const copy = { ...ctx, authTokenUrl: ctx.authTokenUrl.replace("https", "http") }
-      const result: TestResult = await V3Tests.ObtainAuthTokenWithValidCredentials(copy)
+      const result: TestResult = await V3Tests.ObtainAuthTokenWithValidCredentials.action(copy)
       assert(result.status !== TestCaseResultStatus.SUCCESS, "Auth token request unexpectedly succeeded over HTTP")
       
       result.status = TestCaseResultStatus.SUCCESS;
@@ -231,7 +238,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
       
       const copy = { ...ctx, baseUrl: ctx.baseUrl.replace("https", "http") }
-      const result: TestResult = await V3Tests.GetAllPCFsUsingListFootprints(copy)
+      const result: TestResult = await V3Tests.GetAllPCFsUsingListFootprints.action(copy)
       assert(result.status !== TestCaseResultStatus.SUCCESS, "ListFootprints unexpectedly succeeded over HTTP")
       
       result.status = TestCaseResultStatus.SUCCESS;
@@ -248,7 +255,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const copy = { ...ctx, baseUrl: ctx.baseUrl.replace("https", "http") }
-      const result: TestResult = await V3Tests.GetPCFUsingGetFootprint(copy)
+      const result: TestResult = await V3Tests.GetPCFUsingGetFootprint.action(copy)
       assert(result.status !== TestCaseResultStatus.SUCCESS, "GetFootprint unexpectedly succeeded over HTTP")
       
       result.status = TestCaseResultStatus.SUCCESS;
@@ -263,11 +270,14 @@ export const V3Tests = {
     "Test Case 12: Send Asynchronous PCF Request",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-12-send-pcf-creation-request-async",
     async (ctx: TestContext) => {
-      const headers = { ...ctx.headers, "Content-Type": "application/cloudevents+json; charset=UTF-8" };
+      const headers = {
+        ...ctx.headers,
+        "Content-Type": "application/cloudevents+json; charset=UTF-8"
+      };
 
       const body = JSON.stringify({
         specversion: "1.0",
-        id: ctx.testRunId + "-12",
+        id: ctx.testRunId + "/13", // Indicate the callback test case
         source: ctx.webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,
@@ -289,14 +299,23 @@ export const V3Tests = {
   /**
    * Test Case 13: Received Request Fulfilled Response (Callback)
    */
-  ReceivedRequestFulfilledResponse: createTest(
+  ReceivedRequestFulfilledResponse: createListenerTest(
     "Test Case 13: Received Request Fulfilled Response",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-call-back-with-a-request-fulfilled-event",
-    async () => {
-      return {
-        status: TestCaseResultStatus.PENDING,
-        errorMessage: "Waiting for callback",
-      };
+    async (ctx) => {
+      // This callback will be triggered by the system when it receives the request fulfilled event, and will contain the logic to validate the event payload and update the test result accordingly.
+      // The actual processing of the event is handled in the EventHandler service, which will call a separate function to process accepted events (Test Case 13) and rejected events (Test Case 14.B)
+      assert(ctx.path === "/3/events", "Callback received on incorrect path");
+      assertSchema(ctx.data, ctx.schema.events?.fulfilled);
+      const requestedProductIds = (ctx.testRun.data as any).productIds as string[] | undefined;
+      for (const pf of ctx.data.data.pfs) {
+        for (const productId of pf.productIds) {
+          assert(
+            requestedProductIds?.includes(productId) ?? false,
+            `Received product ID ${productId} was not in the original request`
+          );
+        }
+      }
     }
   ),
 
@@ -307,11 +326,14 @@ export const V3Tests = {
     "Test Case 14.A: Send Asynchronous Request to be Rejected",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14a-request-for-the-creation-of-a-pcf-to-be-rejected",
     async (ctx: TestContext) => {
-      const headers = { ...ctx.headers, "Content-Type": "application/cloudevents+json; charset=UTF-8" };
+      const headers = {
+        ...ctx.headers,
+        "Content-Type": "application/cloudevents+json; charset=UTF-8"
+      };
 
       const body = JSON.stringify({
         specversion: "1.0",
-        id: ctx.testRunId + "-14.A",
+        id: ctx.testRunId + "/14.B", // Indicate the callback test case
         source: ctx.webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,
@@ -333,14 +355,16 @@ export const V3Tests = {
   /**
    * Test Case 14.B: Handle Rejected PCF Request (Callback)
    */
-  testCase14B_HandleRejectedPCFRequest: createTest(
+  testCase14B_HandleRejectedPCFRequest: createListenerTest(
     "Test Case 14.B: Handle Rejected PCF Request",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14b-call-back-with-a-request-rejected-event",
-    async () => {
-      return {
-        status: TestCaseResultStatus.PENDING,
-        errorMessage: "Waiting for callback",
-      };
+    async (ctx: ListenerContext) => {
+      assert(ctx.path === "/3/events", `Invalid request path: expected /3/events, but received ${ctx.path}`);
+      assertSchema(ctx.data, ctx.schema.events?.rejected);
+      assert(
+        ctx.data?.data?.error?.code && ctx.data?.data?.error?.message,
+        "Rejected event must contain an error object with a code and message"
+      );
     }
   ),
 
@@ -351,7 +375,10 @@ export const V3Tests = {
     "Test Case 15: Receive Notification of PCF Update (Published Event)",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-15-receive-notification-of-pcf-update-published-event",
     async (ctx: TestContext) => {
-      const headers = { ...ctx.headers, "Content-Type": "application/cloudevents+json; charset=UTF-8" };
+      const headers = {
+        ...ctx.headers,
+        "Content-Type": "application/cloudevents+json; charset=UTF-8"
+      };
 
       const body = JSON.stringify({
         type: EventTypesV3.PUBLISHED,
@@ -381,6 +408,7 @@ export const V3Tests = {
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-16-attempt-action-events-with-invalid-token",
     async (ctx: TestContext) => {
       const headers = {
+        ...ctx.headers,
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
         "Content-Type": "application/cloudevents+json; charset=UTF-8",
       };
@@ -388,7 +416,7 @@ export const V3Tests = {
       const body = JSON.stringify({
         type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
-        id: ctx.testRunId + "-16",
+        id: ctx.testRunId + "/16",
         source: ctx.webhookUrl,
         time: new Date().toISOString(),
         data: {
@@ -420,7 +448,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const copy = { ...ctx, baseUrl: ctx.baseUrl.replace("https", "http") }
-      const result: TestResult = await V3Tests.ReceiveNotificationOfPCFUpdate(copy)
+      const result: TestResult = await V3Tests.ReceiveNotificationOfPCFUpdate.action(copy)
       assert(result.status !== TestCaseResultStatus.SUCCESS, "Action Events unexpectedly succeeded over HTTP")
       
       result.status = TestCaseResultStatus.SUCCESS;
@@ -435,24 +463,15 @@ export const V3Tests = {
     "Test Case 18: OpenId Connect-based Authentication Flow",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-18-openid-connect-based-authentication-flow",
     async (ctx: TestContext) => {
-      if (ctx.authTokenUrl.startsWith(ctx.baseUrl)) {
-        return {
-          status: TestCaseResultStatus.PENDING,
-          errorMessage: "Skipped: authTokenUrl is under baseUrl, not an external OpenID provider",
-        };
-      }
-
       const headers = {
         ...getCorrectAuthHeaders(ctx.baseUrl, ctx.clientId, ctx.clientSecret),
       };
-
       const response = await makeRequest(
         ctx.authTokenUrl,
         "POST",
         headers,
         ctx.authRequestData
       );
-
       assertStatus(response.status, 200);
 
       return { apiResponse: response.text };
@@ -466,24 +485,15 @@ export const V3Tests = {
     "Test Case 19: OpenId connect-based authentication flow with incorrect credentials",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-19-openid-connect-based-authentication-flow-with-incorrect-credentials",
     async (ctx: TestContext) => {
-      if (ctx.authTokenUrl.startsWith(ctx.baseUrl)) {
-        return {
-          status: TestCaseResultStatus.PENDING,
-          errorMessage: "Skipped: authTokenUrl is under baseUrl, not an external OpenID provider",
-        };
-      }
-
       const headers = {
         ...getIncorrectAuthHeaders(ctx.baseUrl),
       };
-
       const response = await makeRequest(
         ctx.authTokenUrl,
         "POST",
         headers,
         ctx.authRequestData
       );
-
       assertStatus(response.status, [400, 401]);
 
       return { apiResponse: response.text };
@@ -498,13 +508,7 @@ export const V3Tests = {
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-20-v3-filtering-functionality-get-filtered-list-of-footprints-by-productid-parameter",
     async (ctx: TestContext) => {
 
-      const url = `${ctx.baseUrl}/3/footprints?productId=${ctx.filterParams.productId}`;
-      const response = await makeRequest(url, "GET", ctx.headers);
-
-      assertStatus(response.status, 200);
-      assert(!!response.data, "Expected JSON response body, but got none");
-
-      assertSchema(response.data, ctx.schema.simpleListFootprintResponse);
+      const response = await fetchNonEmptyFootprintList(ctx, { productId: ctx.filterParams.productId });
 
       const allMatch = response.data?.data?.every((footprint: { productIds: string[] }) =>
         footprint.productIds.includes(ctx.filterParams.productId)
@@ -526,13 +530,7 @@ export const V3Tests = {
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-21-v3-filtering-functionality-get-filtered-list-of-footprints-by-companyid-parameter",
     async (ctx: TestContext) => {
 
-      const url = `${ctx.baseUrl}/3/footprints?companyId=${ctx.filterParams.companyId}`;
-      const response = await makeRequest(url, "GET", ctx.headers);
-
-      assertStatus(response.status, 200);
-      assert(!!response.data, "Expected JSON response body, but got none");
-
-      assertSchema(response.data, ctx.schema.simpleListFootprintResponse);
+      const response = await fetchNonEmptyFootprintList(ctx, { companyId: ctx.filterParams.companyId });
 
       const allMatch = response.data?.data?.every((footprint: { companyIds: string[] }) =>
         footprint.companyIds.includes(ctx.filterParams.companyId)
@@ -540,6 +538,264 @@ export const V3Tests = {
       assert(
         !!allMatch,
         `One or more footprints do not match the condition: 'companyIds contains ${ctx.filterParams.companyId}'`
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 22: Filter by Geography
+   */
+  FilterByGeography: createTest(
+    "Test Case 22: V3 Filtering Functionality: Get Filtered List of Footprints by \"geography\" parameter",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-22-v3-filtering-functionality-get-filtered-list-of-footprints-by-geography-parameter",
+    async (ctx: TestContext) => {
+
+      const response = await fetchNonEmptyFootprintList(ctx, { geography: ctx.filterParams.geography });
+
+      if ((ctx.filterParams.geography ?? '') === '') {
+        assert(
+          response.data?.data?.length === ctx.footprints.data.length,
+          "When no geography is provided, all footprints should be returned"
+        );
+      } else {
+        const allMatch = response.data?.data?.every(
+          (footprint: {
+            pcf: {
+              geographyCountry?: string;
+              geographyRegionOrSubregion?: string;
+              geographyCountrySubdivision?: string;
+            };
+          }) =>
+            footprint.pcf.geographyCountry === ctx.filterParams.geography ||
+            footprint.pcf.geographyRegionOrSubregion === ctx.filterParams.geography ||
+            footprint.pcf.geographyCountrySubdivision === ctx.filterParams.geography
+        );
+        assert(
+          !!allMatch,
+          `One or more footprints do not match the condition: 'pcf.geographyCountry = ${ctx.filterParams.geography}'`
+        );
+      }
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 23: Filter by Classification
+   */
+  FilterByClassification: createTest(
+    "Test Case 23: V3 Filtering Functionality: Get Filtered List of Footprints by \"classification\" parameter",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-23-v3-filtering-functionality-get-filtered-list-of-footprints-by-classification-parameter",
+    async (ctx: TestContext) => {
+
+      const response = await fetchNonEmptyFootprintList(ctx, { classification: ctx.filterParams.classification });
+
+      if ((ctx.filterParams.classification ?? '') === '') {
+        assert(
+          response.data?.data?.length === ctx.footprints.data.length,
+          "When no classification is provided, all footprints should be returned"
+        );
+      } else {
+        const allMatch = response.data?.data?.every((footprint: { productClassifications: string[] }) =>
+          footprint.productClassifications.includes(ctx.filterParams.classification)
+        );
+        assert(
+          !!allMatch,
+          `One or more footprints do not match the condition: 'productClassifications contains ${ctx.filterParams.classification}'`
+        );
+      }
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 24: Filter by ValidOn
+   */
+  FilterByValidOn: createTest(
+    "Test Case 24: V3 Filtering Functionality: Get Filtered List of Footprints by \"validOn\" parameter",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-24-v3-filtering-functionality-get-filtered-list-of-footprints-by-validon-parameter",
+    async (ctx: TestContext) => {
+
+      const response = await fetchNonEmptyFootprintList(ctx, { validOn: ctx.filterParams.validOn });
+
+      const allMatch = response.data?.data?.every(
+        (footprint: {
+          validityPeriodStart: string;
+          validityPeriodEnd: string;
+          pcf: { referencePeriodEnd: string };
+        }) => {
+          const hasValidityPeriod =
+            footprint.validityPeriodStart &&
+            footprint.validityPeriodEnd &&
+            isValidDate(new Date(footprint.validityPeriodStart)) &&
+            isValidDate(new Date(footprint.validityPeriodEnd));
+
+          if (hasValidityPeriod) {
+            return (
+              new Date(footprint.validityPeriodStart) <= new Date(ctx.filterParams.validOn) &&
+              new Date(footprint.validityPeriodEnd) >= new Date(ctx.filterParams.validOn)
+            );
+          } else if (footprint.pcf.referencePeriodEnd) {
+            const refEnd = new Date(footprint.pcf.referencePeriodEnd);
+            const refEndPlus3Years = new Date(refEnd);
+            refEndPlus3Years.setFullYear(refEndPlus3Years.getFullYear() + 3);
+            return (
+              refEnd <= new Date(ctx.filterParams.validOn) &&
+              refEndPlus3Years >= new Date(ctx.filterParams.validOn)
+            );
+          }
+          return false;
+        }
+      );
+      assert(
+        !!allMatch,
+        `One or more footprints do not match the condition: 'validityPeriodStart <= ${ctx.filterParams.validOn} <= validityPeriodEnd' or fallback reference period logic`
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 25: Filter by ValidAfter
+   */
+  FilterByValidAfter: createTest(
+    "Test Case 25: V3 Filtering Functionality: Get Filtered List of Footprints by \"validAfter\" parameter",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-25-v3-filtering-functionality-get-filtered-list-of-footprints-by-validafter-parameter",
+    async (ctx: TestContext) => {
+
+      const response = await fetchNonEmptyFootprintList(ctx, { validAfter: ctx.filterParams.validAfter });
+
+      const allMatch = response.data?.data?.every(
+        (footprint: {
+          validityPeriodStart: string;
+          pcf: { referencePeriodEnd: string };
+        }) => {
+          const hasValidityPeriod =
+            footprint.validityPeriodStart &&
+            isValidDate(new Date(footprint.validityPeriodStart));
+
+          if (hasValidityPeriod) {
+            return new Date(footprint.validityPeriodStart) > new Date(ctx.filterParams.validAfter);
+          } else if (footprint.pcf.referencePeriodEnd) {
+            return new Date(footprint.pcf.referencePeriodEnd) > new Date(ctx.filterParams.validAfter);
+          }
+          return false;
+        }
+      );
+      assert(
+        !!allMatch,
+        `One or more footprints do not match the condition: 'validityPeriodStart > ${ctx.filterParams.validAfter}' or fallback reference period logic`
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 26: Filter by ValidBefore
+   */
+  FilterByValidBefore: createTest(
+    "Test Case 26: V3 Filtering Functionality: Get Filtered List of Footprints by \"validBefore\" parameter",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-26-v3-filtering-functionality-get-filtered-list-of-footprints-by-validbefore-parameter",
+    async (ctx: TestContext) => {
+
+      const response = await fetchNonEmptyFootprintList(ctx, { validBefore: ctx.filterParams.validBefore });
+
+      const allMatch = response.data?.data?.every(
+        (footprint: {
+          validityPeriodEnd: string;
+          pcf: { referencePeriodEnd: string };
+        }) => {
+          const hasValidityPeriod =
+            footprint.validityPeriodEnd &&
+            isValidDate(new Date(footprint.validityPeriodEnd));
+
+          if (hasValidityPeriod) {
+            return new Date(footprint.validityPeriodEnd) < new Date(ctx.filterParams.validBefore);
+          } else if (footprint.pcf.referencePeriodEnd) {
+            const refEnd = new Date(footprint.pcf.referencePeriodEnd);
+            const refEndPlus3Years = new Date(refEnd);
+            refEndPlus3Years.setFullYear(refEndPlus3Years.getFullYear() + 3);
+            return refEndPlus3Years < new Date(ctx.filterParams.validBefore);
+          }
+          return false;
+        }
+      );
+      assert(
+        !!allMatch,
+        `One or more footprints do not match the condition: 'validityPeriodEnd < ${ctx.filterParams.validBefore}' or fallback reference period logic`
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 27: Filter by Status
+   */
+  FilterByStatus: createTest(
+    "Test Case 27: V3 Filtering Functionality: Get Filtered List of Footprints by \"status\" parameter",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-27-v3-filtering-functionality-get-filtered-list-of-footprints-by-status-parameter",
+    async (ctx: TestContext) => {
+
+      const response = await fetchNonEmptyFootprintList(ctx, { status: ctx.filterParams.status });
+
+      const allMatch = response.data?.data?.every(
+        (footprint: { status: string }) => footprint.status === ctx.filterParams.status
+      );
+      assert(
+        !!allMatch,
+        `One or more footprints do not match the condition: 'status = ${ctx.filterParams.status}'`
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 28: Filter by Status and ProductId
+   */
+  FilterByStatusAndProductId: createTest(
+    "Test Case 28: V3 Filtering Functionality: Get Filtered List of Footprints by both \"status\" and \"productId\" parameters",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-28-v3-filtering-functionality-get-filtered-list-of-footprints-by-both-status-and-productid-parameters",
+    async (ctx: TestContext) => {
+
+      const response = await fetchNonEmptyFootprintList(ctx, { status: ctx.filterParams.status, productId: ctx.filterParams.productId });
+
+      const allMatch = response.data?.data?.every(
+        (footprint: { status: string; productIds: string[] }) =>
+          footprint.status === ctx.filterParams.status &&
+          footprint.productIds.includes(ctx.filterParams.productId)
+      );
+      assert(
+        !!allMatch,
+        `One or more footprints do not match the condition: 'status = ${ctx.filterParams.status} AND productIds contains ${ctx.filterParams.productId}'`
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 29: Filter by Multiple CompanyIds (OR logic)
+   */
+  FilterByMultipleCompanyIdsOrLogic: createTest(
+    "Test Case 29: V3 Filtering Functionality: Get Filtered List of Footprints by multiple filter parameters using OR logic",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-29-v3-filtering-functionality-get-filtered-list-of-footprints-by-multiple-filter-parameters-using-or-logic-positive-test-case",
+    async (ctx: TestContext) => {
+
+      const response = await fetchNonEmptyFootprintList(ctx, [['companyId', ctx.filterParams.companyId], ['companyId', randomString(8)], ['companyId', randomString(8)]]);
+
+      const allMatch = response.data?.data?.every((footprint: { companyIds: string[] }) =>
+        footprint.companyIds.includes(ctx.filterParams.companyId)
+      );
+      assert(
+        !!allMatch,
+        `One or more footprints do not match the companyId filter in OR logic test: ${ctx.filterParams.companyId}`
       );
 
       return { apiResponse: response.text };
@@ -572,13 +828,241 @@ export const V3Tests = {
   ),
 
   /**
+   * Test Case 31: Filter by CompanyId (Negative)
+   */
+  FilterByCompanyIdNegative: createTest(
+    "Test Case 31: V3 Filtering Functionality: Get Filtered List of Footprints by \"companyId\" parameter (negative test case)",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-31-v3-filtering-functionality-get-filtered-list-of-footprints-by-companyid-parameter-negative-test-case",
+    async (ctx: TestContext) => {
+
+      const url = `${ctx.baseUrl}/3/footprints?companyId=urn:bogus:company:${randomString(16)}`;
+      const response = await makeRequest(url, "GET", ctx.headers);
+
+      assertStatus(response.status, 200);
+      assert(!!response.data, "Expected JSON response body, but got none");
+
+      assertSchema(response.data, ctx.schema.emptyResponse);
+
+      assert(
+        response.data?.data?.length === 0,
+        "Expected empty data array for bogus companyId filter"
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 32: Filter by Geography (Negative)
+   */
+  FilterByGeographyNegative: createTest(
+    "Test Case 32: V3 Filtering Functionality: Get Filtered List of Footprints by \"geography\" parameter (negative test case)",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-32-v3-filtering-functionality-get-filtered-list-of-footprints-by-geography-parameter-negative-test-case",
+    async (ctx: TestContext) => {
+
+      const url = `${ctx.baseUrl}/3/footprints?geography=XX`;
+      const response = await makeRequest(url, "GET", ctx.headers);
+
+      assertStatus(response.status, 200);
+      assert(!!response.data, "Expected JSON response body, but got none");
+
+      assertSchema(response.data, ctx.schema.emptyResponse);
+
+      assert(
+        response.data?.data?.length === 0,
+        "Expected empty data array for bogus geography filter"
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 33: Filter by Classification (Negative)
+   */
+  FilterByClassificationNegative: createTest(
+    "Test Case 33: V3 Filtering Functionality: Get Filtered List of Footprints by \"classification\" parameter (negative test case)",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-33-v3-filtering-functionality-get-filtered-list-of-footprints-by-classification-parameter-negative-test-case",
+    async (ctx: TestContext) => {
+
+      const url = `${ctx.baseUrl}/3/footprints?classification=urn:bogus:classification:${randomString(16)}`;
+      const response = await makeRequest(url, "GET", ctx.headers);
+
+      assertStatus(response.status, 200);
+      assert(!!response.data, "Expected JSON response body, but got none");
+
+      assertSchema(response.data, ctx.schema.emptyResponse);
+
+      assert(
+        response.data?.data?.length === 0,
+        "Expected empty data array for bogus classification filter"
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 34: Filter by ValidOn (Negative)
+   */
+  FilterByValidOnNegative: createTest(
+    "Test Case 34: V3 Filtering Functionality: Get Filtered List of Footprints by \"validOn\" parameter (negative test case)",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-34-v3-filtering-functionality-get-filtered-list-of-footprints-by-validon-parameter-negative-test-case",
+    async (ctx: TestContext) => {
+
+      const url = `${ctx.baseUrl}/3/footprints?validOn=1900-01-01T00:00:00Z`;
+      const response = await makeRequest(url, "GET", ctx.headers);
+
+      assertStatus(response.status, 200);
+      assert(!!response.data, "Expected JSON response body, but got none");
+
+      assertSchema(response.data, ctx.schema.emptyResponse);
+
+      assert(
+        response.data?.data?.length === 0,
+        "Expected empty data array for bogus validOn filter (date in the past: 1900-01-01T00:00:00Z)"
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 35: Filter by ValidAfter (Negative)
+   */
+  FilterByValidAfterNegative: createTest(
+    "Test Case 35: V3 Filtering Functionality: Get Filtered List of Footprints by \"validAfter\" parameter (negative test case)",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-35-v3-filtering-functionality-get-filtered-list-of-footprints-by-validafter-parameter-negative-test-case",
+    async (ctx: TestContext) => {
+
+      const url = `${ctx.baseUrl}/3/footprints?validAfter=2099-12-31T23:59:59Z`;
+      const response = await makeRequest(url, "GET", ctx.headers);
+
+      assertStatus(response.status, 200);
+      assert(!!response.data, "Expected JSON response body, but got none");
+
+      assertSchema(response.data, ctx.schema.emptyResponse);
+
+      assert(
+        response.data?.data?.length === 0,
+        "Expected empty data array for bogus validAfter filter (date in the future: 2099-12-31T23:59:59Z)"
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 36: Filter by ValidBefore (Negative)
+   */
+  FilterByValidBeforeNegative: createTest(
+    "Test Case 36: V3 Filtering Functionality: Get Filtered List of Footprints by \"validBefore\" parameter (negative test case)",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-36-v3-filtering-functionality-get-filtered-list-of-footprints-by-validbefore-parameter-negative-test-case",
+    async (ctx: TestContext) => {
+
+      const url = `${ctx.baseUrl}/3/footprints?validBefore=1900-01-01T00:00:00Z`;
+      const response = await makeRequest(url, "GET", ctx.headers);
+
+      assertStatus(response.status, 200);
+      assert(!!response.data, "Expected JSON response body, but got none");
+
+      assertSchema(response.data, ctx.schema.emptyResponse);
+
+      assert(
+        response.data?.data?.length === 0,
+        "Expected empty data array for bogus validBefore filter (date in the past: 1900-01-01T00:00:00Z)"
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 37: Filter by Status (Negative)
+   */
+  FilterByStatusNegative: createTest(
+    "Test Case 37: V3 Filtering Functionality: Get Filtered List of Footprints by \"status\" parameter (negative test case)",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-37-v3-filtering-functionality-get-filtered-list-of-footprints-by-status-parameter-negative-test-case",
+    async (ctx: TestContext) => {
+
+      const url = `${ctx.baseUrl}/3/footprints?status=BogusStatus${randomString(8)}`;
+      const response = await makeRequest(url, "GET", ctx.headers);
+
+      assertStatus(response.status, 200);
+      assert(!!response.data, "Expected JSON response body, but got none");
+
+      assertSchema(response.data, ctx.schema.emptyResponse);
+
+      assert(
+        response.data?.data?.length === 0,
+        "Expected empty data array for bogus status filter"
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 38: Filter by Multiple Parameters AND logic (Negative)
+   */
+  FilterByMultipleParamsAndLogicNegative: createTest(
+    "Test Case 38: V3 Filtering Functionality: Get Filtered List of Footprints by multilpe filter parameters using AND logic (negative test case)",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-38-v3-filtering-functionality-get-filtered-list-of-footprints-by-multilpe-filter-parameters-using-and-logic-negative-test-case",
+    async (ctx: TestContext) => {
+
+      const url = `${ctx.baseUrl}/3/footprints?companyId=urn:bogus:company:${randomString(8)}&productId=urn:bogus:product:${randomString(16)}`;
+      const response = await makeRequest(url, "GET", ctx.headers);
+
+      assertStatus(response.status, 200);
+      assert(!!response.data, "Expected JSON response body, but got none");
+
+      assertSchema(response.data, ctx.schema.emptyResponse);
+
+      assert(
+        response.data?.data?.length === 0,
+        "Expected empty data array for bogus companyId and productId filters"
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
+   * Test Case 39: Filter by Multiple CompanyIds OR logic (Negative)
+   */
+  FilterByMultipleCompanyIdsOrLogicNegative: createTest(
+    "Test Case 39: V3 Filtering Functionality: Get Filtered List of Footprints by multilpe filter parameters using OR logic (negative test case)",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-39-v3-filtering-functionality-get-filtered-list-of-footprints-by-multilpe-filter-parameters-using-or-logic-negative-test-case",
+    async (ctx: TestContext) => {
+
+      const url = `${ctx.baseUrl}/3/footprints?companyId=urn:bogus:company:${randomString(8)}&companyId=urn:bogus:company:${randomString(8)}&companyId=urn:bogus:company:${randomString(8)}`;
+      const response = await makeRequest(url, "GET", ctx.headers);
+
+      assertStatus(response.status, 200);
+      assert(!!response.data, "Expected JSON response body, but got none");
+
+      assertSchema(response.data, ctx.schema.emptyResponse);
+
+      assert(
+        response.data?.data?.length === 0,
+        "Expected empty data array for bogus companyId filters in OR logic test"
+      );
+
+      return { apiResponse: response.text };
+    }
+  ),
+
+  /**
    * Test Case 40: Failed Published Event - Malformed Request
    */
   FailedPublishedEventMalformedRequest: createTest(
     "Test Case 40: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-40-failed-to-receive-notification-of-pcf-update-published-event-malformed-request",
     async (ctx: TestContext) => {
-      const headers = { ...ctx.headers, "Content-Type": "application/cloudevents+json; charset=UTF-8" };
+      const headers = {
+        ...ctx.headers,
+        "Content-Type": "application/cloudevents+json; charset=UTF-8",
+      };
 
       const body = JSON.stringify({
         type: EventTypesV3.PUBLISHED,

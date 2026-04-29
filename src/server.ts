@@ -54,7 +54,10 @@ app.get("/testruns/:id", context(async (req) => {
 
 // Start a new test run
 app.post("/testruns/", context(async (req) => {
-  return req.services.worker.startTestRun(req.body as TestRunStartParams);
+  if (process.env.ENABLE_NEW_TESTS === "true") {
+    await req.services.workerNew.startTestRun(req.body as TestRunStartParams);
+  }
+  return await req.services.worker.startTestRun(req.body as TestRunStartParams);
 }));
 
 // Authentication endpoint for callbacks
@@ -71,8 +74,12 @@ app.post("/2/events", context(async (req) => {
 
 // Callback event listener for v3 events
 app.post("/3/events", context(async (req) => {
-   await req.services.eventHandler.processEvent(req.body, req.url);
-   return undefined; // Return 200 OK with no body  
+  if (process.env.ENABLE_NEW_TESTS === "true") {
+    await req.services.workerNew.handleCallback(req.body, req.url);
+  } else {
+    await req.services.eventHandler.processEvent(req.body, req.url);
+  }
+  return undefined; // Return 200 OK with no body  
 }));
 
 // Error handling middleware (should be last)
