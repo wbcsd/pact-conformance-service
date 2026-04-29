@@ -411,7 +411,7 @@ export const V2Tests = {
       const response = await makeRequest(url, "POST", headers, body);
 
       assertStatus(response.status, [400, 401]);
-      assert(response.data?.code !== "BadRequest", "Expected error code BadRequest in response");
+      assert(response.data?.code === "BadRequest", "Expected error code BadRequest in response");
 
       return { apiResponse: response.text };
     }
