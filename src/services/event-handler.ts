@@ -4,9 +4,8 @@ import addFormats from "ajv-formats";
 import betterErrors from "ajv-errors";
 import config from "../config";
 import { TestStorage } from "./types";
-import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus, TestData } from "./types";
+import { EventTypesV2, EventTypesV3, TestResult, TestCaseResultStatus, TestRun } from "./types";
 import { getSchema } from "../schemas";
-import { calculateTestRunMetrics } from "../utils/testRunMetrics";
 import logger from "../utils/logger";
 import { BadRequestError, UnauthorizedError, NotFoundError } from "../errors";
 
@@ -75,21 +74,21 @@ export class EventHandler {
 
     logger.info("Processing event:", { path: requestPath, type: eventPayload.type, requestEventId: eventPayload.data.requestEventId });
 
-    const match = eventPayload.data.requestEventId.match(/^(.+)-(.+)$/);
-    const testRunId = match ? match[1] : eventPayload.data.requestEventId;
-    const testData = await this.storage.getTestData(testRunId);
+    const slashIndex = eventPayload.data.requestEventId.lastIndexOf("/");
+    const testRunId = slashIndex === -1
+      ? eventPayload.data.requestEventId
+      : eventPayload.data.requestEventId.slice(0, slashIndex);
 
-    if (!testData) {
-      throw new NotFoundError(`Test data not found for requestEventId: ${eventPayload.data.requestEventId}`);
-    }
+    // Will throw an error if not found
+    const testRun = await this.storage.getTestRun(testRunId);
 
     // Process fulfilled events
     if (eventPayload.type === EventTypesV2.FULFILLED || eventPayload.type === EventTypesV3.FULFILLED) {
-      await this.processFulfilledEvent(eventPayload, testRunId, testData, requestPath);
+      await this.processFulfilledEvent(eventPayload, testRunId, testRun, requestPath);
     }
     // Process rejected events  
     else if (eventPayload.type === EventTypesV2.REJECTED || eventPayload.type === EventTypesV3.REJECTED) {
-      await this.processRejectedEvent(eventPayload, testRunId, testData, requestPath);
+      await this.processRejectedEvent(eventPayload, testRunId, testRun, requestPath);
     }
     
     // Note: Other event types are silently ignored per original logic
@@ -101,18 +100,18 @@ export class EventHandler {
   private async processFulfilledEvent(
     eventPayload: EventPayload, 
     testRunId: string,
-    testData: TestData, 
+    testRun: TestRun, 
     requestPath: string
   ): Promise<void> {
-    const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
+    const isMandatory = MANDATORY_VERSIONS.includes(testRun.techSpecVersion);
 
     // Validate event against schema
-    const schemas = await getSchema(testData.version);
+    const schemas = await getSchema(testRun.techSpecVersion);
     const validateEvent = ajv.compile(schemas.events?.fulfilled);
     const eventIsValid = validateEvent(eventPayload);
 
     // Validate request path
-    const expectedPath = testData.version.startsWith("V2") ? "/2/events" : "/3/events";
+    const expectedPath = testRun.techSpecVersion.startsWith("V2") ? "/2/events" : "/3/events";
     const isPathValid = requestPath === expectedPath;
 
     let testResult: TestResult;
@@ -123,7 +122,7 @@ export class EventHandler {
         status: TestCaseResultStatus.SUCCESS,
         mandatory: isMandatory,
         testKey: "TESTCASE#13",
-        documentationUrl: testData.version.startsWith("V2")
+        documentationUrl: testRun.techSpecVersion.startsWith("V2")
           ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event"
           : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
       };
@@ -143,7 +142,7 @@ export class EventHandler {
         mandatory: isMandatory,
         testKey: "TESTCASE#13",
         errorMessage,
-        documentationUrl: testData.version.startsWith("V2")
+        documentationUrl: testRun.techSpecVersion.startsWith("V2")
           ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event"
           : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-13-respond-to-pcf-request-fulfilled-event",
       };
@@ -155,7 +154,8 @@ export class EventHandler {
         (pf: { productIds: string[] }) => pf.productIds
       );
 
-      const testPassed = testData.productIds.some((id: string) =>
+      const testRunData = testRun.data as { productIds?: string[] } | null;
+      const testPassed = testRunData?.productIds?.some((id: string) =>
         productIds.includes(id)
       );
 
@@ -163,12 +163,15 @@ export class EventHandler {
         testResult = {
           ...testResult,
           status: TestCaseResultStatus.FAILURE,
-          errorMessage: `Product IDs do not match, the request was made for productIds [${testData.productIds}] but received data for productIds [${productIds}]`,
+          errorMessage: `Product IDs do not match, the request was made for productIds [${testRunData?.productIds}] but received data for productIds [${productIds}]`,
         };
       }
     }
 
-    await this.saveTestResultAndUpdateStatus(testRunId, testResult);
+    // Save this test result, changing it from PEMNDING to eiter SUCCESS or FAILURE, 
+    // and then update the overall test run status accordingly.   
+    await this.storage.saveTestCaseResults(testRunId, [testResult], true);
+    await this.storage.updateTestRunStatus(testRunId);
   }
 
   /**
@@ -177,15 +180,15 @@ export class EventHandler {
   private async processRejectedEvent(
     eventPayload: EventPayload,
     testRunId: string,
-    testData: TestData,
+    testRun: TestRun,
     requestPath: string
   ): Promise<void> {
     logger.info("Processing rejected event:", JSON.stringify(eventPayload, null, 2));
 
-    const isMandatory = MANDATORY_VERSIONS.includes(testData.version);
+    const isMandatory = MANDATORY_VERSIONS.includes(testRun.techSpecVersion);
     
     // Validate request path
-    const expectedPath = testData.version.startsWith("V2") ? "/2/events" : "/3/events";
+    const expectedPath = testRun.techSpecVersion.startsWith("V2") ? "/2/events" : "/3/events";
     const isPathValid = requestPath === expectedPath;
 
     // Validate error object
@@ -202,7 +205,7 @@ export class EventHandler {
         status: TestCaseResultStatus.SUCCESS,
         mandatory: isMandatory,
         testKey: "TESTCASE#14.B",
-        documentationUrl: testData.version.startsWith("V2")
+        documentationUrl: testRun.techSpecVersion.startsWith("V2")
           ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event"
           : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
       };
@@ -222,28 +225,16 @@ export class EventHandler {
         mandatory: isMandatory,
         testKey: "TESTCASE#14.B",
         errorMessage,
-        documentationUrl: testData.version.startsWith("V2")
+        documentationUrl: testRun.techSpecVersion.startsWith("V2")
           ? "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event"
           : "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-14-respond-to-pcf-request-rejected-event",
       };
     }
 
-    await this.saveTestResultAndUpdateStatus(testRunId, testResult);
-  }
-
-  /**
-   * Save test result and update test run status
-   */
-  private async saveTestResultAndUpdateStatus(testRunId: string, testResult: TestResult): Promise<void> {
-    await this.storage.saveTestCaseResult(testRunId, testResult, true);
-
-    // Load updated test results and recalculate test run status
-    const existingTestRun = await this.storage.getTestResults(testRunId);
-    if (existingTestRun?.results) {
-      const { testRunStatus, passingPercentage } = calculateTestRunMetrics(existingTestRun.results);
-      await this.storage.updateTestRunStatus(testRunId, testRunStatus, passingPercentage);
-      logger.info(`Updated test run status: ${testRunStatus}, passing percentage: ${passingPercentage}%`);
-    }
+    // Save this test result, changing it from PEMNDING to eiter SUCCESS or FAILURE, 
+    // and then update the overall test run status accordingly.   
+    await this.storage.saveTestCaseResults(testRunId, [testResult], true);
+    await this.storage.updateTestRunStatus(testRunId);
   }
 
   /**

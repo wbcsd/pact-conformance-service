@@ -9,45 +9,27 @@
    - Download from [nodejs.org](https://nodejs.org/)
    - Verify installation: `node --version` and `npm --version`
 
-2. **TypeScript** (globally installed)
+2. **npm** (usually comes with Node.js)
 
-   ```bash
-   npm install -g typescript
-   ```
-
-   Or use `npx` to run TypeScript commands without global install:
-
-   ```bash
-   npx tsc --version
-   ```
+   - Verify installation: `npm --version`
 
 3. **Docker & Docker Compose** (for local PostgreSQL database)
 
    - Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
    - Verify installation: `docker --version` and `docker-compose --version`
 
-4. **AWS CLI** (for deployment and AWS services)
-
-   - Install: [AWS CLI Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-   - Configure: `aws configure` with your AWS credentials
-
-5. **Terraform** (for infrastructure deployment)
-
-   - Install: [Terraform Installation Guide](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
-   - Verify installation: `terraform --version`
-
-6. **Git** (for version control)
+4. **Git** (for version control)
    - Most systems have this pre-installed
    - Verify: `git --version`
 
-### Optional Tools
+### Recommended Tools
 
 - **Visual Studio Code** with extensions:
   - TypeScript and JavaScript Language Features
-  - AWS Toolkit
-  - Terraform
   - Jest Runner
+  - REST Client (for testing endpoints)
 - **Postman** or **Insomnia** for API testing
+- **VS Code Rest Client** extension for using `routes.rest` file
 
 ## Project Setup
 
@@ -66,43 +48,45 @@ npm install
 
 This installs all required packages including:
 
-- TypeScript and development tools
-- AWS SDK for DynamoDB and Lambda
+- TypeScript for development
 - Jest for testing
-- Express for local development server
+- Express for the development server
+- PostgreSQL driver
 - AJV for JSON schema validation
 
-### 3. Environment Configuration
+### 3. Start Local Database
 
-Copy the example environment file:
+Copy the example environment file and edit if necessary.
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` file with your local configuration:
-
-```bash
-PORT=8004
-DB_CONNECTION_STRING=postgres://postgres:postgres@localhost:5433/pact-conformance-db
-```
-
-**Note**: The Lambda functions use DynamoDB in production, but the local development server can use PostgreSQL for testing database operations.
-
-### 4. Start Local Database (Optional)
-
-For local development server testing (not Lambda testing):
+Start the PostgreSQL database using Docker Compose:
 
 ```bash
 docker-compose up -d
 ```
 
-This starts a PostgreSQL database container on port 5433.
+This starts a PostgreSQL database container with:
+- Host: `localhost`
+- Port: `5433`
+- Database: `pact-conformance-db`
+- User: `postgres`
+- Password: `postgres`
 
 To stop the database:
 
 ```bash
 docker-compose down
+```
+
+### 4. Run Database Migrations
+
+The database migrations are automatically applied when the server starts. To manually run migrations:
+
+```bash
+npm run migrate
 ```
 
 ## Development Environment
@@ -111,146 +95,218 @@ docker-compose down
 
 ```
 src/
-├── lambda/              # Lambda function handlers
-├── utils/              # Shared utilities
-├── test-cases/         # Test case generators
-├── schemas/            # JSON schemas and OpenAPI specs
-├── types/              # TypeScript type definitions
-├── data/               # Database adapters and interfaces
-├── __tests__/          # Test files
-├── config.ts           # Configuration management
-├── server.ts           # Local Express server
-└── index.ts            # Lambda handler exports
+├── services/            # Core business logic
+├── utils/               # Utility functions
+├── test-cases/          # Test case generators (v2, v3)
+├── schemas/             # JSON schemas and OpenAPI specs
+├── data/                # Database models and migrations
+├── middleware/          # Express middleware
+├── config.ts            # Configuration management
+├── server.ts            # Express server
+└── errors.ts            # Error definitions
 ```
 
 ### Available Scripts
 
 ```bash
 # Development
-npm run dev              # Start local Express server with hot reload
+npm start               # Start local development server
+npm run dev             # Start with auto-reload using ts-node-dev
 npm run build           # Compile TypeScript to JavaScript
+npm run cli             # Run conformance tests from CLI (see below)
 
 # Testing
-npm test                # Run all tests (unit + integration)
-npm run test:watch      # Run tests in watch mode
+npm test                # Run all tests
+npm test -- --watch     # Run tests in watch mode
+npm test -- --coverage  # Run tests with coverage report
 
-# Deployment
-./deploy.sh             # Build and deploy to AWS (requires AWS credentials)
+# Database
+npm run migrate         # Run pending database migrations
 ```
+
+### Running Conformance Tests from Command Line
+
+You can run conformance tests directly from the command line without starting the server or using a database. Results are displayed in the console with colored output:
+
+```bash
+npm run cli -- \
+  --baseUrl https://api.example.com \
+  --clientId myClientId \
+  --clientSecret mySecret \
+  --version V3.0 \
+  --organizationName "My Company"
+```
+
+**Required arguments:**
+- `--baseUrl` - Base URL of the API to test
+- `--clientId` - OAuth client ID
+- `--clientSecret` - OAuth client secret
+- `--version` - PACT version (V2.0, V2.1, V2.2, V2.3, or V3.0)
+- `--organizationName` - Name of the organization being tested
+
+**Optional arguments:**
+- `--customAuthBaseUrl` - Custom auth base URL (if different from baseUrl)
+- `--scope` - OAuth scope
+- `--audience` - OAuth audience
+- `--resource` - OAuth resource
+- `--adminEmail` - Admin email address
+- `--adminName` - Admin name
+
+**Example with all options:**
+
+```bash
+npm run cli -- \
+  --baseUrl https://api.example.com \
+  --customAuthBaseUrl https://auth.example.com \
+  --clientId myClientId \
+  --clientSecret mySecret \
+  --version V2.2 \
+  --organizationName "My Company" \
+  --scope "read:footprints" \
+  --adminEmail admin@example.com \
+  --adminName "Admin User"
+```
+
+The CLI will:
+1. Execute all test cases for the specified version
+2. Display progress and results in real-time with colored output
+3. Show a summary of passed/failed tests
+4. Exit with code 0 if all mandatory tests pass, or code 1 if any fail
+
+This is useful for:
+- Quick testing during development
+- CI/CD pipelines
+- Testing without database setup
+- One-off conformance checks
+
 
 ### Local Development Server
 
-The project includes an Express server that wraps the Lambda functions for local testing:
+Start the development server:
 
 ```bash
-npm run dev
+npm start
 ```
 
-This starts a server on `http://localhost:8004` with the following endpoints:
+The server runs on `http://localhost:8004` (or the port specified in your environment).
 
-- `POST /runTestCases` - Execute test suite
-- `GET /getTestResults?testRunId=<id>` - Retrieve test results
-- `GET /getRecentTestRuns?adminEmail=<email>` - Get recent test runs
-- `POST /2/events` - Webhook endpoint for v2 events
-- `POST /3/events` - Webhook endpoint for v3 events
-- `POST /auth/token` - Authentication endpoint
+**Available endpoints** (see [routes.rest](routes.rest) for examples):
 
-**Important**: This local server is for development convenience only. The actual production system uses AWS Lambda functions deployed via API Gateway.
+- `POST /testruns` - Create and run test cases
+- `GET /testruns/:id` - Get test run results
+- `GET /testruns` - List test runs
+- `POST /2/events` - v2 webhook events
+- `POST /2/events` - v3 webhook events
+- `POST /auth/token` - Generate authentication tokens
 
 ## Testing Strategy
 
-### Unit Tests
+### Running Tests
 
-Run individual function tests:
+Run the full test suite:
 
 ```bash
 npm test
 ```
 
-Test files are located in `src/__tests__/lambda/`:
+Run tests in watch mode (re-runs on file changes):
 
-- `asyncRequestListener.test.ts` - Tests webhook handling
-- `runTestCases.test.ts` - Tests main orchestration
-- `runTestCasesWithNock.test.ts` - Tests with HTTP mocking
+```bash
+npm test -- --watch
+```
 
-### Test Configuration
+Run tests with coverage report:
 
-Jest is configured in `package.json`:
+```bash
+npm test -- --coverage
+```
 
-- Uses `ts-jest` preset for TypeScript support
-- Runs tests with `--maxWorkers=1` for sequential execution
-- Test environment: Node.js
+Run a specific test file:
+
+```bash
+npm test -- src/services/test-run-repository.test.ts
+```
+
+### Test Files
+
+Test files are located throughout the `src/` directory alongside their corresponding implementation files:
+
+- `src/services/event-handler.test.ts` - Event handling tests
+- `src/services/test-run-repository.test.ts` - Database operation tests
+- `src/services/test-run-worker.test.ts` - Test execution worker tests
+- `src/utils/runTestCase.test.ts` - Test case execution tests
 
 ### Writing Tests
 
-When adding new functionality:
+The project uses Jest for testing. When adding new features:
 
-1. **Unit Tests**: Test individual functions in isolation
-2. **Integration Tests**: Test Lambda functions with mocked AWS services
-3. **Mocking**: Use `nock` for HTTP request mocking
-4. **Database Mocking**: Mock DynamoDB operations for unit tests
+1. Create a `.test.ts` file alongside your implementation file
+2. Import the function or class you're testing
+3. Use Jest's `describe()` and `test()` functions
+4. Mock external dependencies (database, HTTP calls, etc.)
 
-Example test structure:
+Example test:
 
 ```typescript
-import { handler } from "../lambda/functionName";
+import { TestRunRepository } from "./test-run-repository";
 
-describe("Lambda Function Tests", () => {
-  test("should handle valid input", async () => {
-    const event = {
-      /* mock event */
-    };
-    const result = await handler(event);
-    expect(result.statusCode).toBe(200);
+describe("TestRunRepository", () => {
+  test("should create a new test run", async () => {
+    const repository = new TestRunRepository();
+    const result = await repository.create({
+      // test data
+    });
+    expect(result.id).toBeDefined();
   });
 });
 ```
 
 ## TypeScript Configuration
 
-The project uses strict TypeScript configuration:
+The project uses strict TypeScript configuration (`tsconfig.json`):
 
 - **Target**: ES2020
 - **Module**: CommonJS
-- **Strict mode**: Enabled
+- **Strict mode**: Enabled (null checks, type safety)
 - **Source maps**: Generated for debugging
 - **Output directory**: `dist/`
 
-Key TypeScript features used:
+Build the project:
 
-- Strict null checks
-- Type definitions for AWS Lambda
-- Interface definitions for API contracts
-- Enum types for constants
+```bash
+npm run build
+```
 
-## AWS Services Integration
+Check for TypeScript errors without building:
 
-### DynamoDB
+```bash
+npx tsc --noEmit
+```
 
-The Lambda functions interact with DynamoDB:
+## Database
 
-- **Table**: Configured via Terraform
-- **SDK**: Uses AWS SDK v3 (`@aws-sdk/client-dynamodb`)
-- **Operations**: Put, Get, Query, Update operations
-- **Local Testing**: Use DynamoDB Local or mocked operations
+### PostgreSQL
 
-### API Gateway
+The project uses PostgreSQL for data storage. Configuration is handled in [src/config.ts](src/config.ts), see `.env.example` for relevant environment variables.
 
-HTTP API with Lambda proxy integration:
+### Database Schema
 
-- **Routes**: Defined in `infra/api.tf`
-- **CORS**: Configured for cross-origin requests
-- **Authentication**: Bearer token for some endpoints
-- **Logging**: CloudWatch integration
+Schema is managed through migrations in `src/data/migrations/`:
 
-### Lambda Functions
+- `2025-09-02-init.ts` - Initial schema setup
+- `2025-10-09-guids-and-organizations.ts` - Organization support
 
-Runtime configuration:
+Migrations are run automatically on server start. To manually run migrations:
 
-- **Runtime**: Node.js 22.x
-- **Memory**: 512MB - 1024MB depending on function
-- **Timeout**: 10s - 120s depending on complexity
-- **Environment**: Variables set via Terraform
+```bash
+npm run migrate
+```
+
+### Key Tables
+
+- `test_runs` - Test runs, contain multiple test case results.
+- `test_results` - Individual test case results, all linked to a test run.
+- `test_data` - Additional test data linked to a test run.
 
 ## Development Workflow
 
@@ -276,135 +332,56 @@ Runtime configuration:
    npm test
    ```
 
-5. **Test locally** (if applicable):
+5. **Test locally**:
 
    ```bash
-   npm run dev
-   # Test endpoints with Postman/curl
+   npm start
+   # Use routes.rest or Postman to test endpoints
    ```
 
 6. **Build the project**:
+
    ```bash
    npm run build
    ```
 
-### Debugging
+### Code Quality
 
-**Local Development**:
+- Use TypeScript strict mode
+- Write tests for new features
+- Follow existing code style
+- Run all tests before committing
 
-- Use `console.log()` statements
+## Debugging
+
+### Local Server
+
+- Use `console.log()` for quick debugging
 - VS Code debugger with breakpoints
-- Express server request/response logging
+- Check server output in terminal
 
-**AWS Lambda**:
-
-- CloudWatch Logs for deployed functions
-- AWS X-Ray for distributed tracing
-- API Gateway access logs
-- DynamoDB CloudWatch metrics
-
-## Deployment
-
-The project uses GitHub Actions for CI/CD with automated deployments to both development and production environments.
-
-### GitHub Actions CI/CD Pipeline
-
-#### Development Deployment (Automatic)
-
-**Trigger**: Automatic deployment on every push to `main` branch
-
-**Workflow**: `.github/workflows/deploy-dev.yml`
-
-The development pipeline:
-
-1. **Setup**: Checks out code and sets up Node.js 20
-2. **Dependencies**: Installs packages with `npm ci`
-3. **Testing**: Runs the complete test suite (`npm test`)
-4. **Build**: Compiles TypeScript to JavaScript
-5. **Package**: Creates `lambdas.zip` with compiled code and dependencies
-6. **Deploy**: Uses Terraform to deploy infrastructure and Lambda functions
-
-**Environment**:
-
-- **Region**: `eu-north-1` (Stockholm)
-- **Backend**: S3 state storage with DynamoDB locking
-- **Webhook URL**: `https://conformance.services.dev.carbon-transparency.org`
-
-#### Production Deployment (Manual)
-
-**Trigger**: Manual workflow dispatch from GitHub Actions UI
-
-**Workflow**: `.github/workflows/deploy-prod.yml`
-
-The production pipeline follows the same steps as development but:
-
-- **No automatic testing** (assumes tests passed in dev)
-- **Manual approval** required via GitHub UI
-- **Production configuration** with prod webhook URL
-- **Webhook URL**: `https://conformance.services.carbon-transparency.org`
-
-#### Required GitHub Secrets
-
-The following secrets must be configured in GitHub repository settings:
-
-```
-AWS_ACCESS_KEY_ID       # AWS access key for deployment
-AWS_SECRET_ACCESS_KEY   # AWS secret key for deployment
-```
-
-### Local Development Deployment
-
-For local development and testing:
+### Database
 
 ```bash
-# Build and deploy to dev environment
-./deploy.sh
+# Connect to local database
+docker exec -it pact-conformance-db psql -U postgres -d pact-conformance-db
+
+# View tables
+\dt
+
+# Query data
+SELECT * FROM test_runs;
 ```
 
-This script:
+### Testing Endpoints
 
-1. Compiles TypeScript to JavaScript
-2. Creates `lambdas.zip` with compiled code and dependencies
-3. Applies Terraform configuration to AWS
-4. Updates Lambda functions with new code
+Use the [routes.rest](routes.rest) file with VS Code REST Client extension, or use curl:
 
-### Prerequisites for Deployment
-
-1. **AWS Credentials**: Configure via `aws configure` or environment variables
-2. **Terraform Backend**: S3 bucket for state storage (`api-test-service-terraform-state-bucket`)
-3. **IAM Permissions**: Sufficient permissions for Lambda, API Gateway, DynamoDB
-4. **GitHub Secrets**: AWS credentials configured in repository settings
-
-### Environment Configuration Files
-
-- `infra/dev.tfvars` - Development environment variables
-- `infra/prod.tfvars` - Production environment variables
-- `infra/backend-dev.hcl` - Development Terraform backend configuration
-- `infra/backend-prod.hcl` - Production Terraform backend configuration
-
-### Deployment Flow
-
-#### Development
-
+```bash
+curl -X POST http://localhost:8004/testruns \
+  -H "Content-Type: application/json" \
+  -d '{"provider": "example", "consumer": "test"}'
 ```
-Push to main → GitHub Actions → Tests → Build → Deploy to Dev
-```
-
-#### Production
-
-```
-Manual Trigger → GitHub Actions → Build → Deploy to Prod
-```
-
-### Infrastructure Components
-
-Both environments deploy:
-
-- **Lambda Functions**: All 5 functions with appropriate memory/timeout settings
-- **API Gateway**: HTTP API with route configurations
-- **DynamoDB**: Test results and metadata storage
-- **IAM Roles**: Execution roles with necessary permissions
-- **CloudWatch**: Logging and monitoring
 
 ## Troubleshooting
 
@@ -413,42 +390,38 @@ Both environments deploy:
 **TypeScript Compilation Errors**:
 
 ```bash
-npx tsc --noEmit  # Check for type errors
+npx tsc --noEmit
 ```
 
 **Test Failures**:
 
 ```bash
-npm test -- --verbose  # Run tests with detailed output
+npm test -- --verbose
 ```
 
-**Local Server Issues**:
+**Server won't start**:
 
-- Check port 8004 is not in use
-- Verify environment variables are set
-- Ensure PostgreSQL container is running (if using local DB)
+- Check port 8004 is not in use: `lsof -i :8004`
+- Verify database is running: `docker-compose ps`
+- Check logs: `docker-compose logs postgres`
 
-**AWS Deployment Issues**:
+**Database connection errors**:
 
-- Verify AWS credentials: `aws sts get-caller-identity`
-- Check Terraform state: `terraform plan` in `infra/` directory
-- Review CloudWatch logs for Lambda function errors
+- Ensure PostgreSQL container is running: `docker-compose up -d`
+- Verify connection string in environment
+- Check database exists: `docker exec -it pact-conformance-db psql -U postgres -l`
 
-### Getting Help
+**Tests failing**:
 
-1. **Documentation**: Check `docs/` directory for additional guides
-2. **Issues**: Create GitHub issue for bugs or feature requests
-3. **Team Chat**: Reach out to team members for development questions
-4. **AWS Documentation**: Reference AWS Lambda and API Gateway docs
+- Run migrations: `npm run migrate`
+- Clear database and restart: `docker-compose down && docker-compose up -d`
 
 ## Next Steps
 
-Once you have the development environment set up:
+1. **Clone and set up**: Follow the [Project Setup](#project-setup) section
+2. **Start the server**: Run `npm start`
+3. **Run tests**: Execute `npm test` to verify everything works
+4. **Explore endpoints**: Use [routes.rest](routes.rest) to test the API
+5. **Read test cases**: Review [docs/v3-test-cases-expected-results.md](docs/v3-test-cases-expected-results.md)
 
-1. **Read lambda functions documentation**: Review `docs/lambda-functions.md` for an overview
-2. **Explore the codebase**: Start with `src/lambda/runTestCases.ts` for the main workflow
-3. **Run the test suite**: Ensure all tests pass in your environment
-4. **Try local development**: Start the Express server and test endpoints
-5. **Deploy to development**: Use `./deploy.sh` to deploy your first changes
-
-Welcome to the PACT API Test Service development team! 🚀
+Welcome to the PACT Conformance Service development team!

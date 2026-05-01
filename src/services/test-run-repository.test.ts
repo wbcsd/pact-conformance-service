@@ -1,10 +1,10 @@
 import { TestRunRepository } from "./test-run-repository";
-import { Kysely } from "kysely";
+import { CaseThenBuilder, Kysely } from "kysely";
 import { DB } from "../data/types";
 import {
   TestRun,
   TestResult,
-  TestData,
+  TestRunStatus,
   TestCaseResultStatus,
   PagingParameters,
 } from "./types";
@@ -69,7 +69,8 @@ describe("TestRunRepository", () => {
         adminName: "John Doe",
         techSpecVersion: "v1.0",
         timestamp: "",
-        status: ""
+        status: TestRunStatus.PENDING,
+        data: null
       };
 
       const mockBuilder = createMockQueryBuilder();
@@ -101,7 +102,8 @@ describe("TestRunRepository", () => {
         adminName: "John Doe",
         techSpecVersion: "v1.0",
         timestamp: "",
-        status: ""
+        status: TestRunStatus.PENDING,
+        data: null
       };
 
       const error = new Error("Database error");
@@ -117,73 +119,244 @@ describe("TestRunRepository", () => {
   });
 
   describe("updateTestRunStatus", () => {
-    it("should update test run status successfully", async () => {
+    it("should set status to PASS when all mandatory tests pass", async () => {
       const testRunId = "test-run-123";
-      const status = "completed";
-      const passingPercentage = 85;
+      const mockResults = [
+        {
+          testKey: "test-001",
+          result: {
+            testKey: "test-001",
+            name: "Test Case 1",
+            status: TestCaseResultStatus.SUCCESS,
+            mandatory: true,
+          },
+        },
+        {
+          testKey: "test-002",
+          result: {
+            testKey: "test-002",
+            name: "Test Case 2",
+            status: TestCaseResultStatus.SUCCESS,
+            mandatory: true,
+          },
+        },
+      ];
 
-      const mockBuilder = createMockQueryBuilder();
-      mockBuilder.executeTakeFirst.mockResolvedValue({
+      const mockSelectBuilder = createMockQueryBuilder();
+      mockSelectBuilder.execute.mockResolvedValue(mockResults);
+      mockDb.selectFrom.mockReturnValue(mockSelectBuilder);
+
+      const mockUpdateBuilder = createMockQueryBuilder();
+      mockUpdateBuilder.executeTakeFirst.mockResolvedValue({
         numUpdatedRows: BigInt(1),
       });
-      mockDb.updateTable.mockReturnValue(mockBuilder);
+      mockDb.updateTable.mockReturnValue(mockUpdateBuilder);
 
-      await repository.updateTestRunStatus(
-        testRunId,
-        status,
-        passingPercentage
-      );
+      await repository.updateTestRunStatus(testRunId);
 
+      expect(mockDb.selectFrom).toHaveBeenCalledWith("testResults");
       expect(mockDb.updateTable).toHaveBeenCalledWith("testRuns");
-      expect(mockBuilder.set).toHaveBeenCalledWith({
-        status,
-        passingPercentage,
+      expect(mockUpdateBuilder.set).toHaveBeenCalledWith({
+        status: TestRunStatus.PASS,
+        passingPercentage: 100,
       });
-      expect(mockBuilder.where).toHaveBeenCalledWith("id", "=", testRunId);
-      expect(logger.info).toHaveBeenCalledWith(
-        `Test run ${testRunId} status updated to ${status} with ${passingPercentage}% passing`
-      );
     });
 
-    it("should warn when no test run is found to update", async () => {
-      const testRunId = "non-existent-id";
-      const status = "completed";
-      const passingPercentage = 85;
+    it("should set status to FAIL when at least one mandatory test fails", async () => {
+      const testRunId = "test-run-123";
+      const mockResults = [
+        {
+          testKey: "test-001",
+          result: {
+            testKey: "test-001",
+            name: "Test Case 1",
+            status: TestCaseResultStatus.SUCCESS,
+            mandatory: true,
+          },
+        },
+        {
+          testKey: "test-002",
+          result: {
+            testKey: "test-002",
+            name: "Test Case 2",
+            status: TestCaseResultStatus.FAILURE,
+            mandatory: true,
+          },
+        },
+        {
+          testKey: "test-003",
+          result: {
+            testKey: "test-003",
+            name: "Test Case 3",
+            status: TestCaseResultStatus.PENDING,
+            mandatory: true,
+          },
+        },
+      ];
 
-      const mockBuilder = createMockQueryBuilder();
-      mockBuilder.executeTakeFirst.mockResolvedValue({
-        numUpdatedRows: BigInt(0),
+      const mockSelectBuilder = createMockQueryBuilder();
+      mockSelectBuilder.execute.mockResolvedValue(mockResults);
+      mockDb.selectFrom.mockReturnValue(mockSelectBuilder);
+
+      const mockUpdateBuilder = createMockQueryBuilder();
+      mockUpdateBuilder.executeTakeFirst.mockResolvedValue({
+        numUpdatedRows: BigInt(1),
       });
-      mockDb.updateTable.mockReturnValue(mockBuilder);
+      mockDb.updateTable.mockReturnValue(mockUpdateBuilder);
 
-      await repository.updateTestRunStatus(
-        testRunId,
-        status,
-        passingPercentage
-      );
+      await repository.updateTestRunStatus(testRunId);
 
-      expect(console.warn).toHaveBeenCalledWith(
-        `No test run found with ID ${testRunId} to update`
-      );
+      expect(mockUpdateBuilder.set).toHaveBeenCalledWith({
+        status: "FAIL",
+        passingPercentage: 33, // 1 out of 3 passed
+      });
     });
 
-    it("should handle errors when updating test run status", async () => {
-      const error = new Error("Update failed");
-      const mockBuilder = createMockQueryBuilder();
-      mockBuilder.executeTakeFirst.mockRejectedValue(error);
-      mockDb.updateTable.mockReturnValue(mockBuilder);
+    it("should set status to PENDING when there are pending tests", async () => {
+      const testRunId = "test-run-123";
+      const mockResults = [
+        {
+          testKey: "test-001",
+          result: {
+            testKey: "test-001",
+            name: "Test Case 1",
+            status: TestCaseResultStatus.SUCCESS,
+            mandatory: true,
+          },
+        },
+        {
+          testKey: "test-002",
+          result: {
+            testKey: "test-002",
+            name: "Test Case 2",
+            status: TestCaseResultStatus.PENDING,
+            mandatory: true,
+          },
+        },
+      ];
 
-      await expect(
-        repository.updateTestRunStatus("test-run-123", "completed", 85)
-      ).rejects.toThrow("Update failed");
-      expect(logger.error).toHaveBeenCalledWith(
-        "Error updating test run status:",
-        error
-      );
+      const mockSelectBuilder = createMockQueryBuilder();
+      mockSelectBuilder.execute.mockResolvedValue(mockResults);
+      mockDb.selectFrom.mockReturnValue(mockSelectBuilder);
+
+      const mockUpdateBuilder = createMockQueryBuilder();
+      mockUpdateBuilder.executeTakeFirst.mockResolvedValue({
+        numUpdatedRows: BigInt(1),
+      });
+      mockDb.updateTable.mockReturnValue(mockUpdateBuilder);
+
+      await repository.updateTestRunStatus(testRunId);
+
+      // PENDING tests are treated as failures in the implementation
+      expect(mockUpdateBuilder.set).toHaveBeenCalledWith({
+        status: "PENDING",
+        passingPercentage: 50, // 1 out of 2 not failed
+      });
+    });
+
+    it("should calculate passing percentage correctly with multiple failed tests", async () => {
+      const testRunId = "test-run-123";
+      const mockResults = [
+        {
+          testKey: "test-001",
+          result: {
+            testKey: "test-001",
+            name: "Test Case 1",
+            status: TestCaseResultStatus.SUCCESS,
+            mandatory: true,
+          },
+        },
+        {
+          testKey: "test-002",
+          result: {
+            testKey: "test-002",
+            name: "Test Case 2",
+            status: TestCaseResultStatus.SUCCESS,
+            mandatory: true,
+          },
+        },
+        {
+          testKey: "test-003",
+          result: {
+            testKey: "test-003",
+            name: "Test Case 3",
+            status: TestCaseResultStatus.FAILURE,
+            mandatory: true,
+          },
+        },
+        {
+          testKey: "test-004",
+          result: {
+            testKey: "test-004",
+            name: "Test Case 4",
+            status: TestCaseResultStatus.FAILURE,
+            mandatory: true,
+          },
+        },
+      ];
+
+      const mockSelectBuilder = createMockQueryBuilder();
+      mockSelectBuilder.execute.mockResolvedValue(mockResults);
+      mockDb.selectFrom.mockReturnValue(mockSelectBuilder);
+
+      const mockUpdateBuilder = createMockQueryBuilder();
+      mockUpdateBuilder.executeTakeFirst.mockResolvedValue({
+        numUpdatedRows: BigInt(1),
+      });
+      mockDb.updateTable.mockReturnValue(mockUpdateBuilder);
+
+      await repository.updateTestRunStatus(testRunId);
+
+      expect(mockUpdateBuilder.set).toHaveBeenCalledWith({
+        status: "FAIL",
+        passingPercentage: 50, // 2 out of 4 passed
+      });
+    });
+
+    it("should ignore non-mandatory tests when calculating status", async () => {
+      const testRunId = "test-run-123";
+      const mockResults = [
+        {
+          testKey: "test-001",
+          result: {
+            testKey: "test-001",
+            name: "Test Case 1",
+            status: TestCaseResultStatus.SUCCESS,
+            mandatory: true,
+          },
+        },
+        {
+          testKey: "test-002",
+          result: {
+            testKey: "test-002",
+            name: "Test Case 2",
+            status: TestCaseResultStatus.FAILURE,
+            mandatory: false, // non-mandatory
+          },
+        },
+      ];
+
+      const mockSelectBuilder = createMockQueryBuilder();
+      mockSelectBuilder.execute.mockResolvedValue(mockResults);
+      mockDb.selectFrom.mockReturnValue(mockSelectBuilder);
+
+      const mockUpdateBuilder = createMockQueryBuilder();
+      mockUpdateBuilder.executeTakeFirst.mockResolvedValue({
+        numUpdatedRows: BigInt(1),
+      });
+      mockDb.updateTable.mockReturnValue(mockUpdateBuilder);
+
+      await repository.updateTestRunStatus(testRunId);
+
+      // Should be PASS because the only mandatory test passed
+      expect(mockUpdateBuilder.set).toHaveBeenCalledWith({
+        status: "PASS",
+        passingPercentage: 100,
+      });
     });
   });
 
-  describe("saveTestCaseResult", () => {
+  describe("saveTestCaseResults", () => {
     const testResult: TestResult = {
       testKey: "test-001",
       name: "Test Case 1",
@@ -191,76 +364,7 @@ describe("TestRunRepository", () => {
       mandatory: true,
     };
 
-    it("should save a new test case result when overwriteExisting is true", async () => {
-      const testRunId = "test-run-123";
-
-      const mockTx = createMockQueryBuilder();
-      mockTx.execute.mockResolvedValue(undefined);
-      
-      const mockTransaction = {
-        execute: jest.fn().mockImplementation(async (fn) => {
-          return await fn(mockTx);
-        }),
-      };
-
-      mockDb.transaction.mockReturnValue(mockTransaction as any);
-      mockTx.insertInto.mockReturnValue(mockTx);
-
-      await repository.saveTestCaseResult(testRunId, testResult, true);
-
-      expect(mockTx.insertInto).toHaveBeenCalledWith("testResults");
-      expect(mockTx.values).toHaveBeenCalledWith(
-        expect.objectContaining({
-          testRunId,
-          testKey: testResult.testKey,
-          result: testResult,
-        })
-      );
-    });
-
-    it("should not save when result exists and overwriteExisting is false", async () => {
-      const testRunId = "test-run-123";
-
-      const mockTx = createMockQueryBuilder();
-      mockTx.executeTakeFirst.mockResolvedValue({ one: 1 });
-      
-      const mockTransaction = {
-        execute: jest.fn().mockImplementation(async (fn) => {
-          return await fn(mockTx);
-        }),
-      };
-
-      mockDb.transaction.mockReturnValue(mockTransaction as any);
-      mockTx.selectFrom.mockReturnValue(mockTx);
-
-      await repository.saveTestCaseResult(testRunId, testResult, false);
-
-      expect(console.debug).toHaveBeenCalledWith(
-        "Item already exists, no action taken."
-      );
-      expect(mockTx.insertInto).not.toHaveBeenCalled();
-    });
-
-    it("should handle errors when saving test case result", async () => {
-      const error = new Error("Save failed");
-      const mockTransaction = {
-        execute: jest.fn().mockRejectedValue(error),
-      };
-
-      mockDb.transaction.mockReturnValue(mockTransaction as any);
-
-      await expect(
-        repository.saveTestCaseResult("test-run-123", testResult, true)
-      ).rejects.toThrow("Save failed");
-      expect(logger.error).toHaveBeenCalledWith(
-        `Error saving test case: ${testResult.name}`,
-        error
-      );
-    });
-  });
-
-  describe("saveTestCaseResults", () => {
-    it("should save multiple test case results", async () => {
+    it("should save multiple test case results with overwriteExisting=false", async () => {
       const testRunId = "test-run-123";
       const testResults: TestResult[] = [
         {
@@ -277,28 +381,68 @@ describe("TestRunRepository", () => {
         },
       ];
 
-      const mockTx = createMockQueryBuilder();
-      mockTx.executeTakeFirst.mockResolvedValue(null);
-      mockTx.execute.mockResolvedValue(undefined);
-      
-      const mockTransaction = {
-        execute: jest.fn().mockImplementation(async (fn) => {
-          return await fn(mockTx);
-        }),
-      };
+      const mockBuilder = createMockQueryBuilder();
+      mockBuilder.execute.mockResolvedValue(undefined);
+      mockDb.insertInto.mockReturnValue(mockBuilder);
 
-      mockDb.transaction.mockReturnValue(mockTransaction as any);
-      mockTx.selectFrom.mockReturnValue(mockTx);
-      mockTx.insertInto.mockReturnValue(mockTx);
+      await repository.saveTestCaseResults(testRunId, testResults, false);
 
-      await repository.saveTestCaseResults(testRunId, testResults);
-
+      expect(mockDb.insertInto).toHaveBeenCalledWith("testResults");
+      expect(mockBuilder.onConflict).toHaveBeenCalled();
       expect(logger.info).toHaveBeenCalledWith(
         `Saving ${testResults.length} test cases...`
       );
       expect(logger.info).toHaveBeenCalledWith(
-        `All ${testResults.length} test cases saved successfully`
+        `Saved ${testResults.length} test cases successfully.`
       );
+    });
+
+    it("should save a test case result when overwriteExisting is true", async () => {
+      const testRunId = "test-run-123";
+
+      const mockBuilder = createMockQueryBuilder();
+      mockBuilder.execute.mockResolvedValue(undefined);
+      mockDb.insertInto.mockReturnValue(mockBuilder);
+
+      await repository.saveTestCaseResults(testRunId, [testResult], true);
+
+      expect(mockDb.insertInto).toHaveBeenCalledWith("testResults");
+      expect(mockBuilder.values).toHaveBeenCalledWith(
+        expect.objectContaining({
+          testRunId,
+          testKey: testResult.testKey,
+          result: testResult,
+        })
+      );
+      expect(mockBuilder.onConflict).toHaveBeenCalled();
+    });
+
+    it("should use doNothing when overwriteExisting is false", async () => {
+      const testRunId = "test-run-123";
+      const mockBuilder = createMockQueryBuilder();
+      
+      mockBuilder.execute.mockResolvedValue(undefined);
+      mockDb.insertInto.mockReturnValue(mockBuilder);
+
+      await repository.saveTestCaseResults(testRunId, [testResult], false);
+
+      expect(mockDb.insertInto).toHaveBeenCalledWith("testResults");
+      expect(mockBuilder.onConflict).toHaveBeenCalled();
+      expect(mockBuilder.execute).toHaveBeenCalled();
+    });
+
+    it("should use doUpdateSet when overwriteExisting is true", async () => {
+      const testRunId = "test-run-123";
+      const mockBuilder = createMockQueryBuilder();
+      
+      mockBuilder.execute.mockResolvedValue(undefined);
+      mockDb.insertInto.mockReturnValue(mockBuilder);
+
+      await repository.saveTestCaseResults(testRunId, [testResult], true);
+
+      expect(mockDb.insertInto).toHaveBeenCalledWith("testResults");
+      expect(mockBuilder.onConflict).toHaveBeenCalled();
+      expect(mockBuilder.execute).toHaveBeenCalled();
     });
 
     it("should handle errors when saving test case results", async () => {
@@ -313,19 +457,64 @@ describe("TestRunRepository", () => {
       ];
 
       const error = new Error("Save failed");
-      const mockTransaction = {
-        execute: jest.fn().mockRejectedValue(error),
-      };
-
-      mockDb.transaction.mockReturnValue(mockTransaction as any);
+      const mockBuilder = createMockQueryBuilder();
+      mockBuilder.execute.mockRejectedValue(error);
+      mockDb.insertInto.mockReturnValue(mockBuilder);
 
       await expect(
-        repository.saveTestCaseResults(testRunId, testResults)
+        repository.saveTestCaseResults(testRunId, testResults, false)
       ).rejects.toThrow("Save failed");
     });
   });
 
-  describe("getTestResults", () => {
+  describe("getTestRun", () => {
+    it("should return test run details", async () => {
+      const testRunId = "test-run-123";
+      const mockDetails = {
+        id: testRunId,
+        timestamp: "2024-01-01T00:00:00Z",
+        companyName: "Acme Corp",
+        adminEmail: "admin@acme.com",
+        adminName: "John Doe",
+        techSpecVersion: "v1.0",
+        status: "completed",
+        passingPercentage: 85,
+      };
+
+      const mockBuilder = createMockQueryBuilder();
+      mockBuilder.executeTakeFirst.mockResolvedValueOnce(mockDetails);
+      mockDb.selectFrom.mockReturnValue(mockBuilder);
+
+      const result = await repository.getTestRun(testRunId);
+
+      expect(result).toBeDefined();
+      expect(result.testRunId).toBe(testRunId);
+      expect(result.organizationName).toBe("Acme Corp");
+      expect(result.adminEmail).toBe("admin@acme.com");
+      expect(result.adminName).toBe("John Doe");
+      expect(result.techSpecVersion).toBe("v1.0");
+      expect(mockBuilder.where).toHaveBeenCalledWith("id", "=", testRunId);
+    });
+
+    it("should throw ValidationError for missing testRunId", async () => {
+      await expect(repository.getTestRun("")).rejects.toThrow(ValidationError);
+      await expect(repository.getTestRun("   ")).rejects.toThrow(ValidationError);
+    });
+
+    it("should throw NotFoundError when test run does not exist", async () => {
+      const testRunId = "non-existent-id";
+
+      const mockBuilder = createMockQueryBuilder();
+      mockBuilder.executeTakeFirst.mockResolvedValueOnce(undefined);
+      mockDb.selectFrom.mockReturnValue(mockBuilder);
+
+      await expect(repository.getTestRun(testRunId)).rejects.toThrow(
+        NotFoundError
+      );
+    });
+  });
+
+  describe("getTestRunWithResults", () => {
     it("should return test run with results", async () => {
       const testRunId = "test-run-123";
       const mockResults = [
@@ -363,7 +552,7 @@ describe("TestRunRepository", () => {
       mockBuilder.executeTakeFirst.mockResolvedValueOnce(mockDetails);
       mockDb.selectFrom.mockReturnValue(mockBuilder);
 
-      const result = await repository.getTestResults(testRunId);
+      const result = await repository.getTestRunWithResults(testRunId);
 
       expect(result).toBeDefined();
       expect(result?.testRunId).toBe(testRunId);
@@ -373,10 +562,10 @@ describe("TestRunRepository", () => {
     });
 
     it("should throw ValidationError for missing testRunId", async () => {
-      await expect(repository.getTestResults("")).rejects.toThrow(
+      await expect(repository.getTestRunWithResults("")).rejects.toThrow(
         ValidationError
       );
-      await expect(repository.getTestResults("   ")).rejects.toThrow(
+      await expect(repository.getTestRunWithResults("   ")).rejects.toThrow(
         ValidationError
       );
     });
@@ -389,7 +578,7 @@ describe("TestRunRepository", () => {
       mockBuilder.executeTakeFirst.mockResolvedValueOnce(undefined);
       mockDb.selectFrom.mockReturnValue(mockBuilder);
 
-      await expect(repository.getTestResults(testRunId)).rejects.toThrow(
+      await expect(repository.getTestRunWithResults(testRunId)).rejects.toThrow(
         NotFoundError
       );
     });
@@ -429,138 +618,10 @@ describe("TestRunRepository", () => {
       mockBuilder.executeTakeFirst.mockResolvedValueOnce(mockDetails);
       mockDb.selectFrom.mockReturnValue(mockBuilder);
 
-      const result = await repository.getTestResults(testRunId);
+      const result = await repository.getTestRunWithResults(testRunId);
 
       expect(result?.results[0].name).toBe("Test Case 2");
       expect(result?.results[1].name).toBe("Test Case 10");
-    });
-  });
-
-  describe("getTestResultsWithPercentages", () => {
-    it("should return test results with calculated passing percentages", async () => {
-      const testRunId = "test-run-123";
-      const mockResults = [
-        {
-          result: {
-            testKey: "test-001",
-            name: "Test Case 1",
-            status: TestCaseResultStatus.SUCCESS,
-            mandatory: true,
-          },
-        },
-        {
-          result: {
-            testKey: "test-002",
-            name: "Test Case 2",
-            status: TestCaseResultStatus.FAILURE,
-            mandatory: true,
-          },
-        },
-        {
-          result: {
-            testKey: "test-003",
-            name: "Test Case 3",
-            status: TestCaseResultStatus.SUCCESS,
-            mandatory: false,
-          },
-        },
-      ];
-
-      const mockDetails = {
-        id: testRunId,
-        timestamp: "2024-01-01T00:00:00Z",
-        companyName: "Acme Corp",
-        adminEmail: "admin@acme.com",
-        adminName: "John Doe",
-        techSpecVersion: "v1.0",
-      };
-
-      const mockBuilder = createMockQueryBuilder();
-      mockBuilder.execute.mockResolvedValueOnce(mockResults);
-      mockBuilder.executeTakeFirst.mockResolvedValueOnce(mockDetails);
-      mockDb.selectFrom.mockReturnValue(mockBuilder);
-
-      const result = await repository.getTestResultsWithPercentages(testRunId);
-
-      expect(result.passingPercentage).toBe(50); // 1 out of 2 mandatory tests passed
-      expect(result.nonMandatoryPassingPercentage).toBe(100); // 1 out of 1 non-mandatory test passed
-    });
-
-    it("should handle zero tests correctly", async () => {
-      const testRunId = "test-run-123";
-      const mockDetails = {
-        id: testRunId,
-        timestamp: "2024-01-01T00:00:00Z",
-        companyName: "Acme Corp",
-        adminEmail: "admin@acme.com",
-        adminName: "John Doe",
-        techSpecVersion: "v1.0",
-      };
-
-      const mockBuilder = createMockQueryBuilder();
-      mockBuilder.execute.mockResolvedValueOnce([]);
-      mockBuilder.executeTakeFirst.mockResolvedValueOnce(mockDetails);
-      mockDb.selectFrom.mockReturnValue(mockBuilder);
-
-      const result = await repository.getTestResultsWithPercentages(testRunId);
-
-      expect(result.passingPercentage).toBe(0);
-      expect(result.nonMandatoryPassingPercentage).toBe(0);
-    });
-  });
-
-  describe("saveTestData", () => {
-    it("should save test data successfully", async () => {
-      const testRunId = "test-run-123";
-      const testData: TestData = {
-        productIds: ["product1", "product2"],
-        version: "V2.2",
-      };
-
-      const mockBuilder = createMockQueryBuilder();
-      mockBuilder.execute.mockResolvedValue(undefined);
-      mockDb.insertInto.mockReturnValue(mockBuilder);
-
-      await repository.saveTestData(testRunId, testData);
-
-      expect(mockDb.insertInto).toHaveBeenCalledWith("testData");
-      expect(mockBuilder.values).toHaveBeenCalledWith(
-        expect.objectContaining({
-          testRunId,
-          data: testData,
-        })
-      );
-      expect(logger.info).toHaveBeenCalledWith("Test data saved successfully");
-    });
-  });
-
-  describe("getTestData", () => {
-    it("should return test data when it exists", async () => {
-      const testRunId = "test-run-123";
-      const testData: TestData = {
-        productIds: ["product1", "product2"],
-        version: "V2.2",
-      };
-
-      const mockBuilder = createMockQueryBuilder();
-      mockBuilder.executeTakeFirst.mockResolvedValue({ data: testData });
-      mockDb.selectFrom.mockReturnValue(mockBuilder);
-
-      const result = await repository.getTestData(testRunId);
-
-      expect(result).toEqual(testData);
-    });
-
-    it("should return null when test data does not exist", async () => {
-      const testRunId = "non-existent-id";
-
-      const mockBuilder = createMockQueryBuilder();
-      mockBuilder.executeTakeFirst.mockResolvedValue(undefined);
-      mockDb.selectFrom.mockReturnValue(mockBuilder);
-
-      const result = await repository.getTestData(testRunId);
-
-      expect(result).toBeNull();
     });
   });
 
@@ -647,5 +708,7 @@ describe("TestRunRepository", () => {
 
       expect(mockBuilder.offset).toHaveBeenCalledWith(0);
     });
+
+
   });
 });

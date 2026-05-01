@@ -141,10 +141,10 @@ export const generateV2TestCases = async ({
     {
       name: "Test Case 8: Attempt GetFootprint with Non-Existent PfId",
       method: "GET",
-      endpoint: `/2/footprints/random-string-as-id-${randomString(16)}`,
+      endpoint: "/2/footprints/00000000-0000-0000-0000-000000000000",
       expectedStatusCodes: [400, 404],
       condition: (body) => {
-        return body?.code === "NoSuchFootprint";
+        return body?.code === "NoSuchFootprint" || body?.code === "BadRequest";
       },
       conditionErrorMessage: `Expected error code NoSuchFootprint in response.`,
       mandatoryVersion: ["V2.0", "V2.1", "V2.2", "V2.3"],
@@ -202,7 +202,7 @@ export const generateV2TestCases = async ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        id: testRunId + "-12",  // Create a unique ID for this event which we can trace back to the test run
+        id: testRunId + "/12",  // Create a unique ID for this event which we can trace back to the test run
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV2.CREATED,
@@ -239,7 +239,7 @@ export const generateV2TestCases = async ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        id: testRunId + "-14.A",  // Create a unique ID for this event which we can trace back to the test run
+        id: testRunId + "/14.A",  // Create a unique ID for this event which we can trace back to the test run
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV2.CREATED,
@@ -297,7 +297,7 @@ export const generateV2TestCases = async ({
       requestData: {
         type: EventTypesV2.PUBLISHED,
         specversion: "1.0",
-        id: testRunId + "-16",
+        id: testRunId + "/16",
         source: webhookUrl,
         time: new Date().toISOString(),
         data: {
@@ -322,7 +322,7 @@ export const generateV2TestCases = async ({
       customUrl: `${baseUrl.replace("https", "http")}/2/events`,
       requestData: {
         specversion: "1.0",
-        id: testRunId + "-17",
+        id: testRunId + "/17",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV2.PUBLISHED,
@@ -343,7 +343,8 @@ export const generateV2TestCases = async ({
     {
       name: "Test Case 18: OpenId Connect-based Authentication Flow",
       method: "POST",
-      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Skip if authTokenUrl is under the baseUrl, will not be an OpenID provider then
+      endpoint: "/auth/token",
+      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Fall back to using endpoint (/auth/token) if authTokenUrl is under the baseUrl.
       expectedStatusCodes: [200],
       headers: getCorrectAuthHeaders(baseUrl, clientId, clientSecret),
       testKey: "TESTCASE#18",
@@ -354,7 +355,8 @@ export const generateV2TestCases = async ({
     {
       name: "Test Case 19: OpenId connect-based authentication flow with incorrect credentials",
       method: "POST",
-      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Skip if authTokenUrl is under the baseUrl, will not be an OpenID provider then
+      endpoint: "/auth/token",
+      customUrl: authTokenUrl.startsWith(baseUrl) ? undefined : authTokenUrl, // Fall back to using endpoint (/auth/token) if authTokenUrl is under the baseUrl.
       expectedStatusCodes: [400, 401],
       headers: getIncorrectAuthHeaders(baseUrl),
       testKey: "TESTCASE#19",

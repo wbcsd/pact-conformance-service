@@ -10,6 +10,7 @@ export interface TestRunsTable {
   techSpecVersion: string;
   status: string | null;
   passingPercentage: number | null;
+  data: unknown; // jsonb, nullable, flexible field to store additional data like productIds
 }
 
 export interface TestResultsTable {
@@ -20,16 +21,9 @@ export interface TestResultsTable {
   result: unknown; // jsonb
 }
 
-export interface TestDataTable {
-  testRunId: string; 
-  timestamp: ColumnType<Date, Date | string, Date | string>;
-  data: unknown; // jsonb
-}
-
 export interface DB {
   testRuns: TestRunsTable; 
   testResults: TestResultsTable; 
-  testData: TestDataTable; 
   migrations: {
     name: string;
     runAt: Date; 

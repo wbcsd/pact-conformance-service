@@ -5,10 +5,11 @@
   "main": "index.js",
   "scripts": {
     "clean": "rimraf ./dist",
-    "build": "tsc",
+    "build": "tsc --build tsconfig.prod.json",
     "dev": "ts-node-dev ./src/server.ts",
     "dev:run": "ts-node-dev --respawn --transpile-only src/",
     "start": "NODE_ENV=production node ./dist/server.js",
+    "cli": "ts-node ./src/scripts/run-tests-cli.ts",
     "test": "jest --maxWorkers=1",
     "test:watch": "jest --watch",
     "check": "ts-node ./src/scripts/check-config.ts",
@@ -43,7 +44,7 @@
     "express": "^5.1.0",
     "js-yaml": "^4.1.1",
     "jsonwebtoken": "^9.0.2",
-    "kysely": "^0.28.5",
+    "kysely": "^0.28.13",
     "pg": "^8.11.3",
     "pino-http": "^10.5.0",
     "pino-pretty": "^13.1.1"
