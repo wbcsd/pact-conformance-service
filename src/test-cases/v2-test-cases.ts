@@ -202,7 +202,8 @@ export const generateV2TestCases = async ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        id: testRunId + "/12",  // Create a unique ID for this event which we can trace back to the test run
+        // Create a unique ID for this event which points to the corresponding callback test
+        id: testRunId + "/13",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV2.CREATED,
@@ -239,7 +240,8 @@ export const generateV2TestCases = async ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        id: testRunId + "/14.A",  // Create a unique ID for this event which we can trace back to the test run
+        // Create a unique ID for this event which points to the corresponding callback test
+        id: testRunId + "/14.B",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV2.CREATED,
@@ -260,7 +262,7 @@ export const generateV2TestCases = async ({
       callback: true,
       endpoint: '/2/events',
       method: "POST",
-      schema: undefined, // v2_0_EventRejectedSchema,
+      schema: schema.events?.rejected,
       mandatoryVersion: ["V2.2", "V2.3"],
       testKey: "TESTCASE#14.B",
       documentationUrl: 

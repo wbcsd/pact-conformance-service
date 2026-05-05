@@ -23,22 +23,18 @@ interface Footprint {
   status: string;
 }
 
-interface FootprintsData {
-  data: Footprint[];
-}
-
 function isValidDate(date: Date) {
   return date instanceof Date && !isNaN(date.getTime());
 }
 
-export const getFilterParameters = (footprints: FootprintsData) => {
-  if (!footprints.data?.[0]) {
+export const getFilterParameters = (footprints: Footprint[]) => {
+  if (!footprints || !footprints[0]) {
     throw new Error(
       "Invalid footprints data: Missing required data structure. Please check the API response."
     );
   }
 
-  const firstFootprint = footprints.data[0];
+  const firstFootprint = footprints[0];
 
   // Check if validityPeriodStart or validityPeriodEnd are empty or invalid
   const hasValidityPeriod =
@@ -120,7 +116,7 @@ export const generateV3TestCases = async ({
 }): Promise<TestCase[]> => {
   
   const schema = await getSchema(version);
-  const filterParams = getFilterParameters(footprints);
+  const filterParams = getFilterParameters(footprints.data);
   const callbackBaseUrl = webhookUrl.replace(/\/+$/, "");
 
   return [

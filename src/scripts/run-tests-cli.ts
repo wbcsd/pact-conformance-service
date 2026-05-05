@@ -27,7 +27,7 @@
  *   --adminName        Admin name
  */
 
-import { TestRunWorker } from "../services/test-run-worker";
+import { TestRunWorkerNew } from "../services/test-run-worker-new";
 import { ConsoleTestStorage } from "../services/console-test-storage";
 import { ApiVersion, TestRunStartParams } from "../services/types";
 import logger from "../utils/logger";
@@ -199,6 +199,7 @@ async function main() {
   try {
     logger.info("PACT Conformance Test CLI");
     logger.info("=".repeat(80));
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; // Allow self-signed certificates for testing purposes
 
     const params = parseArgs();
 
@@ -206,7 +207,7 @@ async function main() {
     const storage = new ConsoleTestStorage();
 
     // Create test run worker
-    const worker = new TestRunWorker(storage);
+    const worker = new TestRunWorkerNew(storage);
 
     // Start the test run
     logger.info("Starting test run...\n");

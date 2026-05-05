@@ -1,8 +1,10 @@
 import { randomUUID } from "crypto";
-import logger from "../utils/logger";
-import { TestResult, TestCaseResultStatus, EventTypesV3 } from "../services/types";
+import { EventTypesV3 } from "../services/types";
 import { randomString, getCorrectAuthHeaders, getIncorrectAuthHeaders } from "../utils/authUtils";
-import { TestContext, createTest, assert, assertStatus, assertSchema, makeRequest, createListenerTest, ListenerContext } from "./test-helpers";
+import { TestContext, createTest, createInitTest, assert, assertStatus, assertSchema, createListenerTest, ListenerContext } from "./test-helpers";
+import { parseLinkHeader } from "../utils/fetchFootprints";
+import { getFilterParameters } from "./v3-test-cases";
+
 
 function isValidDate(date: Date) {
   return date instanceof Date && !isNaN(date.getTime());
@@ -12,7 +14,7 @@ async function fetchNonEmptyFootprintList(ctx: TestContext, params: any) {
   // Construct list footprints URL with query parameters 
   const queryParams = new URLSearchParams(params).toString();
   const url = `${ctx.baseUrl}/3/footprints?${queryParams}`;
-  const response = await makeRequest(url, "GET", ctx.headers);
+  const response = await ctx.request(url, "GET");
 
   // Test existence of json body and validate acording to schema
   assertStatus(response.status, 200);
@@ -28,25 +30,97 @@ async function fetchNonEmptyFootprintList(ctx: TestContext, params: any) {
 export const V3Tests = {
 
   /**
+   * Test Case 0: Initialize test run
+   */
+  InitializeTestRun: createInitTest(
+    "Test Case 0: Initialize test run",
+    "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-0-initialize-test-run",
+    async (ctx: TestContext) => {
+      // This test case serves to initialize the TestContext which is used by all subsequent test cases.
+      // If initialization fails, this test case will fail and prevent execution of the rest of the test
+      // suite, providing early feedback on issues with auth, footprint fetching, schema loading, etc.
+
+      // Discover the auth token endpoint via the OpenID Connect well-known configuration.
+      // Discovery is optional under the spec, so fall back to /auth/token if it is unavailable.
+      const authBaseUrl = ctx.startParams.customAuthBaseUrl || ctx.baseUrl;
+      const openIdConfigUrl = `${authBaseUrl}/.well-known/openid-configuration`;
+      ctx.authTokenUrl = `${authBaseUrl}/auth/token`;
+      ctx.info(`Attempting OpenID token endpoint discovery at ${openIdConfigUrl}`);
+      try {
+        const discovery = await ctx.request(openIdConfigUrl, "GET", {});
+        if (discovery.status === 200 && discovery.data?.token_endpoint) {
+          ctx.authTokenUrl = discovery.data.token_endpoint;
+          ctx.info(`Discovered token endpoint from OpenID configuration: ${ctx.authTokenUrl}`);
+        } else {
+          ctx.info(`No OpenID configuration available (status ${discovery.status}); falling back to ${ctx.authTokenUrl}`);
+        }
+      } catch (err: any) {
+        ctx.info(`OpenID discovery request failed (${err.message}); falling back to ${ctx.authTokenUrl}`);
+      }
+
+      // Build the client credentials grant request body, including any optional scope/audience/resource params.
+      ctx.authRequestData = new URLSearchParams({
+        grant_type: "client_credentials",
+        ...(ctx.startParams.scope && { scope: ctx.startParams.scope }),
+        ...(ctx.startParams.audience && { audience: ctx.startParams.audience }),
+        ...(ctx.startParams.resource && { resource: ctx.startParams.resource }),
+      }).toString()
+
+      // Request an access token from the discovered (or fallback) token endpoint using HTTP Basic auth.
+      ctx.info(`Requesting access token from ${ctx.authTokenUrl} with clientId: ${ctx.startParams.clientId}`);
+      const encodedCredentials = Buffer.from(
+        `${ctx.startParams.clientId}:${ctx.startParams.clientSecret}`
+      ).toString("base64");
+      const tokenResponse = await ctx.request(
+        ctx.authTokenUrl,
+        "POST",
+        {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${encodedCredentials}`,
+        },
+        ctx.authRequestData
+      );
+      assertStatus(tokenResponse.status, 200);
+      assert(!!tokenResponse.data?.access_token, "Access token was not present in the auth token response");
+      ctx.accessToken = tokenResponse.data.access_token;
+
+      // Set common headers for future requests
+      ctx.headers = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ctx.accessToken}`,
+      }
+
+      // Fetch footprints
+      const footprintsResponse = await ctx.request(`${ctx.baseUrl}/3/footprints`, "GET")
+      ctx.footprints = footprintsResponse.data?.data
+      assert(ctx.footprints?.length >= 2, "At least two footprints are required to run the tests, but none were returned from the API");
+    
+      // Get link header for pagination test case 5
+      const paginationResponse = await ctx.request(`${ctx.baseUrl}/3/footprints?limit=1`, "GET")
+      ctx.paginationLinks = parseLinkHeader(paginationResponse.headers["link"])
+
+      // Store productIds on the test run data for use in callback test cases
+      assert(ctx.footprints[0].productIds?.length > 0, "Footprints must contain at least one product ID");      
+      ctx.testRun.data = { productIds: ctx.footprints[0].productIds }
+
+      // Determine filter parameters for test cases 20-39
+      ctx.filterParams = getFilterParameters(ctx.footprints)
+    
+      ctx.info("Test context initialized");
+    }
+  ),
+
+  /**
    * Test Case 1: Obtain auth token with valid credentials
    */
   ObtainAuthTokenWithValidCredentials: createTest(
     "Test Case 1: Obtain auth token with valid credentials",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-1-obtain-auth-token-with-valid-credentials",
     async (ctx: TestContext) => {
-      const headers = {
-        ...getCorrectAuthHeaders(ctx.baseUrl, ctx.clientId, ctx.clientSecret)
-      }
-
-      const response = await makeRequest(
-        ctx.authTokenUrl,
-        "POST",
-        headers,
-        ctx.authRequestData
-      )
+      const headers = {...getCorrectAuthHeaders(ctx.baseUrl, ctx.startParams.clientId, ctx.startParams.clientSecret) }
+      const response = await ctx.request(ctx.authTokenUrl, "POST", headers, ctx.authRequestData)
       assertStatus(response.status, 200)
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -57,19 +131,9 @@ export const V3Tests = {
     "Test Case 2: Obtain auth token with invalid credentials",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-2-obtain-auth-token-with-invalid-credentials",
     async (ctx: TestContext) => {
-      const headers = {
-        ...getIncorrectAuthHeaders(ctx.baseUrl)
-      }
-      const response = await makeRequest(
-        ctx.authTokenUrl,
-        "POST",
-        headers,
-        ctx.authRequestData
-      )
-
+      const headers = { ...getIncorrectAuthHeaders(ctx.baseUrl) }
+      const response = await ctx.request(ctx.authTokenUrl, "POST", headers, ctx.authRequestData)
       assertStatus(response.status, [400, 401])
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -80,9 +144,9 @@ export const V3Tests = {
     "Test Case 3: Get PCF using GetFootprint",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-3-get-pcf-using-getfootprint",
     async (ctx: TestContext) => {
-      
+
       const url = `${ctx.baseUrl}/3/footprints/${ctx.filterParams.id}`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -92,8 +156,6 @@ export const V3Tests = {
         response.data?.data?.id === ctx.filterParams.id,
         `Returned footprint does not match the requested footprint with id ${ctx.filterParams.id}`
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -105,18 +167,16 @@ export const V3Tests = {
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-4-get-all-pcfs-using-listfootprints",
     async (ctx: TestContext) => {
       const url = `${ctx.baseUrl}/3/footprints`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, [200, 202]);
       assert(!!response.data, "Expected JSON response body, but got none");
       assertSchema(response.data, ctx.schema.listFootprintResponse);
 
       assert(
-        response.data?.data?.length === ctx.footprints.data.length,
+        response.data?.data?.length === ctx.footprints.length,
         "Number of footprints does not match"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -130,13 +190,11 @@ export const V3Tests = {
       const paginationUrl = Object.values(ctx.paginationLinks)[0];
       assert(!!paginationUrl, "No pagination link found");
 
-      const response = await makeRequest(paginationUrl, "GET", ctx.headers);
+      const response = await ctx.request(paginationUrl, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
       assertSchema(response.data, ctx.schema.simpleListFootprintResponse);
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -152,17 +210,13 @@ export const V3Tests = {
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
       };
       const url = `${ctx.baseUrl}/3/footprints`;
-      const response = await makeRequest(url, "GET", headers);
+      const response = await ctx.request(url, "GET", headers);
 
       assertStatus(response.status, [400, 401]);
 
       if (response.data?.code !== "BadRequest") {
-        logger.warn(
-          `Test case "Test Case 6: Attempt ListFootPrints with Invalid Token": Expected error code BadRequest but received ${response.data?.code}`
-        );
+        ctx.warn(`Expected error code BadRequest but received ${response.data?.code}`);
       }
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -178,17 +232,13 @@ export const V3Tests = {
         Authorization: `Bearer very-invalid-access-token-${randomString(16)}`,
       };
       const url = `${ctx.baseUrl}/3/footprints/${ctx.filterParams.id}`;
-      const response = await makeRequest(url, "GET", headers);
+      const response = await ctx.request(url, "GET", headers);
 
       assertStatus(response.status, [400, 401]);
 
       if (response.data?.code !== "BadRequest") {
-        logger.warn(
-          `Test case "Test Case 7: Attempt GetFootprint with Invalid Token": Expected error code BadRequest but received ${response.data?.code}`
-        );
+        ctx.warn(`Expected error code BadRequest but received ${response.data?.code}`);
       }
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -200,15 +250,13 @@ export const V3Tests = {
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-8-attempt-getfootprint-with-non-existent-pfid",
     async (ctx: TestContext) => {
       const url = `${ctx.baseUrl}/3/footprints/00000000-0000-0000-0000-000000000000`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, [400, 404]);
       assert(
         response.data?.code === "NotFound" || response.data?.code === "BadRequest",
         "Expected error code NotFound or BadRequest in response"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -219,13 +267,12 @@ export const V3Tests = {
     "Test Case 9: Attempt Authentication through HTTP (non-HTTPS)",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-9-attempt-authentication-through-http-non-https",
     async (ctx: TestContext) => {
-      
-      const copy = { ...ctx, authTokenUrl: ctx.authTokenUrl.replace("https", "http") }
-      const result: TestResult = await V3Tests.ObtainAuthTokenWithValidCredentials.action(copy)
-      assert(result.status !== TestCaseResultStatus.SUCCESS, "Auth token request unexpectedly succeeded over HTTP")
-      
-      result.status = TestCaseResultStatus.SUCCESS;
-      return result;
+      const old = ctx.authTokenUrl;
+      ctx.authTokenUrl = ctx.authTokenUrl.replace("https", "http");
+      let threw = false;
+      try { await V3Tests.ObtainAuthTokenWithValidCredentials.action!(ctx); } catch { threw = true; }
+      ctx.authTokenUrl = old;
+      assert(threw, "Auth token request unexpectedly succeeded over HTTP");
     }
   ),
 
@@ -235,14 +282,13 @@ export const V3Tests = {
   ListFootprintsThroughHTTP: createTest(
     "Test Case 10: Attempt ListFootprints through HTTP (non-HTTPS)",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-10-attempt-listfootprints-through-http-non-https",
-    async (ctx: TestContext) => {
-      
-      const copy = { ...ctx, baseUrl: ctx.baseUrl.replace("https", "http") }
-      const result: TestResult = await V3Tests.GetAllPCFsUsingListFootprints.action(copy)
-      assert(result.status !== TestCaseResultStatus.SUCCESS, "ListFootprints unexpectedly succeeded over HTTP")
-      
-      result.status = TestCaseResultStatus.SUCCESS;
-      return result;
+    async (ctx: TestContext) => {      
+      const old = ctx.baseUrl;
+      ctx.baseUrl = ctx.baseUrl.replace("https", "http");
+      let threw = false;
+      try { await V3Tests.GetAllPCFsUsingListFootprints.action!(ctx); } catch { threw = true; }
+      ctx.baseUrl = old;
+      assert(threw, "ListFootprints unexpectedly succeeded over HTTP");
     }
   ),
 
@@ -253,13 +299,12 @@ export const V3Tests = {
     "Test Case 11: Attempt GetFootprint through HTTP (non-HTTPS)",
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-11-attempt-getfootprint-through-http-non-https",
     async (ctx: TestContext) => {
-
-      const copy = { ...ctx, baseUrl: ctx.baseUrl.replace("https", "http") }
-      const result: TestResult = await V3Tests.GetPCFUsingGetFootprint.action(copy)
-      assert(result.status !== TestCaseResultStatus.SUCCESS, "GetFootprint unexpectedly succeeded over HTTP")
-      
-      result.status = TestCaseResultStatus.SUCCESS;
-      return result;
+      const old = ctx.baseUrl;
+      ctx.baseUrl = ctx.baseUrl.replace("https", "http");
+      let threw = false;
+      try { await V3Tests.GetPCFUsingGetFootprint.action!(ctx); } catch { threw = true; }
+      ctx.baseUrl = old;
+      assert(threw, "GetFootprint unexpectedly succeeded over HTTP");
     }
   ),
 
@@ -275,9 +320,9 @@ export const V3Tests = {
         "Content-Type": "application/cloudevents+json; charset=UTF-8"
       };
 
-      const body = JSON.stringify({
+      const body = {
         specversion: "1.0",
-        id: ctx.testRunId + "/13", // Indicate the callback test case
+        id: ctx.testRun.testRunId + "/13", // Indicate the callback test case
         source: ctx.webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,
@@ -285,14 +330,14 @@ export const V3Tests = {
           productId: ctx.filterParams.productIds,
           comment: "Please send PCF data for this year.",
         },
-      });
+      };
 
       const url = `${ctx.baseUrl}/3/events`;
-      const response = await makeRequest(url, "POST", headers, body);
+      ctx.info(`Sending asynchronous PCF request to ${url} with id: ${body.id} and productIds: ${ctx.filterParams.productIds} - this should trigger a callback with a request fulfilled event`);
+      
+      const response = await ctx.request(url, "POST", headers, body);
 
       assertStatus(response.status, 200);
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -331,9 +376,9 @@ export const V3Tests = {
         "Content-Type": "application/cloudevents+json; charset=UTF-8"
       };
 
-      const body = JSON.stringify({
+      const body = {
         specversion: "1.0",
-        id: ctx.testRunId + "/14.B", // Indicate the callback test case
+        id: ctx.testRun.testRunId + "/14.B", // Indicate the callback test case
         source: ctx.webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,
@@ -341,14 +386,12 @@ export const V3Tests = {
           productId: ["urn:pact:null"],
           comment: "Please send PCF data for this year.",
         },
-      });
+      };
 
       const url = `${ctx.baseUrl}/3/events`;
-      const response = await makeRequest(url, "POST", headers, body);
+      const response = await ctx.request(url, "POST", headers, body);
 
       assertStatus(response.status, 200);
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -380,7 +423,7 @@ export const V3Tests = {
         "Content-Type": "application/cloudevents+json; charset=UTF-8"
       };
 
-      const body = JSON.stringify({
+      const body = {
         type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
         id: randomUUID(),
@@ -389,14 +432,12 @@ export const V3Tests = {
         data: {
           pfIds: ["3a6c14a7-4deb-498a-b5ea-16ce2535b576"],
         },
-      });
+      };
 
       const url = `${ctx.baseUrl}/3/events`;
-      const response = await makeRequest(url, "POST", headers, body);
+      const response = await ctx.request(url, "POST", headers, body);
 
       assertStatus(response.status, 200);
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -413,29 +454,25 @@ export const V3Tests = {
         "Content-Type": "application/cloudevents+json; charset=UTF-8",
       };
 
-      const body = JSON.stringify({
+      const body = {
         type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
-        id: ctx.testRunId + "/16",
+        id: ctx.testRun.testRunId + "/16",
         source: ctx.webhookUrl,
         time: new Date().toISOString(),
         data: {
           pfIds: ["3a6c14a7-4deb-498a-b5ea-16ce2535b576"],
         },
-      });
+      };
 
       const url = `${ctx.baseUrl}/3/events`;
-      const response = await makeRequest(url, "POST", headers, body);
+      const response = await ctx.request(url, "POST", headers, body);
 
       assertStatus(response.status, [400, 401]);
 
       if (response.data?.code !== "BadRequest") {
-        logger.warn(
-          `Test case "Test Case 16: Attempt Action Events with Invalid Token": Expected error code BadRequest but received ${response.data?.code}`
-        );
+        ctx.warn(`Expected error code BadRequest but received ${response.data?.code}`);
       }
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -447,12 +484,12 @@ export const V3Tests = {
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-17-attempt-action-events-through-http-non-https",
     async (ctx: TestContext) => {
 
-      const copy = { ...ctx, baseUrl: ctx.baseUrl.replace("https", "http") }
-      const result: TestResult = await V3Tests.ReceiveNotificationOfPCFUpdate.action(copy)
-      assert(result.status !== TestCaseResultStatus.SUCCESS, "Action Events unexpectedly succeeded over HTTP")
-      
-      result.status = TestCaseResultStatus.SUCCESS;
-      return result;
+      const old = ctx.baseUrl;
+      ctx.baseUrl = ctx.baseUrl.replace("https", "http");
+      let threw = false;
+      try { await V3Tests.ReceiveNotificationOfPCFUpdate.action!(ctx); } catch { threw = true; }
+      ctx.baseUrl = old;
+      assert(threw, "Action Events unexpectedly succeeded over HTTP");
     }
   ),
 
@@ -464,17 +501,10 @@ export const V3Tests = {
     "https://docs.carbon-transparency.org/pact-conformance-service/v3-test-cases-expected-results.html#test-case-18-openid-connect-based-authentication-flow",
     async (ctx: TestContext) => {
       const headers = {
-        ...getCorrectAuthHeaders(ctx.baseUrl, ctx.clientId, ctx.clientSecret),
+        ...getCorrectAuthHeaders(ctx.baseUrl, ctx.startParams.clientId, ctx.startParams.clientSecret),
       };
-      const response = await makeRequest(
-        ctx.authTokenUrl,
-        "POST",
-        headers,
-        ctx.authRequestData
-      );
+      const response = await ctx.request(ctx.authTokenUrl, "POST", headers, ctx.authRequestData);
       assertStatus(response.status, 200);
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -488,15 +518,8 @@ export const V3Tests = {
       const headers = {
         ...getIncorrectAuthHeaders(ctx.baseUrl),
       };
-      const response = await makeRequest(
-        ctx.authTokenUrl,
-        "POST",
-        headers,
-        ctx.authRequestData
-      );
+      const response = await ctx.request(ctx.authTokenUrl, "POST", headers, ctx.authRequestData);
       assertStatus(response.status, [400, 401]);
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -517,8 +540,6 @@ export const V3Tests = {
         !!allMatch,
         `One or more footprints do not match the condition: 'productIds contains ${ctx.filterParams.productId}'`
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -539,8 +560,6 @@ export const V3Tests = {
         !!allMatch,
         `One or more footprints do not match the condition: 'companyIds contains ${ctx.filterParams.companyId}'`
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -556,7 +575,7 @@ export const V3Tests = {
 
       if ((ctx.filterParams.geography ?? '') === '') {
         assert(
-          response.data?.data?.length === ctx.footprints.data.length,
+          response.data?.data?.length === ctx.footprints.length,
           "When no geography is provided, all footprints should be returned"
         );
       } else {
@@ -577,8 +596,6 @@ export const V3Tests = {
           `One or more footprints do not match the condition: 'pcf.geographyCountry = ${ctx.filterParams.geography}'`
         );
       }
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -594,7 +611,7 @@ export const V3Tests = {
 
       if ((ctx.filterParams.classification ?? '') === '') {
         assert(
-          response.data?.data?.length === ctx.footprints.data.length,
+          response.data?.data?.length === ctx.footprints.length,
           "When no classification is provided, all footprints should be returned"
         );
       } else {
@@ -606,8 +623,6 @@ export const V3Tests = {
           `One or more footprints do not match the condition: 'productClassifications contains ${ctx.filterParams.classification}'`
         );
       }
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -654,8 +669,6 @@ export const V3Tests = {
         !!allMatch,
         `One or more footprints do not match the condition: 'validityPeriodStart <= ${ctx.filterParams.validOn} <= validityPeriodEnd' or fallback reference period logic`
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -690,8 +703,6 @@ export const V3Tests = {
         !!allMatch,
         `One or more footprints do not match the condition: 'validityPeriodStart > ${ctx.filterParams.validAfter}' or fallback reference period logic`
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -729,8 +740,6 @@ export const V3Tests = {
         !!allMatch,
         `One or more footprints do not match the condition: 'validityPeriodEnd < ${ctx.filterParams.validBefore}' or fallback reference period logic`
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -751,8 +760,6 @@ export const V3Tests = {
         !!allMatch,
         `One or more footprints do not match the condition: 'status = ${ctx.filterParams.status}'`
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -775,8 +782,6 @@ export const V3Tests = {
         !!allMatch,
         `One or more footprints do not match the condition: 'status = ${ctx.filterParams.status} AND productIds contains ${ctx.filterParams.productId}'`
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -797,8 +802,6 @@ export const V3Tests = {
         !!allMatch,
         `One or more footprints do not match the companyId filter in OR logic test: ${ctx.filterParams.companyId}`
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -811,7 +814,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?productId=urn:bogus:product:${randomString(16)}`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -822,8 +825,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus productId filter"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -836,7 +837,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?companyId=urn:bogus:company:${randomString(16)}`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -847,8 +848,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus companyId filter"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -861,7 +860,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?geography=XX`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -872,8 +871,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus geography filter"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -886,7 +883,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?classification=urn:bogus:classification:${randomString(16)}`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -897,8 +894,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus classification filter"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -911,7 +906,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?validOn=1900-01-01T00:00:00Z`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -922,8 +917,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus validOn filter (date in the past: 1900-01-01T00:00:00Z)"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -936,7 +929,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?validAfter=2099-12-31T23:59:59Z`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -947,8 +940,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus validAfter filter (date in the future: 2099-12-31T23:59:59Z)"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -961,7 +952,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?validBefore=1900-01-01T00:00:00Z`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -972,8 +963,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus validBefore filter (date in the past: 1900-01-01T00:00:00Z)"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -986,7 +975,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?status=BogusStatus${randomString(8)}`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -997,8 +986,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus status filter"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -1011,7 +998,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?companyId=urn:bogus:company:${randomString(8)}&productId=urn:bogus:product:${randomString(16)}`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -1022,8 +1009,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus companyId and productId filters"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -1036,7 +1021,7 @@ export const V3Tests = {
     async (ctx: TestContext) => {
 
       const url = `${ctx.baseUrl}/3/footprints?companyId=urn:bogus:company:${randomString(8)}&companyId=urn:bogus:company:${randomString(8)}&companyId=urn:bogus:company:${randomString(8)}`;
-      const response = await makeRequest(url, "GET", ctx.headers);
+      const response = await ctx.request(url, "GET");
 
       assertStatus(response.status, 200);
       assert(!!response.data, "Expected JSON response body, but got none");
@@ -1047,8 +1032,6 @@ export const V3Tests = {
         response.data?.data?.length === 0,
         "Expected empty data array for bogus companyId filters in OR logic test"
       );
-
-      return { apiResponse: response.text };
     }
   ),
 
@@ -1064,7 +1047,7 @@ export const V3Tests = {
         "Content-Type": "application/cloudevents+json; charset=UTF-8",
       };
 
-      const body = JSON.stringify({
+      const body = {
         type: EventTypesV3.PUBLISHED,
         specversion: "1.0",
         id: randomUUID(),
@@ -1073,14 +1056,12 @@ export const V3Tests = {
         data: {
           pfIds: ["urn:gtin:4712345060507"],
         },
-      });
+      };
 
       const url = `${ctx.baseUrl}/3/events`;
-      const response = await makeRequest(url, "POST", headers, body);
+      const response = await ctx.request(url, "POST", headers, body);
 
       assertStatus(response.status, 400);
-
-      return { apiResponse: response.text };
     }
   ),
 };

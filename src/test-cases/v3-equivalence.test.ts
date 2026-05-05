@@ -12,8 +12,8 @@
  */
 
 import { jest } from "@jest/globals";
-import { TestCaseResultStatus, EventTypesV3, ApiVersion } from "../services/types";
-import { TestContext, ListenerContext } from "./test-helpers";
+import { TestCaseResultStatus, EventTypesV3, ApiVersion, TestRunStatus, TestRunStartParams, TestRun } from "../services/types";
+import { TestContext, ListenerContext, runTest, runListenerTest } from "./test-helpers";
 import { generateV3TestCases } from "./v3-test-cases";
 import { runTestCase } from "../utils/runTestCase";
 import { V3Tests } from "./v3-tests";
@@ -127,7 +127,7 @@ const validRejectedEventBody = JSON.stringify({
 // ---------------------------------------------------------------------------
 
 type MockFetchEntry =
-  | { status: number; body: string; contentType?: string }
+  | { status: number; body: string }
   | { throws: Error };
 
 function mockFetch(...responses: MockFetchEntry[]) {
@@ -135,11 +135,13 @@ function mockFetch(...responses: MockFetchEntry[]) {
   global.fetch = jest.fn().mockImplementation(() => {
     const r = responses[Math.min(i++, responses.length - 1)];
     if ("throws" in r) return Promise.reject(r.throws);
-    const contentType = r.contentType ?? "application/json";
     return Promise.resolve({
       status: r.status,
       text: () => Promise.resolve(r.body),
-      headers: { get: (h: string) => (h === "Content-Type" ? contentType : null) },
+      headers: { 
+        get: (h: string) => (h.toLowerCase() === "content-type" ? "application/json" : null),
+        entries: () => ([["content-type", "application/json"]]),
+      },
     });
   }) as any;
 }
@@ -177,6 +179,27 @@ beforeAll(async () => {
     webhookUrl: WEBHOOK_URL,
   });
 
+  const testRunStartParams: TestRunStartParams = {
+    baseUrl: BASE_URL,
+    version: VERSION,
+    clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
+    organizationName: "Test Org",
+    adminEmail: "admin@test.org",
+    adminName: "Test Admin",
+  }
+
+  const testRun : TestRun = {
+    testRunId: TEST_RUN_ID,
+    organizationName: "Test Org",
+    adminEmail: "admin@test.org",
+    adminName: "Test Admin",
+    timestamp: new Date().toISOString(),
+    techSpecVersion: VERSION,
+    data: null,
+    status: TestRunStatus.PENDING,
+  };
+
   declarativeCtx = {
     runner: async (testKey: string) => {
       const tc = testCases.find((t) => t.testKey === testKey);
@@ -185,36 +208,30 @@ beforeAll(async () => {
     },
   };
 
+
   // --- Imperative runner ---
-  const imperativeTestCtx: TestContext = {
-    testRunId: TEST_RUN_ID,
-    baseUrl: BASE_URL,
-    authTokenUrl: AUTH_URL,
-    accessToken: ACCESS_TOKEN,
-    headers: {
+  let imperativeTestCtx: TestContext = new TestContext(testRun, testRunStartParams, schema);
+  imperativeTestCtx.paginationLinks = PAGINATION_LINKS;
+  imperativeTestCtx.webhookUrl = WEBHOOK_URL;
+  imperativeTestCtx.footprints = MOCK_FOOTPRINTS.data;
+  imperativeTestCtx.accessToken = ACCESS_TOKEN;
+  imperativeTestCtx.authTokenUrl = AUTH_URL;
+  imperativeTestCtx.headers = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${ACCESS_TOKEN}`,
     },
-    clientId: CLIENT_ID,
-    clientSecret: CLIENT_SECRET,
-    authRequestData: AUTH_REQUEST_DATA,
-    version: VERSION,
-    webhookUrl: WEBHOOK_URL,
-    footprints: MOCK_FOOTPRINTS,
-    paginationLinks: PAGINATION_LINKS,
-    schema,
-    filterParams: {
-      id: MOCK_FOOTPRINT.id,
-      productId: MOCK_FOOTPRINT.productIds[0],
-      productIds: MOCK_FOOTPRINT.productIds,
-      companyId: MOCK_FOOTPRINT.companyIds[0],
-      geography: MOCK_FOOTPRINT.pcf.geographyCountry,
-      classification: MOCK_FOOTPRINT.productClassifications[0],
-      validOn: MOCK_FOOTPRINT.validityPeriodStart,
-      validAfter: "2022-12-31T00:00:00.000Z",
-      validBefore: "2026-01-02T00:00:00.000Z",
-      status: MOCK_FOOTPRINT.status,
-    },
+  imperativeTestCtx.authRequestData = AUTH_REQUEST_DATA;
+  imperativeTestCtx.filterParams = {
+    id: MOCK_FOOTPRINT.id,
+    productId: MOCK_FOOTPRINT.productIds[0],
+    productIds: MOCK_FOOTPRINT.productIds,
+    companyId: MOCK_FOOTPRINT.companyIds[0],
+    geography: MOCK_FOOTPRINT.pcf.geographyCountry,
+    classification: MOCK_FOOTPRINT.productClassifications[0],
+    validOn: MOCK_FOOTPRINT.validityPeriodStart,
+    validAfter: "2022-12-31T00:00:00.000Z",
+    validBefore: "2026-01-02T00:00:00.000Z",
+    status: MOCK_FOOTPRINT.status,
   };
 
   const imperativeTestDefs = Object.values(V3Tests);
@@ -224,7 +241,7 @@ beforeAll(async () => {
       const def = imperativeTestDefs.find((d) => d.testKey === testKey);
       if (!def) throw new Error(`Test case ${testKey} not found in imperative set`);
       if (!def.action) throw new Error(`Test case ${testKey} is a listener test; use runner.listener()`);
-      return def.action(imperativeTestCtx);
+      return runTest(def, imperativeTestCtx);
     },
   };
 });
@@ -944,8 +961,8 @@ describe("TC13: Received Request Fulfilled Response (listener)", () => {
 
   it("imperative listener: succeeds with valid fulfilled event containing matching productIds", async () => {
     const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#13")!;
-    const ctx: ListenerContext = {
-      testRun: {
+    const ctx = new ListenerContext(
+      {
         testRunId: TEST_RUN_ID,
         organizationName: "Test",
         adminEmail: "test@test.com",
@@ -955,21 +972,21 @@ describe("TC13: Received Request Fulfilled Response (listener)", () => {
         techSpecVersion: VERSION,
         data: { productIds: ["urn:x:product:1"] },
       },
-      version: VERSION,
-      path: "/3/events",
-      method: "POST",
-      headers: {},
-      data: JSON.parse(validFulfilledEventBody),
+      VERSION,
+      "/3/events",
+      "POST",
+      {},
+      JSON.parse(validFulfilledEventBody),
       schema,
-    };
-    const result = await def.listener(ctx);
+    );
+    const result = await runListenerTest(def, ctx);
     expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
   });
 
   it("imperative listener: fails when callback is received on wrong path", async () => {
     const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#13")!;
-    const ctx: ListenerContext = {
-      testRun: {
+    const ctx = new ListenerContext(
+      {
         testRunId: TEST_RUN_ID,
         organizationName: "Test",
         adminEmail: "test@test.com",
@@ -979,21 +996,21 @@ describe("TC13: Received Request Fulfilled Response (listener)", () => {
         techSpecVersion: VERSION,
         data: { productIds: ["urn:x:product:1"] },
       },
-      version: VERSION,
-      path: "/3/wrong-path",
-      method: "POST",
-      headers: {},
-      data: JSON.parse(validFulfilledEventBody),
+      VERSION,
+      "/3/wrong-path",
+      "POST",
+      {},
+      JSON.parse(validFulfilledEventBody),
       schema,
-    };
-    const result = await def.listener(ctx);
+    );
+    const result = await runListenerTest(def, ctx);
     expect(result.status).toBe(TestCaseResultStatus.FAILURE);
   });
 
   it("imperative listener: fails when productId in response was not in original request", async () => {
     const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#13")!;
-    const ctx: ListenerContext = {
-      testRun: {
+    const ctx = new ListenerContext(
+      {
         testRunId: TEST_RUN_ID,
         organizationName: "Test",
         adminEmail: "test@test.com",
@@ -1003,18 +1020,18 @@ describe("TC13: Received Request Fulfilled Response (listener)", () => {
         techSpecVersion: VERSION,
         data: { productIds: ["urn:x:product:1"] },
       },
-      version: VERSION,
-      path: "/3/events",
-      method: "POST",
-      headers: {},
-      data: {
+      VERSION,
+      "/3/events",
+      "POST",
+      {},
+      {
         ...JSON.parse(validFulfilledEventBody),
         // Use a valid ProductFootprint with productIds NOT in the originally requested set
         data: { requestEventId: `${TEST_RUN_ID}/12`, pfs: [{ ...VALID_PRODUCT_FOOTPRINT, productIds: ["urn:unexpected:product"] }] },
       },
       schema,
-    };
-    const result = await def.listener(ctx);
+    );
+    const result = await runListenerTest(def, ctx);
     expect(result.status).toBe(TestCaseResultStatus.FAILURE);
   });
 });
@@ -1046,8 +1063,8 @@ describe("TC14.B: Handle Rejected PCF Request (listener)", () => {
 
   it("imperative listener: succeeds with valid rejected event containing error.code and error.message", async () => {
     const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#14.B")!;
-    const ctx: ListenerContext = {
-      testRun: {
+    const ctx = new ListenerContext(
+      {
         testRunId: TEST_RUN_ID,
         organizationName: "Test",
         adminEmail: "test@test.com",
@@ -1057,21 +1074,21 @@ describe("TC14.B: Handle Rejected PCF Request (listener)", () => {
         techSpecVersion: VERSION,
         data: {},
       },
-      version: VERSION,
-      path: "/3/events",
-      method: "POST",
-      headers: {},
-      data: JSON.parse(validRejectedEventBody),
+      VERSION,
+      "/3/events",
+      "POST",
+      {},
+      JSON.parse(validRejectedEventBody),
       schema,
-    };
-    const result = await def.listener(ctx);
+    );
+    const result = await runListenerTest(def, ctx);
     expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
   });
 
   it("imperative listener: fails when callback is received on wrong path", async () => {
     const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#14.B")!;
-    const ctx: ListenerContext = {
-      testRun: {
+    const ctx = new ListenerContext(
+      {
         testRunId: TEST_RUN_ID,
         organizationName: "Test",
         adminEmail: "test@test.com",
@@ -1081,21 +1098,21 @@ describe("TC14.B: Handle Rejected PCF Request (listener)", () => {
         techSpecVersion: VERSION,
         data: {},
       },
-      version: VERSION,
-      path: "/3/wrong-path",
-      method: "POST",
-      headers: {},
-      data: JSON.parse(validRejectedEventBody),
+      VERSION,
+      "/3/wrong-path",
+      "POST",
+      {},
+      JSON.parse(validRejectedEventBody),
       schema,
-    };
-    const result = await def.listener(ctx);
+    );
+    const result = await runListenerTest(def, ctx);
     expect(result.status).toBe(TestCaseResultStatus.FAILURE);
   });
 
   it("imperative listener: fails when rejected event is missing error.code", async () => {
     const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#14.B")!;
-    const ctx: ListenerContext = {
-      testRun: {
+    const ctx = new ListenerContext(
+      {
         testRunId: TEST_RUN_ID,
         organizationName: "Test",
         adminEmail: "test@test.com",
@@ -1105,17 +1122,17 @@ describe("TC14.B: Handle Rejected PCF Request (listener)", () => {
         techSpecVersion: VERSION,
         data: {},
       },
-      version: VERSION,
-      path: "/3/events",
-      method: "POST",
-      headers: {},
-      data: {
+      VERSION,
+      "/3/events",
+      "POST",
+      {},
+      {
         ...JSON.parse(validRejectedEventBody),
         data: { error: {} }, // missing code and message
       },
       schema,
-    };
-    const result = await def.listener(ctx);
+    );
+    const result = await runListenerTest(def, ctx);
     expect(result.status).toBe(TestCaseResultStatus.FAILURE);
   });
 });

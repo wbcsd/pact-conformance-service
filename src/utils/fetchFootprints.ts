@@ -57,7 +57,7 @@ export const getLinksHeaderFromFootprints = async (
   return parseLinkHeader(linksHeader);
 };
 
-const parseLinkHeader = (header: string | null): Record<string, string> => {
+export const parseLinkHeader = (header: string | null): Record<string, string> => {
   if (!header) return {};
 
   return header.split(", ").reduce<Record<string, string>>((acc, link) => {
