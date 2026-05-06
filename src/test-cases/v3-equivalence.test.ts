@@ -34,6 +34,7 @@ const VERSION: ApiVersion = "V3.0";
 
 const MOCK_FOOTPRINT = {
   id: "00000000-0000-0000-0000-000000000000",
+  created: "2024-01-01T00:00:00Z",
   productIds: ["urn:x:product:1"],
   companyIds: ["urn:x:company:1"],
   pcf: {
@@ -254,7 +255,6 @@ afterEach(() => {
 // Shared test suite — runs for both implementations
 // ---------------------------------------------------------------------------
 
-//DISABLED
 describe.each([
   ["declarative (v3-test-cases.ts)", () => declarativeCtx],
   ["imperative (v3-tests.ts)", () => imperativeCtx],
@@ -924,7 +924,6 @@ describe.each([
     });
   });
 });
-// DISABLED });
 
 // ---------------------------------------------------------------------------
 // Listener tests — not equivalence-testable via describe.each

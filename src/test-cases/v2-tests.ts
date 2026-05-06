@@ -295,6 +295,7 @@ export const V2Tests = {
     "Test Case 12: Send Asynchronous PCF Request",
     "https://docs.carbon-transparency.org/pact-conformance-service/v2-test-cases-expected-results.html#test-case-12-send-pcf-creation-request-async",
     async (ctx: TestContext) => {
+
       const headers = {
         ...ctx.headers,
         "Content-Type": "application/cloudevents+json; charset=UTF-8"
@@ -320,7 +321,8 @@ export const V2Tests = {
       const response = await ctx.request(url, "POST", headers, body);
 
       assertStatus(response.status, 200);
-    }
+    },
+    ["V2.0", "V2.1"]
   ),
 
   /**
@@ -343,7 +345,8 @@ export const V2Tests = {
           );
         }
       }
-    }
+    },
+    ["V2.0","V2.1"]
   ),
 
   /**
@@ -376,7 +379,8 @@ export const V2Tests = {
       const response = await ctx.request(url, "POST", headers, body);
 
       assertStatus(response.status, 200);
-    }
+    },
+    ["V2.0","V2.1"]
   ),
 
   /**
@@ -392,7 +396,8 @@ export const V2Tests = {
         ctx.data?.data?.error?.code && ctx.data?.data?.error?.message,
         "Rejected event must contain an error object with a code and message"
       );
-    }
+    },
+    ["V2.0","V2.1"]
   ),
 
   /**
@@ -422,7 +427,8 @@ export const V2Tests = {
       const response = await ctx.request(url, "POST", headers, body);
 
       assertStatus(response.status, 200);
-    }
+    },
+    ["V2.0","V2.1"]
   ),
 
   /**
@@ -457,7 +463,8 @@ export const V2Tests = {
       if (response.data?.code !== "BadRequest") {
         ctx.warn(`Expected error code BadRequest but received ${response.data?.code}`);
       }
-    }
+    },
+    ["V2.0","V2.1"]
   ),
 
   /**
@@ -474,7 +481,8 @@ export const V2Tests = {
       try { await V2Tests.ReceiveNotificationOfPCFUpdate.action!(ctx); } catch { threw = true; }
       ctx.baseUrl = old;
       assert(threw, "Action Events unexpectedly succeeded over HTTP");
-    }
+    },
+    ["V2.0","V2.1"]
   ),
 
   /**
@@ -528,11 +536,12 @@ export const V2Tests = {
         !!allMatch,
         `One or more footprints do not match the condition: 'created date >= ${created}'`
       );
-    }
+    },
+    ["V2.0","V2.1","V2.2", "V2.3"]
   ),
 
   /**
-   * Test Case 40: Failed Published Event - Malformed Request
+   * Test Case 21: Failed Published Event - Malformed Request
    */
   FailedPublishedEventMalformedRequest: createTest(
     "Test Case 21: Failed to Receive Notification of PCF Update (Published Event) - Malformed Request",
@@ -558,6 +567,7 @@ export const V2Tests = {
       const response = await ctx.request(url, "POST", headers, body);
 
       assertStatus(response.status, 400);
-    }
+    },
+    ["V2.0","V2.1"]
   ),
 };

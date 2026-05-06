@@ -26,6 +26,7 @@ const VERSION: ApiVersion = "V3.0";
 
 const MOCK_FOOTPRINT = {
   id: "00000000-0000-0000-0000-000000000000",
+  created: "2024-01-01T00:00:00Z",
   productIds: ["urn:x:product:1"],
   companyIds: ["urn:x:company:1"],
   pcf: {
@@ -119,7 +120,7 @@ const validRejectedEventBody = JSON.stringify({
 // ---------------------------------------------------------------------------
 
 type MockFetchEntry =
-  | { status: number; body: string; contentType?: string }
+  | { status: number; body: string }
   | { throws: Error };
 
 function mockFetch(...responses: MockFetchEntry[]) {
@@ -127,11 +128,13 @@ function mockFetch(...responses: MockFetchEntry[]) {
   global.fetch = jest.fn().mockImplementation(() => {
     const r = responses[Math.min(i++, responses.length - 1)];
     if ("throws" in r) return Promise.reject(r.throws);
-    const contentType = r.contentType ?? "application/json";
     return Promise.resolve({
       status: r.status,
       text: () => Promise.resolve(r.body),
-      headers: { get: (h: string) => (h === "Content-Type" ? contentType : null) },
+      headers: { 
+        get: (h: string) => (h.toLowerCase() === "content-type" ? "application/json" : null),
+        entries: () => ([["content-type", "application/json"]]),
+      },
     });
   }) as any;
 }

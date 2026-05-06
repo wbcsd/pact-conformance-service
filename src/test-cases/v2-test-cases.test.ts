@@ -130,7 +130,7 @@ const validRejectedEventBody = JSON.stringify({
 // ---------------------------------------------------------------------------
 
 type MockFetchEntry =
-  | { status: number; body: string; contentType?: string }
+  | { status: number; body: string }
   | { throws: Error };
 
 function mockFetch(...responses: MockFetchEntry[]) {
@@ -138,11 +138,13 @@ function mockFetch(...responses: MockFetchEntry[]) {
   global.fetch = jest.fn().mockImplementation(() => {
     const r = responses[Math.min(i++, responses.length - 1)];
     if ("throws" in r) return Promise.reject(r.throws);
-    const contentType = r.contentType ?? "application/json";
     return Promise.resolve({
       status: r.status,
       text: () => Promise.resolve(r.body),
-      headers: { get: (h: string) => (h === "Content-Type" ? contentType : null) },
+      headers: { 
+        get: (h: string) => (h.toLowerCase() === "content-type" ? "application/json" : null),
+        entries: () => ([["content-type", "application/json"]]),
+      },
     });
   }) as any;
 }

@@ -188,6 +188,7 @@ export class ListenerContext extends TestContextBase {
 export interface TestDefinition {
   action?: (ctx: TestContext) => Promise<void>;
   listener?: (ctx: ListenerContext) => Promise<void>;
+  optional?: ApiVersion[];
   documentationUrl: string;
   testName: string;
   testKey: string;
@@ -201,10 +202,11 @@ export const createTest = (
   testName: string,
   url: string,
   action: (ctx: TestContext) => Promise<void>,
+  optional?: ApiVersion[]
 ): TestDefinition => {
   const testKey = testName.toUpperCase().replace(/^TEST CASE (\d+).*/, "TESTCASE#$1");
   const testNumber = parseInt(testKey.slice("TESTCASE#".length)) || null;
-  return { action, documentationUrl: url, testKey, testName, testNumber };
+  return { action, documentationUrl: url, testKey, testName, testNumber, optional: optional };
 };
 
 // Create a test case for a listener test, which will be executed
@@ -213,10 +215,11 @@ export const createListenerTest = (
   testName: string,
   url: string,
   listener: (ctx: ListenerContext) => Promise<void>,
+  optional?: ApiVersion[]
 ): TestDefinition => {
   const testKey = testName.toUpperCase().replace(/^TEST CASE (\d+(\.\w+)?).*/, "TESTCASE#$1");
   const testNumber = parseInt(testKey.slice("TESTCASE#".length)) || null;
-  return { listener, documentationUrl: url, testKey, testName, testNumber };
+  return { listener, documentationUrl: url, testKey, testName, testNumber, optional: optional };
 };
 
 // Create a test case for an initialization test, which will always
@@ -240,7 +243,7 @@ export const runTest = async (test: TestDefinition, ctx: TestContext): Promise<T
     return {
       name: test.testName,
       status: TestCaseResultStatus.SUCCESS,
-      mandatory: true,
+      mandatory: test.optional?.includes(ctx.startParams.version) ? false : true,
       testKey: test.testKey,
       documentationUrl: test.documentationUrl,
       log: ctx.log,
@@ -250,7 +253,7 @@ export const runTest = async (test: TestDefinition, ctx: TestContext): Promise<T
     return {
       name: test.testName,
       status: TestCaseResultStatus.FAILURE,
-      mandatory: true,
+      mandatory: test.optional?.includes(ctx.startParams.version) ? false : true,
       testKey: test.testKey,
       documentationUrl: test.documentationUrl,
       errorMessage: error.message,
