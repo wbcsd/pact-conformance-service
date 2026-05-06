@@ -27,10 +27,14 @@
  *   --adminName        Admin name
  */
 
+import express from "express";
+import { Server } from "http";
+import { randomBytes } from "crypto";
 import { TestRunWorkerNew } from "../services/test-run-worker-new";
 import { ConsoleTestStorage } from "../services/console-test-storage";
-import { ApiVersion, TestRunStartParams } from "../services/types";
+import { ApiVersion, TestCaseResultStatus, TestRunStartParams } from "../services/types";
 import logger from "../utils/logger";
+import config from "../config";
 
 /**
  * Parses a comma-separated list of test case numbers and ranges (e.g. "1-2,9" -> [1, 2, 9]).
@@ -195,7 +199,73 @@ Examples:
   `);
 }
 
+/**
+ * Spins up an Express listener on `config.PORT` to receive callback events from the
+ * tested API during a test run. The listener exposes:
+ *   - POST /auth/token : returns a stub access token to any caller presenting Basic auth.
+ *     The token is opaque to us — handleCallback does not validate it — so this only needs
+ *     to satisfy the spec's OAuth2 client-credentials response shape.
+ *   - POST /2/events, /3/events : forwarded to TestRunWorkerNew.handleCallback, which
+ *     correlates each event to the originating async test case via requestEventId.
+ */
+function startCallbackListener(worker: TestRunWorkerNew): Promise<Server> {
+  const app = express();
+  app.use(express.json({ type: ["application/json", "application/cloudevents+json"] }));
+
+  app.post("/auth/token", (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Basic ")) {
+      res.status(401).json({ code: "Unauthorized", message: "Missing or invalid Basic Authorization header" });
+      return;
+    }
+    res.json({ access_token: randomBytes(24).toString("hex"), token_type: "Bearer", expires_in: 3600 });
+  });
+
+  app.post(["/2/events", "/3/events"], async (req, res, next) => {
+    try {
+      await worker.handleCallback(req);
+      res.status(200).send();
+    } catch (err: any) {
+      const status = typeof err.status === "number" ? err.status : 500;
+      res.status(status).json({ code: err.code ?? "InternalError", message: err.message });
+      next(err);
+    }
+  });
+
+  const port = Number(config.PORT);
+  return new Promise((resolve, reject) => {
+    const server = app.listen(port, () => {
+      logger.info(`Callback listener running on port ${port}`);
+      resolve(server);
+    });
+    server.once("error", reject);
+  });
+}
+
+/**
+ * After the synchronous test phase completes, async callback tests may still be PENDING
+ * while waiting for the tested API to respond. Poll storage until none remain or we hit
+ * the timeout.
+ */
+async function waitForPendingCallbacks(
+  storage: ConsoleTestStorage,
+  testRunId: string,
+  timeoutMs: number,
+  pollIntervalMs = 1000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const run = await storage.getTestRunWithResults(testRunId);
+    const pending = run.results.some((r) => r.mandatory && r.status === TestCaseResultStatus.PENDING);
+    if (!pending) return;
+    await new Promise((r) => setTimeout(r, pollIntervalMs));
+  }
+  logger.warn(`Timed out after ${timeoutMs}ms waiting for callback events; some test cases remain PENDING.`);
+}
+
 async function main() {
+  let server: Server | undefined;
+  let exitCode = 1;
   try {
     logger.info("PACT Conformance Test CLI");
     logger.info("=".repeat(80));
@@ -209,32 +279,40 @@ async function main() {
     // Create test run worker
     const worker = new TestRunWorkerNew(storage);
 
+    // Start the callback listener before running tests so async events sent during
+    // the test run are received and correlated to their pending test cases.
+    server = await startCallbackListener(worker);
+
     // Start the test run
     logger.info("Starting test run...\n");
-    const result = await worker.startTestRun(params);
+    const initial = await worker.startTestRun(params);
 
-    // Display final results
-    logger.info("\n" + "=".repeat(80));
-    logger.info("TEST RUN COMPLETE");
+    // Wait for any callback-driven tests that are still PENDING after the sync phase.
+    if (initial.results.some((r) => r.mandatory && r.status === TestCaseResultStatus.PENDING)) {
+      logger.info("Waiting for asynchronous callback events...");
+      await waitForPendingCallbacks(storage, initial.testRunId, 60_000);
+    }
+
+    // Update final status based on any changes from callback events
+    await storage.updateTestRunStatus(initial.testRunId);
+    
+    // Display results in console
+    storage.displayTestResults(initial.testRunId);
     if (params.testCaseNumbers?.length) {
       logger.info("WARNING: Some test cases may have been excluded (see --testCases argument)");
     }
-    logger.info("=".repeat(80));
-    logger.info(`Status: ${result.status}`);
-    logger.info(`Passing Percentage: ${result.passingPercentage}%`);
-    logger.info(`Total Tests: ${result.results.length}`);
-    logger.info("=".repeat(80));
+    const result = await storage.getTestRun(initial.testRunId);
+    exitCode = result.status === "PASS" ? 0 : 1;
 
-    // Exit with appropriate code
-    if (result.status === "PASS") {
-      process.exit(0);
-    } else {
-      process.exit(1);
-    }
   } catch (error: any) {
     logger.error("Error running tests:", error);
-    process.exit(1);
+    exitCode = 1;
+  } finally {
+    if (server) {
+      await new Promise<void>((resolve) => server!.close(() => resolve()));
+    }
   }
+  process.exit(exitCode);
 }
 
 // Run the CLI
