@@ -270,7 +270,7 @@ export const runListenerTest = async (test: TestDefinition, ctx: ListenerContext
     return {
       name: test.testName,
       status: TestCaseResultStatus.SUCCESS,
-      mandatory: true,
+      mandatory: test.optional?.includes(ctx.version) ? false : true,
       testKey: test.testKey,
       documentationUrl: test.documentationUrl,
       log: ctx.log,
@@ -280,7 +280,7 @@ export const runListenerTest = async (test: TestDefinition, ctx: ListenerContext
     return {
       name: test.testName,
       status: TestCaseResultStatus.FAILURE,
-      mandatory: true,
+      mandatory: test.optional?.includes(ctx.version) ? false : true,
       testKey: test.testKey,
       documentationUrl: test.documentationUrl,
       errorMessage: error.message,
