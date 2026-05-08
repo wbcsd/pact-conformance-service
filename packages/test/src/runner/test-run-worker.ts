@@ -1,5 +1,5 @@
 import logger from "../logger";
-import { TestRunStartParams, TestRunWithResults, TestStorage, TestCaseResultStatus, ApiVersion, TestRun, TestRunStatus } from "../types";
+import { TestRunStartParams, TestRunWithResults, TestStorage, TestCaseResultStatus, ApiVersion, TestRun, TestRunStatus, TestResult } from "../types";
 import { V3Tests } from "../test-cases/v3-tests";
 import { V2Tests } from "../test-cases/v2-tests";
 import { ListenerContext, TestContext } from "./test-context";
@@ -65,7 +65,7 @@ export class TestRunWorker {
     const regularTests = allTests.filter((t) => !t.isInit);
 
     // Run all init tests sequentially; abort on first failure
-    const results: any[] = [];
+    const results: TestResult[] = [];
     for (const test of initTests) {
       const result = await runTest(test, context);
       results.push(result);
@@ -93,7 +93,7 @@ export class TestRunWorker {
     for (const test of testsToRun) {
       const result = test.action
         ? await runTest(test, context)
-        : { status: TestCaseResultStatus.PENDING, testKey: test.testKey, name: test.testName, mandatory: true };
+        : { status: TestCaseResultStatus.PENDING, testKey: test.testKey, name: test.testName, mandatory: test.optional?.includes(params.version) ? false : true, };
       if (result.status === TestCaseResultStatus.FAILURE) {
         logger.error(`Test case "${test.testName}" failed: ${result.errorMessage}`);
       }

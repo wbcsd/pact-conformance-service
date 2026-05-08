@@ -55,9 +55,12 @@ app.get("/testruns/:id", context(async (req) => {
 
 // Start a new test run
 app.post("/testruns/", context(async (req) => {
-  req.services.workerOld.startTestRun(req.body as TestRunStartParams).catch(err => {
+  try {
+    const params = { ...req.body, adminEmail: "-old-implementation-" } as TestRunStartParams;
+    await req.services.workerOld.startTestRun(params);
+  } catch (err) {
     logger.error("Error starting test run with old worker", { error: err });
-  });
+  }
   return await req.services.worker.startTestRun(req.body as TestRunStartParams);
 }));
 
