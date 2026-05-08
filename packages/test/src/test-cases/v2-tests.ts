@@ -69,6 +69,7 @@ export const V2Tests = {
       }
 
       // Fetch footprints
+      ctx.info("Fetching footprints to obtain test parameters for subsequent test cases");
       const footprintsResponse = await ctx.request(`${ctx.baseUrl}/2/footprints`, "GET")
       ctx.footprints = footprintsResponse.data?.data
       assert(ctx.footprints?.length >= 2, "At least two footprints are required to run the tests, but none were returned from the API");

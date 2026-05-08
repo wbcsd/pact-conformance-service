@@ -141,7 +141,7 @@ export class TestContext extends TestContextBase {
         response.data = JSON.parse(response.text);
       }
     } catch (err: any) {
-      this.log.push({ error: err.message });
+      this.log.push({ error: err.message + (err.cause?.message ? `: ${err.cause.message}` : "") });
       throw err;
     }
 
