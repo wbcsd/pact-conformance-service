@@ -1,5 +1,5 @@
 import logger from "../utils/logger";
-import { TestRunStartParams, TestRunWithResults, TestStorage, TestCaseResultStatus, ApiVersion, TestRun, TestRunStatus } from "./types";
+import { TestRunStartParams, TestRunWithResults, TestStorage, TestCaseResultStatus, ApiVersion, TestRun, TestRunStatus, TestResult } from "./types";
 import { V3Tests } from "../test-cases/v3-tests";
 import { ListenerContext, TestDefinition, runTest, runListenerTest, TestContext } from "../test-cases/test-helpers";
 import { BadRequestError } from "../errors";
@@ -56,7 +56,7 @@ export class TestRunWorkerNew {
     const regularTests = allTests.filter((t) => !t.isInit);
 
     // Run all init tests sequentially; abort on first failure
-    const results: any[] = [];
+    const results: TestResult[] = [];
     for (const test of initTests) {
       const result = await runTest(test, context);
       results.push(result);
