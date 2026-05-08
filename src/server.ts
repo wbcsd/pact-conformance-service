@@ -5,7 +5,7 @@ import { context } from "./middleware/context";
 import { errorHandler } from "./middleware/error-handler";
 import { db } from "./data";
 import { ServiceContainer } from "./services";
-import { PagingParameters, TestRunStartParams } from "./services/types";
+import { PagingParameters, TestRunStartParams, TestRunWithResults } from "./services/types";
 
 
 // Create Express app
@@ -55,11 +55,15 @@ app.get("/testruns/:id", context(async (req) => {
 // Start a new test run
 app.post("/testruns/", context(async (req) => {
   if (process.env.ENABLE_NEW_TESTS === "true") {
-    await req.services.workerNew.startTestRun(req.body as TestRunStartParams);
+    let result = await req.services.workerNew.startTestRun(req.body as TestRunStartParams);
     // Subsequent test runs with the old worker are marked with a specific admin email for easier identification in the database
     req.body.adminEmail = "-old-implementation-";
+    await req.services.worker.startTestRun(req.body as TestRunStartParams);
+    // Return the new result
+    return result;
+  } else {
+    return await req.services.worker.startTestRun(req.body as TestRunStartParams);
   }
-  return await req.services.worker.startTestRun(req.body as TestRunStartParams);
 }));
 
 // Authentication endpoint for callbacks
