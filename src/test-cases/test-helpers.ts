@@ -193,7 +193,7 @@ export interface TestDefinition {
   testName: string;
   testKey: string;
   testNumber: number | null;
-  isInit?: true;
+  isInit?: true;  
 }
 
 // Create a test case  for a regular test, which will be
@@ -204,7 +204,7 @@ export const createTest = (
   action: (ctx: TestContext) => Promise<void>,
   optional?: ApiVersion[]
 ): TestDefinition => {
-  const testKey = testName.toUpperCase().replace(/^TEST CASE (\d+).*/, "TESTCASE#$1");
+  const testKey = testName.toUpperCase().replace(/^TEST CASE (\d+(\.\w+)?).*/, "TESTCASE#$1");
   const testNumber = parseInt(testKey.slice("TESTCASE#".length)) || null;
   return { action, documentationUrl: url, testKey, testName, testNumber, optional: optional };
 };
