@@ -84,7 +84,7 @@ export class TestRunWorkerNew {
     for (const test of testsToRun) {
       const result = test.action
         ? await runTest(test, context)
-        : { status: TestCaseResultStatus.PENDING, testKey: test.testKey, name: test.testName, mandatory: true };
+        : { status: TestCaseResultStatus.PENDING, testKey: test.testKey, name: test.testName, mandatory: test.optional?.includes(params.version) ? false : true, };
       if (result.status !== TestCaseResultStatus.SUCCESS) {
         logger.error(`Test case "${test.testName}" failed: ${result.errorMessage}`);
       }
