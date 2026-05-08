@@ -8,6 +8,7 @@ import {
   TestCaseResultStatus,
   PagingParameters,
   TestRunStatus,
+  LogEntry,
 } from "../types";
 
 /**
@@ -149,13 +150,50 @@ export class ConsoleTestStorage implements TestStorage {
       const resetColor = "\x1b[0m";
       
       logger.info(`${statusColor}${icon}${resetColor} ${result.name}`);
-      
+
       if (result.errorMessage) {
         logger.info(`  Error: ${result.errorMessage}`);
       }
-      
+
       if (result.status === TestCaseResultStatus.FAILURE && result.curlRequest) {
         logger.info(`  Request: ${result.curlRequest}`);
+      }
+
+      if (result.log && result.log.length > 0) {
+        logger.info("  Logs:");
+        for (const entry of result.log) {
+          this.displayLogEntry(entry);
+        }
+      }
+    }
+  }
+
+  private displayLogEntry(entry: LogEntry): void {
+    if ("message" in entry) {
+      logger.info(`    • ${entry.message}`);
+    } else if ("warning" in entry) {
+      logger.info(`    \x1b[33m⚠ ${entry.warning}\x1b[0m`);
+    } else if ("error" in entry) {
+      logger.info(`    \x1b[31m✗ ${entry.error}\x1b[0m`);
+    } else if ("request" in entry) {
+      const { method, url, headers, data, text } = entry.request;
+      logger.info(`    \x1b[36m→ ${method} ${url}\x1b[0m`);
+      if (headers && Object.keys(headers).length > 0) {
+        logger.info(`        headers: ${JSON.stringify(headers)}`);
+      }
+      const body = data ?? text;
+      if (body !== undefined) {
+        logger.info(`        body: ${typeof body === "string" ? body : JSON.stringify(body)}`);
+      }
+    } else if ("response" in entry) {
+      const { statusCode, headers, data, text } = entry.response;
+      logger.info(`    \x1b[35m← ${statusCode}\x1b[0m`);
+      if (headers && Object.keys(headers).length > 0) {
+        logger.info(`        headers: ${JSON.stringify(headers)}`);
+      }
+      const body = data ?? text;
+      if (body !== undefined) {
+        logger.info(`        body: ${typeof body === "string" ? body : JSON.stringify(body)}`);
       }
     }
   }
