@@ -1,14 +1,22 @@
 /**
- * Tests for V3.x test cases. 
- * Tests are written to verify the declarative implementation (v3-test-cases.ts + runTestCase).
+ * Equivalence tests for v3-test-cases.ts (declarative) and v3-tests.ts (imperative).
  *
- * Listener tests (TC13, TC14.B) are tested separately.
+ * Each describe("TCN") block runs twice via describe.each:
+ *   1. With the declarative runner (v3-test-cases.ts + runTestCase)
+ *   2. With the imperative runner (v3-tests.ts + V3Tests.<key>.action)
+ *
+ * Tests are written to pass against the declarative implementation.
+ * Known divergences in the imperative implementation are marked with `it.failing`.
+ *
+ * Listener tests (TC13, TC14.B) are excluded from the shared loop and tested separately.
  */
 
 import { jest } from "@jest/globals";
-import { TestCaseResultStatus, EventTypesV3, ApiVersion } from "../services/types";
+import { TestCaseResultStatus, EventTypesV3, ApiVersion, TestRunStatus, TestRunStartParams, TestRun } from "../services/types";
+import { TestContext, ListenerContext, runTest, runListenerTest } from "./test-helpers";
 import { generateV3TestCases } from "./v3-test-cases";
 import { runTestCase } from "../utils/runTestCase";
+import { V3Tests } from "./v3-tests";
 import { getSchema } from "../schemas";
 
 // ---------------------------------------------------------------------------
@@ -153,6 +161,7 @@ interface EquivalenceTestContext {
 
 // Built once before tests run
 let declarativeCtx: EquivalenceTestContext;
+let imperativeCtx: EquivalenceTestContext;
 
 beforeAll(async () => {
   const schema = await getSchema(VERSION);
@@ -171,11 +180,69 @@ beforeAll(async () => {
     webhookUrl: WEBHOOK_URL,
   });
 
+  const testRunStartParams: TestRunStartParams = {
+    baseUrl: BASE_URL,
+    version: VERSION,
+    clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
+    organizationName: "Test Org",
+    adminEmail: "admin@test.org",
+    adminName: "Test Admin",
+  }
+
+  const testRun : TestRun = {
+    testRunId: TEST_RUN_ID,
+    organizationName: "Test Org",
+    adminEmail: "admin@test.org",
+    adminName: "Test Admin",
+    timestamp: new Date().toISOString(),
+    techSpecVersion: VERSION,
+    data: null,
+    status: TestRunStatus.PENDING,
+  };
+
   declarativeCtx = {
     runner: async (testKey: string) => {
       const tc = testCases.find((t) => t.testKey === testKey);
       if (!tc) throw new Error(`Test case ${testKey} not found in declarative set`);
       return runTestCase(BASE_URL, tc, ACCESS_TOKEN, VERSION);
+    },
+  };
+
+
+  // --- Imperative runner ---
+  let imperativeTestCtx: TestContext = new TestContext(testRun, testRunStartParams, schema);
+  imperativeTestCtx.paginationLinks = PAGINATION_LINKS;
+  imperativeTestCtx.webhookUrl = WEBHOOK_URL;
+  imperativeTestCtx.footprints = MOCK_FOOTPRINTS.data;
+  imperativeTestCtx.accessToken = ACCESS_TOKEN;
+  imperativeTestCtx.authTokenUrl = AUTH_URL;
+  imperativeTestCtx.headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${ACCESS_TOKEN}`,
+    },
+  imperativeTestCtx.authRequestData = AUTH_REQUEST_DATA;
+  imperativeTestCtx.filterParams = {
+    id: MOCK_FOOTPRINT.id,
+    productId: MOCK_FOOTPRINT.productIds[0],
+    productIds: MOCK_FOOTPRINT.productIds,
+    companyId: MOCK_FOOTPRINT.companyIds[0],
+    geography: MOCK_FOOTPRINT.pcf.geographyCountry,
+    classification: MOCK_FOOTPRINT.productClassifications[0],
+    validOn: MOCK_FOOTPRINT.validityPeriodStart,
+    validAfter: "2022-12-31T00:00:00.000Z",
+    validBefore: "2026-01-02T00:00:00.000Z",
+    status: MOCK_FOOTPRINT.status,
+  };
+
+  const imperativeTestDefs = Object.values(V3Tests);
+
+  imperativeCtx = {
+    runner: async (testKey: string) => {
+      const def = imperativeTestDefs.find((d) => d.testKey === testKey);
+      if (!def) throw new Error(`Test case ${testKey} not found in imperative set`);
+      if (!def.action) throw new Error(`Test case ${testKey} is a listener test; use runner.listener()`);
+      return runTest(def, imperativeTestCtx);
     },
   };
 });
@@ -185,12 +252,16 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Test suite
+// Shared test suite — runs for both implementations
 // ---------------------------------------------------------------------------
 
-{
+describe.each([
+  ["declarative (v3-test-cases.ts)", () => declarativeCtx],
+  ["imperative (v3-tests.ts)", () => imperativeCtx],
+])("%s", (_, getCtx) => {
+
   let testcontext: EquivalenceTestContext;
-  beforeAll(() => { testcontext = declarativeCtx; });
+  beforeAll(() => { testcontext = getCtx(); });
 
   // -------------------------------------------------------------------------
   describe("TC1: Obtain auth token with valid credentials", () => {
@@ -339,14 +410,11 @@ afterEach(() => {
       const result = await testcontext.runner("TESTCASE#8");
       expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
     });
-    // TODO: Add an extra test (8A) getting a footprint with an invalid id format 
-    // (e.g. not a UUID). This should also succeed with a 400 + BadRequest response.
-    //
-    // it("succeeds on HTTP 400 with BadRequest code", async () => {
-    //   mockFetch({ status: 400, body: '{"code":"BadRequest"}' });
-    //   const result = await testcontext.runner("TESTCASE#8");
-    //   expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    // });
+    it("succeeds on HTTP 400 with BadRequest code", async () => {
+      mockFetch({ status: 400, body: '{"code":"BadRequest"}' });
+      const result = await testcontext.runner("TESTCASE#8");
+      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
+    });
     it("fails on HTTP 200", async () => {
       mockFetch({ status: 200, body: validSingleFootprintBody });
       const result = await testcontext.runner("TESTCASE#8");
@@ -422,17 +490,20 @@ afterEach(() => {
   // TC13 and TC14.B are listener tests — see dedicated section below
 
   // -------------------------------------------------------------------------
+  // TC14.A: The declarative testKey is "TESTCASE#14.A", but the imperative createTest
+  // regex only captures digits so it produces "TESTCASE#14". Both are looked up here.
   describe("TC14.A: Send Asynchronous Request to be Rejected", () => {
     const testKey14A = "TESTCASE#14.A";
     it("succeeds on HTTP 200", async () => {
       mockFetch({ status: 200, body: '{}' });
-      const key = testKey14A;
+      // Fall back to TESTCASE#14 for imperative (regex limitation in createTest)
+      const key = testcontext === imperativeCtx ? "TESTCASE#14" : testKey14A;
       const result = await testcontext.runner(key);
       expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
     });
     it("fails on HTTP 400", async () => {
       mockFetch({ status: 400, body: '{}' });
-      const key = testKey14A;
+      const key = testcontext === imperativeCtx ? "TESTCASE#14" : testKey14A;
       const result = await testcontext.runner(key);
       expect(result.status).toBe(TestCaseResultStatus.FAILURE);
     });
@@ -486,6 +557,9 @@ afterEach(() => {
   });
 
   // -------------------------------------------------------------------------
+  // TC18: known divergence — declarative falls back to /auth/token endpoint
+  // when authTokenUrl starts with baseUrl; imperative always uses authTokenUrl.
+  // Both implementations should succeed here since AUTH_URL !== BASE_URL.
   describe("TC18: OpenId Connect-based Authentication Flow", () => {
     it("succeeds on HTTP 200", async () => {
       mockFetch({ status: 200, body: validAuthBody });
@@ -849,17 +923,20 @@ afterEach(() => {
       expect(result.status).toBe(TestCaseResultStatus.FAILURE);
     });
   });
-};
+});
 
 // ---------------------------------------------------------------------------
-// Listener tests
+// Listener tests — not equivalence-testable via describe.each
+//
+// The declarative implementation returns PENDING immediately (no fetch call).
+// The imperative implementation has a listener function with extra assertions.
 // ---------------------------------------------------------------------------
 
 describe("TC13: Received Request Fulfilled Response (listener)", () => {
   let schema: any;
   beforeAll(async () => { schema = await getSchema(VERSION); });
 
-  it("returns PENDING without making a fetch call", async () => {
+  it("declarative: returns PENDING without making a fetch call", async () => {
     const testCases = await generateV3TestCases({
       testRunId: TEST_RUN_ID,
       footprints: MOCK_FOOTPRINTS,
@@ -880,13 +957,89 @@ describe("TC13: Received Request Fulfilled Response (listener)", () => {
     expect(result.status).toBe(TestCaseResultStatus.PENDING);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("imperative listener: succeeds with valid fulfilled event containing matching productIds", async () => {
+    const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#13")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: { productIds: ["urn:x:product:1"] },
+      },
+      VERSION,
+      "/3/events",
+      "POST",
+      {},
+      JSON.parse(validFulfilledEventBody),
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
+  });
+
+  it("imperative listener: fails when callback is received on wrong path", async () => {
+    const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#13")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: { productIds: ["urn:x:product:1"] },
+      },
+      VERSION,
+      "/3/wrong-path",
+      "POST",
+      {},
+      JSON.parse(validFulfilledEventBody),
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.FAILURE);
+  });
+
+  it("imperative listener: fails when productId in response was not in original request", async () => {
+    const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#13")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: { productIds: ["urn:x:product:1"] },
+      },
+      VERSION,
+      "/3/events",
+      "POST",
+      {},
+      {
+        ...JSON.parse(validFulfilledEventBody),
+        // Use a valid ProductFootprint with productIds NOT in the originally requested set
+        data: { requestEventId: `${TEST_RUN_ID}/12`, pfs: [{ ...VALID_PRODUCT_FOOTPRINT, productIds: ["urn:unexpected:product"] }] },
+      },
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.FAILURE);
+  });
 });
 
 describe("TC14.B: Handle Rejected PCF Request (listener)", () => {
   let schema: any;
   beforeAll(async () => { schema = await getSchema(VERSION); });
 
-  it("returns PENDING without making a fetch call", async () => {
+  it("declarative: returns PENDING without making a fetch call", async () => {
     const testCases = await generateV3TestCases({
       testRunId: TEST_RUN_ID,
       footprints: MOCK_FOOTPRINTS,
@@ -905,5 +1058,80 @@ describe("TC14.B: Handle Rejected PCF Request (listener)", () => {
     const result = await runTestCase(BASE_URL, tc, ACCESS_TOKEN, VERSION);
     expect(result.status).toBe(TestCaseResultStatus.PENDING);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("imperative listener: succeeds with valid rejected event containing error.code and error.message", async () => {
+    const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#14.B")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: {},
+      },
+      VERSION,
+      "/3/events",
+      "POST",
+      {},
+      JSON.parse(validRejectedEventBody),
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
+  });
+
+  it("imperative listener: fails when callback is received on wrong path", async () => {
+    const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#14.B")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: {},
+      },
+      VERSION,
+      "/3/wrong-path",
+      "POST",
+      {},
+      JSON.parse(validRejectedEventBody),
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.FAILURE);
+  });
+
+  it("imperative listener: fails when rejected event is missing error.code", async () => {
+    const def = Object.values(V3Tests).find((d) => d.testKey === "TESTCASE#14.B")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: {},
+      },
+      VERSION,
+      "/3/events",
+      "POST",
+      {},
+      {
+        ...JSON.parse(validRejectedEventBody),
+        data: { error: {} }, // missing code and message
+      },
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.FAILURE);
   });
 });

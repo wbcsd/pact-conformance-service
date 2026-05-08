@@ -85,6 +85,7 @@ export class TestRunRepository implements TestStorage {
               oc.columns(["testRunId", "testKey"]).doNothing()
             )
             .execute();
+          logger.info(`Inserted test case ${testResult.testKey} with status ${testResult.status}`);
         } else {
           await this.db
             .insertInto("testResults")
@@ -103,6 +104,7 @@ export class TestRunRepository implements TestStorage {
               })
             )
             .execute();
+          logger.info(`Saved test case ${testResult.testKey} with status ${testResult.status}`);
         }
       } catch (error) {
         logger.error(

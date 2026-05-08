@@ -1,14 +1,22 @@
 /**
- * Tests for V3.x test cases. 
- * Tests are written to verify the declarative implementation (v3-test-cases.ts + runTestCase).
+ * Equivalence tests for v2-test-cases.ts (declarative) and v2-tests.ts (imperative).
  *
- * Listener tests (TC13, TC14.B) are tested separately.
+ * Each describe("TCN") block runs twice via describe.each:
+ *   1. With the declarative runner (v2-test-cases.ts + runTestCase)
+ *   2. With the imperative runner (v2-tests.ts + V2Tests.<key>.action)
+ *
+ * Tests are written to pass against the declarative implementation.
+ * Known divergences in the imperative implementation are marked with `it.failing`.
+ *
+ * Listener tests (TC13, TC14.B) are excluded from the shared loop and tested separately.
  */
 
 import { jest } from "@jest/globals";
-import { TestCaseResultStatus, EventTypesV3, ApiVersion } from "../services/types";
-import { generateV3TestCases } from "./v3-test-cases";
+import { TestCaseResultStatus, EventTypesV2, ApiVersion, TestRunStatus, TestRunStartParams, TestRun } from "../services/types";
+import { TestContext, ListenerContext, runTest, runListenerTest } from "./test-helpers";
+import { generateV2TestCases } from "./v2-test-cases";
 import { runTestCase } from "../utils/runTestCase";
+import { V2Tests } from "./v2-tests";
 import { getSchema } from "../schemas";
 
 // ---------------------------------------------------------------------------
@@ -22,7 +30,7 @@ const CLIENT_ID = "test-client";
 const CLIENT_SECRET = "test-secret";
 const ACCESS_TOKEN = "test-access-token";
 const TEST_RUN_ID = "test-run-id";
-const VERSION: ApiVersion = "V3.0";
+const VERSION: ApiVersion = "V2.3";
 
 const MOCK_FOOTPRINT = {
   id: "00000000-0000-0000-0000-000000000000",
@@ -42,7 +50,7 @@ const MOCK_FOOTPRINT = {
 const MOCK_FOOTPRINTS = { data: [MOCK_FOOTPRINT] };
 
 const PAGINATION_LINKS: Record<string, string> = {
-  next: `${BASE_URL}/3/footprints?offset=1`,
+  next: `${BASE_URL}/2/footprints?offset=1`,
 };
 
 const AUTH_REQUEST_DATA = "grant_type=client_credentials";
@@ -55,33 +63,43 @@ const validAuthBody = JSON.stringify({ access_token: "tok" });
 const validEmptyBody = JSON.stringify({ data: [] });
 const validSimpleListBody = JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, productIds: ["urn:x:product:1"] }] });
 
-// Minimal valid ProductFootprint (satisfies the v3.0 OpenAPI schema)
-// Note: decimal fields are type: string in the v3.0 schema; unit enum requires full names
+// Minimal valid ProductFootprint (satisfies the v2.3 OpenAPI schema)
+// Key differences from v3: version (int), comment, productCategoryCpc are required;
+// CarbonFootprint uses declaredUnit, unitaryProductAmount, pCfExcludingBiogenic,
+// biogenicCarbonContent, characterizationFactors, ipccCharacterizationFactorsSources,
+// crossSectoralStandardsUsed, boundaryProcessesDescription, packagingEmissionsIncluded
 const VALID_PRODUCT_FOOTPRINT = {
   id: "079e425a-464f-528d-341d-4a944a1dfd70", // valid UUID v4 format
-  specVersion: "3.0.0", // must match /^\d+\.\d+\.\d+(-\d{8})?$/
+  specVersion: "2.3.0", // must match /^\d+\.\d+\.\d+(-\d{8})?$/
+  version: 1,
   status: "Active",
   created: "2024-01-01T00:00:00Z",
   companyName: "Test Company",
   companyIds: ["urn:x:company:1"],
   productDescription: "Test product",
   productIds: ["urn:x:product:1"],
+  productCategoryCpc: "3462",
   productNameCompany: "Test Product Name",
+  comment: "none",
   pcf: {
-    declaredUnitOfMeasurement: "kilogram",
-    declaredUnitAmount: "1.0",
+    declaredUnit: "kilogram",
+    unitaryProductAmount: "1.0",
     productMassPerDeclaredUnit: "1.0",
     referencePeriodStart: "2023-01-01T00:00:00Z",
     referencePeriodEnd: "2024-01-01T00:00:00Z",
     geographyCountry: "DE",
-    pcfExcludingBiogenicUptake: "1.0",
-    pcfIncludingBiogenicUptake: "1.0",
+    pCfExcludingBiogenic: "1.0",
+    pCfIncludingBiogenic: "1.0",
     fossilGhgEmissions: "1.0",
     fossilCarbonContent: "0.0",
-    ipccCharacterizationFactors: ["AR5"],
-    crossSectoralStandards: ["GHG Protocol Product standard"],
-    exemptedEmissionsPercent: "0",
+    biogenicCarbonContent: "0.0",
+    characterizationFactors: "AR5",
+    ipccCharacterizationFactorsSources: ["AR5"],
+    crossSectoralStandardsUsed: ["GHG Protocol Product standard"],
+    boundaryProcessesDescription: "none",
+    exemptedEmissionsPercent: 0,
     exemptedEmissionsDescription: "none",
+    packagingEmissionsIncluded: false,
   },
 };
 
@@ -95,7 +113,7 @@ const validFulfilledEventBody = JSON.stringify({
   id: `${TEST_RUN_ID}/13`,
   source: WEBHOOK_URL,
   time: new Date().toISOString(),
-  type: EventTypesV3.FULFILLED,
+  type: EventTypesV2.FULFILLED,
   data: {
     requestEventId: `${TEST_RUN_ID}/12`,
     pfs: [{ ...VALID_PRODUCT_FOOTPRINT, productIds: ["urn:x:product:1"] }],
@@ -108,7 +126,7 @@ const validRejectedEventBody = JSON.stringify({
   id: `${TEST_RUN_ID}/14.B`,
   source: BASE_URL,
   time: new Date().toISOString(),
-  type: EventTypesV3.REJECTED,
+  type: EventTypesV2.REJECTED,
   data: {
     requestEventId: `${TEST_RUN_ID}/14.A`,
     error: { code: "BadRequest", message: "Rejected" },
@@ -153,12 +171,13 @@ interface EquivalenceTestContext {
 
 // Built once before tests run
 let declarativeCtx: EquivalenceTestContext;
+let imperativeCtx: EquivalenceTestContext;
 
 beforeAll(async () => {
   const schema = await getSchema(VERSION);
 
   // --- Declarative runner ---
-  const testCases = await generateV3TestCases({
+  const testCases = await generateV2TestCases({
     testRunId: TEST_RUN_ID,
     footprints: MOCK_FOOTPRINTS,
     paginationLinks: PAGINATION_LINKS,
@@ -171,11 +190,69 @@ beforeAll(async () => {
     webhookUrl: WEBHOOK_URL,
   });
 
+  const testRunStartParams: TestRunStartParams = {
+    baseUrl: BASE_URL,
+    version: VERSION,
+    clientId: CLIENT_ID,
+    clientSecret: CLIENT_SECRET,
+    organizationName: "Test Org",
+    adminEmail: "admin@test.org",
+    adminName: "Test Admin",
+  }
+
+  const testRun : TestRun = {
+    testRunId: TEST_RUN_ID,
+    organizationName: "Test Org",
+    adminEmail: "admin@test.org",
+    adminName: "Test Admin",
+    timestamp: new Date().toISOString(),
+    techSpecVersion: VERSION,
+    data: null,
+    status: TestRunStatus.PENDING,
+  };
+
   declarativeCtx = {
     runner: async (testKey: string) => {
       const tc = testCases.find((t) => t.testKey === testKey);
       if (!tc) throw new Error(`Test case ${testKey} not found in declarative set`);
       return runTestCase(BASE_URL, tc, ACCESS_TOKEN, VERSION);
+    },
+  };
+
+
+  // --- Imperative runner ---
+  let imperativeTestCtx: TestContext = new TestContext(testRun, testRunStartParams, schema);
+  imperativeTestCtx.paginationLinks = PAGINATION_LINKS;
+  imperativeTestCtx.webhookUrl = WEBHOOK_URL;
+  imperativeTestCtx.footprints = MOCK_FOOTPRINTS.data;
+  imperativeTestCtx.accessToken = ACCESS_TOKEN;
+  imperativeTestCtx.authTokenUrl = AUTH_URL;
+  imperativeTestCtx.headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${ACCESS_TOKEN}`,
+    },
+  imperativeTestCtx.authRequestData = AUTH_REQUEST_DATA;
+  imperativeTestCtx.filterParams = {
+      id: MOCK_FOOTPRINT.id,
+      productId: MOCK_FOOTPRINT.productIds[0],
+      productIds: MOCK_FOOTPRINT.productIds,
+      companyId: MOCK_FOOTPRINT.companyIds[0],
+      geography: MOCK_FOOTPRINT.pcf.geographyCountry,
+      classification: MOCK_FOOTPRINT.productClassifications[0],
+      validOn: MOCK_FOOTPRINT.validityPeriodStart,
+      validAfter: "2022-12-31T00:00:00.000Z",
+      validBefore: "2026-01-02T00:00:00.000Z",
+      status: MOCK_FOOTPRINT.status,
+  };
+
+  const imperativeTestDefs = Object.values(V2Tests);
+
+  imperativeCtx = {
+    runner: async (testKey: string) => {
+      const def = imperativeTestDefs.find((d) => d.testKey === testKey);
+      if (!def) throw new Error(`Test case ${testKey} not found in imperative set`);
+      if (!def.action) throw new Error(`Test case ${testKey} is a listener test; use runner.listener()`);
+      return runTest(def, imperativeTestCtx);
     },
   };
 });
@@ -185,12 +262,16 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Test suite
+// Shared test suite — runs for both implementations
 // ---------------------------------------------------------------------------
 
-{
+describe.each([
+  ["declarative (v2-test-cases.ts)", () => declarativeCtx],
+  ["imperative (v2-tests.ts)", () => imperativeCtx],
+])("%s", (_, getCtx) => {
+
   let testcontext: EquivalenceTestContext;
-  beforeAll(() => { testcontext = declarativeCtx; });
+  beforeAll(() => { testcontext = getCtx(); });
 
   // -------------------------------------------------------------------------
   describe("TC1: Obtain auth token with valid credentials", () => {
@@ -334,19 +415,16 @@ afterEach(() => {
 
   // -------------------------------------------------------------------------
   describe("TC8: GetFootprint with non-existent pfId", () => {
-    it("succeeds on HTTP 404 with NotFound code", async () => {
-      mockFetch({ status: 404, body: '{"code":"NotFound"}' });
+    it("succeeds on HTTP 404 with NoSuchFootprint code", async () => {
+      mockFetch({ status: 404, body: '{"code":"NoSuchFootprint"}' });
       const result = await testcontext.runner("TESTCASE#8");
       expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
     });
-    // TODO: Add an extra test (8A) getting a footprint with an invalid id format 
-    // (e.g. not a UUID). This should also succeed with a 400 + BadRequest response.
-    //
-    // it("succeeds on HTTP 400 with BadRequest code", async () => {
-    //   mockFetch({ status: 400, body: '{"code":"BadRequest"}' });
-    //   const result = await testcontext.runner("TESTCASE#8");
-    //   expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    // });
+    it("succeeds on HTTP 400 with BadRequest code", async () => {
+      mockFetch({ status: 400, body: '{"code":"BadRequest"}' });
+      const result = await testcontext.runner("TESTCASE#8");
+      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
+    });
     it("fails on HTTP 200", async () => {
       mockFetch({ status: 200, body: validSingleFootprintBody });
       const result = await testcontext.runner("TESTCASE#8");
@@ -422,17 +500,20 @@ afterEach(() => {
   // TC13 and TC14.B are listener tests — see dedicated section below
 
   // -------------------------------------------------------------------------
+  // TC14.A: The declarative testKey is "TESTCASE#14.A", but the imperative createTest
+  // regex only captures digits so it produces "TESTCASE#14". Both are looked up here.
   describe("TC14.A: Send Asynchronous Request to be Rejected", () => {
     const testKey14A = "TESTCASE#14.A";
     it("succeeds on HTTP 200", async () => {
       mockFetch({ status: 200, body: '{}' });
-      const key = testKey14A;
+      // Fall back to TESTCASE#14 for imperative (regex limitation in createTest)
+      const key = testcontext === imperativeCtx ? "TESTCASE#14" : testKey14A;
       const result = await testcontext.runner(key);
       expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
     });
     it("fails on HTTP 400", async () => {
       mockFetch({ status: 400, body: '{}' });
-      const key = testKey14A;
+      const key = testcontext === imperativeCtx ? "TESTCASE#14" : testKey14A;
       const result = await testcontext.runner(key);
       expect(result.status).toBe(TestCaseResultStatus.FAILURE);
     });
@@ -454,12 +535,12 @@ afterEach(() => {
 
   // -------------------------------------------------------------------------
   describe("TC16: Action Events with invalid token", () => {
-    it("succeeds on HTTP 401", async () => {
+    it("succeeds on HTTP 401 with BadRequest code", async () => {
       mockFetch({ status: 401, body: '{"code":"BadRequest"}' });
       const result = await testcontext.runner("TESTCASE#16");
       expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
     });
-    it("succeeds on HTTP 400", async () => {
+    it("succeeds on HTTP 400 with BadRequest code", async () => {
       mockFetch({ status: 400, body: '{"code":"BadRequest"}' });
       const result = await testcontext.runner("TESTCASE#16");
       expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
@@ -486,6 +567,9 @@ afterEach(() => {
   });
 
   // -------------------------------------------------------------------------
+  // TC18: known divergence — declarative falls back to /auth/token endpoint
+  // when authTokenUrl starts with baseUrl; imperative always uses authTokenUrl.
+  // Both implementations should succeed here since AUTH_URL !== BASE_URL.
   describe("TC18: OpenId Connect-based Authentication Flow", () => {
     it("succeeds on HTTP 200", async () => {
       mockFetch({ status: 200, body: validAuthBody });
@@ -519,348 +603,48 @@ afterEach(() => {
   });
 
   // -------------------------------------------------------------------------
-  describe("TC20: Filter by productId", () => {
-    it("succeeds when all returned footprints include the productId", async () => {
-      // Body must include productIds field (used by both implementations' condition check)
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, productIds: ["urn:x:product:1"] }] }) });
+  describe("Test Case 20: Get Filtered List of Footprints", () => {
+    it("succeeds when all returned footprints have created date >= filter date", async () => {
+      // Both implementations check: every fp.created >= MOCK_FOOTPRINT.created ("2024-01-01")
+      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, created: "2024-01-01T00:00:00Z" }] }) });
       const result = await testcontext.runner("TESTCASE#20");
       expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
     });
-    it("fails when a footprint does not include the productId", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, productIds: ["urn:other"] }] }) });
+    it("fails when a footprint has created date before the filter date", async () => {
+      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, created: "2020-01-01T00:00:00Z" }] }) });
       const result = await testcontext.runner("TESTCASE#20");
       expect(result.status).toBe(TestCaseResultStatus.FAILURE);
     });
   });
 
   // -------------------------------------------------------------------------
-  describe("TC21: Filter by companyId", () => {
-    it("succeeds when all returned footprints include the companyId", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, companyIds: ["urn:x:company:1"] }] }) });
-      const result = await testcontext.runner("TESTCASE#21");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when a footprint does not include the companyId", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, companyIds: ["urn:other"] }] }) });
-      const result = await testcontext.runner("TESTCASE#21");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC22: Filter by geography", () => {
-    it("succeeds when all footprints match geography", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, pcf: { geographyCountry: "DE" } }] }) });
-      const result = await testcontext.runner("TESTCASE#22");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when a footprint does not match geography", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, pcf: { geographyCountry: "FR" } }] }) });
-      const result = await testcontext.runner("TESTCASE#22");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC23: Filter by classification", () => {
-    it("succeeds when all footprints include the classification", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, productClassifications: ["urn:x:classification:1"] }] }) });
-      const result = await testcontext.runner("TESTCASE#23");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when a footprint does not include the classification", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, productClassifications: ["urn:other"] }] }) });
-      const result = await testcontext.runner("TESTCASE#23");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC24: Filter by validOn", () => {
-    it("succeeds when footprint validity period contains validOn", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, validityPeriodStart: "2022-01-01T00:00:00Z", validityPeriodEnd: "2027-01-01T00:00:00Z", pcf: {} }] }) });
-      const result = await testcontext.runner("TESTCASE#24");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("succeeds using referencePeriodEnd fallback when validityPeriod is absent", async () => {
-      // validOn = "2023-01-01", referencePeriodEnd = "2022-01-01", +3yrs = "2025-01-01"
-      // condition: refEnd (2022) <= validOn (2023) <= refEnd+3yrs (2025) ✓
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, pcf: { referencePeriodEnd: "2022-01-01T00:00:00Z" } }] }) });
-      const result = await testcontext.runner("TESTCASE#24");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when footprint validity period does not contain validOn", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, validityPeriodStart: "2024-06-01T00:00:00Z", validityPeriodEnd: "2025-01-01T00:00:00Z", pcf: {} }] }) });
-      const result = await testcontext.runner("TESTCASE#24");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-    it("fails using referencePeriodEnd fallback when validOn is outside the reference period", async () => {
-      // validOn = "2023-01-01", referencePeriodEnd = "2019-01-01", +3yrs = "2022-01-01" < validOn ✗
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, pcf: { referencePeriodEnd: "2019-01-01T00:00:00Z" } }] }) });
-      const result = await testcontext.runner("TESTCASE#24");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC25: Filter by validAfter", () => {
-    it("succeeds when footprint validityPeriodStart is after validAfter", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, validityPeriodStart: "2023-06-01T00:00:00Z", pcf: {} }] }) });
-      const result = await testcontext.runner("TESTCASE#25");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("succeeds using referencePeriodEnd fallback when validityPeriodStart is absent", async () => {
-      // validAfter = "2022-12-31", referencePeriodEnd = "2023-06-01" > validAfter ✓
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, pcf: { referencePeriodEnd: "2023-06-01T00:00:00Z" } }] }) });
-      const result = await testcontext.runner("TESTCASE#25");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when footprint validityPeriodStart is before validAfter", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, validityPeriodStart: "2020-01-01T00:00:00Z", pcf: {} }] }) });
-      const result = await testcontext.runner("TESTCASE#25");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-    it("fails using referencePeriodEnd fallback when referencePeriodEnd is before validAfter", async () => {
-      // validAfter = "2022-12-31", referencePeriodEnd = "2021-01-01" < validAfter ✗
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, pcf: { referencePeriodEnd: "2021-01-01T00:00:00Z" } }] }) });
-      const result = await testcontext.runner("TESTCASE#25");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC26: Filter by validBefore", () => {
-    it("succeeds when footprint validityPeriodEnd is before validBefore", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, validityPeriodEnd: "2025-01-01T00:00:00Z", pcf: {} }] }) });
-      const result = await testcontext.runner("TESTCASE#26");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("succeeds using referencePeriodEnd fallback when validityPeriodEnd is absent", async () => {
-      // validBefore = "2026-01-02", referencePeriodEnd = "2022-01-01", +3yrs = "2025-01-01" < validBefore ✓
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, pcf: { referencePeriodEnd: "2022-01-01T00:00:00Z" } }] }) });
-      const result = await testcontext.runner("TESTCASE#26");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when footprint validityPeriodEnd is after validBefore", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, validityPeriodEnd: "2027-01-01T00:00:00Z", pcf: {} }] }) });
-      const result = await testcontext.runner("TESTCASE#26");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-    it("fails using referencePeriodEnd fallback when referencePeriodEnd+3yrs exceeds validBefore", async () => {
-      // validBefore = "2026-01-02", referencePeriodEnd = "2024-01-01", +3yrs = "2027-01-01" > validBefore ✗
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, pcf: { referencePeriodEnd: "2024-01-01T00:00:00Z" } }] }) });
-      const result = await testcontext.runner("TESTCASE#26");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC27: Filter by status", () => {
-    it("succeeds when all footprints have matching status", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, status: "Active" }] }) });
-      const result = await testcontext.runner("TESTCASE#27");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when a footprint has a different status", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, status: "Inactive" }] }) });
-      const result = await testcontext.runner("TESTCASE#27");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC28: Filter by status AND productId", () => {
-    it("succeeds when all footprints match both filters", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, status: "Active", productIds: ["urn:x:product:1"] }] }) });
-      const result = await testcontext.runner("TESTCASE#28");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when status matches but productId does not", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, status: "Active", productIds: ["urn:other"] }] }) });
-      const result = await testcontext.runner("TESTCASE#28");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC29: Filter by multiple companyIds (OR logic)", () => {
-    it("succeeds when all footprints include the known companyId", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, companyIds: ["urn:x:company:1"] }] }) });
-      const result = await testcontext.runner("TESTCASE#29");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when a footprint does not include the known companyId", async () => {
-      mockFetch({ status: 200, body: JSON.stringify({ data: [{ id: MOCK_FOOTPRINT.id, companyIds: ["urn:other"] }] }) });
-      const result = await testcontext.runner("TESTCASE#29");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC30: Filter by productId (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#30");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#30");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC31: Filter by companyId (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#31");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#31");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC32: Filter by geography (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#32");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#32");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC33: Filter by classification (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#33");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#33");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC34: Filter by validOn (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#34");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#34");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC35: Filter by validAfter (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#35");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#35");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC36: Filter by validBefore (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#36");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#36");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC37: Filter by status (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#37");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#37");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC38: Filter by multiple params AND logic (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#38");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#38");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC39: Filter by multiple companyIds OR logic (negative)", () => {
-    it("succeeds when response contains empty data array", async () => {
-      mockFetch({ status: 200, body: validEmptyBody });
-      const result = await testcontext.runner("TESTCASE#39");
-      expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
-    });
-    it("fails when response contains footprints", async () => {
-      mockFetch({ status: 200, body: validListBody });
-      const result = await testcontext.runner("TESTCASE#39");
-      expect(result.status).toBe(TestCaseResultStatus.FAILURE);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  describe("TC40: Failed Published Event - Malformed Request", () => {
+  describe("TC21: Failed Published Event - Malformed Request", () => {
     it("succeeds on HTTP 400", async () => {
       mockFetch({ status: 400, body: '{}' });
-      const result = await testcontext.runner("TESTCASE#40");
+      const result = await testcontext.runner("TESTCASE#21");
       expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
     });
     it("fails on HTTP 200", async () => {
       mockFetch({ status: 200, body: '{}' });
-      const result = await testcontext.runner("TESTCASE#40");
+      const result = await testcontext.runner("TESTCASE#21");
       expect(result.status).toBe(TestCaseResultStatus.FAILURE);
     });
   });
-};
+});
 
 // ---------------------------------------------------------------------------
-// Listener tests
+// Listener tests — not equivalence-testable via describe.each
+//
+// The declarative implementation returns PENDING immediately (no fetch call).
+// The imperative implementation has a listener function with extra assertions.
 // ---------------------------------------------------------------------------
 
 describe("TC13: Received Request Fulfilled Response (listener)", () => {
   let schema: any;
   beforeAll(async () => { schema = await getSchema(VERSION); });
 
-  it("returns PENDING without making a fetch call", async () => {
-    const testCases = await generateV3TestCases({
+  it("declarative: returns PENDING without making a fetch call", async () => {
+    const testCases = await generateV2TestCases({
       testRunId: TEST_RUN_ID,
       footprints: MOCK_FOOTPRINTS,
       paginationLinks: PAGINATION_LINKS,
@@ -880,14 +664,87 @@ describe("TC13: Received Request Fulfilled Response (listener)", () => {
     expect(result.status).toBe(TestCaseResultStatus.PENDING);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("imperative listener: succeeds with valid fulfilled event containing matching productIds", async () => {
+    const def = Object.values(V2Tests).find((d) => d.testKey === "TESTCASE#13")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: { productIds: ["urn:x:product:1"] },
+      },
+      VERSION,
+      "/2/events",
+      "POST",
+      {},
+      JSON.parse(validFulfilledEventBody),
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
+  });
+
+  it("imperative listener: fails when callback is received on wrong path", async () => {
+    const def = Object.values(V2Tests).find((d) => d.testKey === "TESTCASE#13")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: { productIds: ["urn:x:product:1"] },
+      },
+      VERSION,
+      "/2/wrong-path",
+      "POST",
+      {},
+      JSON.parse(validFulfilledEventBody),
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.FAILURE);
+  });
+
+  it("imperative listener: fails when productId in response was not in original request", async () => {
+    const def = Object.values(V2Tests).find((d) => d.testKey === "TESTCASE#13")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: { productIds: ["urn:x:product:1"] },
+      },
+      VERSION,
+      "/2/events",
+      "POST",
+      {},
+      // Pass inner data with productIds NOT in the originally requested set
+      { requestEventId: `${TEST_RUN_ID}/12`, pfs: [{ ...VALID_PRODUCT_FOOTPRINT, productIds: ["urn:unexpected:product"] }] },
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.FAILURE);
+  });
 });
 
 describe("TC14.B: Handle Rejected PCF Request (listener)", () => {
   let schema: any;
   beforeAll(async () => { schema = await getSchema(VERSION); });
 
-  it("returns PENDING without making a fetch call", async () => {
-    const testCases = await generateV3TestCases({
+  it("declarative: returns PENDING without making a fetch call", async () => {
+    const testCases = await generateV2TestCases({
       testRunId: TEST_RUN_ID,
       footprints: MOCK_FOOTPRINTS,
       paginationLinks: PAGINATION_LINKS,
@@ -905,5 +762,77 @@ describe("TC14.B: Handle Rejected PCF Request (listener)", () => {
     const result = await runTestCase(BASE_URL, tc, ACCESS_TOKEN, VERSION);
     expect(result.status).toBe(TestCaseResultStatus.PENDING);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("imperative listener: succeeds with valid rejected event containing error.code and error.message", async () => {
+    const def = Object.values(V2Tests).find((d) => d.testKey === "TESTCASE#14.B")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: {},
+      },
+      VERSION,
+      "/2/events",
+      "POST",
+      {},
+      JSON.parse(validRejectedEventBody),
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.SUCCESS);
+  });
+
+  it("imperative listener: fails when callback is received on wrong path", async () => {
+    const def = Object.values(V2Tests).find((d) => d.testKey === "TESTCASE#14.B")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: {},
+      },
+      VERSION,
+      "/2/wrong-path",
+      "POST",
+      {},
+      JSON.parse(validRejectedEventBody).data,
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.FAILURE);
+  });
+
+  it("imperative listener: fails when rejected event is missing error.code", async () => {
+    const def = Object.values(V2Tests).find((d) => d.testKey === "TESTCASE#14.B")!;
+    const ctx = new ListenerContext(
+      {
+        testRunId: TEST_RUN_ID,
+        organizationName: "Test",
+        adminEmail: "test@test.com",
+        adminName: "Test",
+        timestamp: new Date().toISOString(),
+        status: "PENDING" as any,
+        techSpecVersion: VERSION,
+        data: {},
+      },
+      VERSION,
+      "/2/events",
+      "POST",
+      {},
+      { error: {} }, // missing code and message — inner data only
+      schema,
+    );
+    const result = await runListenerTest(def, ctx);
+    expect(result.status).toBe(TestCaseResultStatus.FAILURE);
   });
 });

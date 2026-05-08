@@ -47,6 +47,13 @@ export interface TestCase {
   expectHttpError?: boolean;
 }
 
+export type LogEntry =
+  | { message: string }
+  | { warning: string }
+  | { error: string }
+  | { request: { method: string; url: string; headers: Record<string, string>; data?: any; text?: string } } 
+  | { response: { statusCode: number; headers: Record<string, string>; data?: any; text?: string } };
+
 export interface TestResult {
   name: string;
   status: TestCaseResultStatus;
@@ -56,6 +63,7 @@ export interface TestResult {
   testKey: string;
   curlRequest?: string;
   documentationUrl?: string;
+  log?: LogEntry[];
 }
 
 export interface TestRunStartParams {

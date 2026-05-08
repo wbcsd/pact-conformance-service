@@ -54,7 +54,12 @@ app.get("/testruns/:id", context(async (req) => {
 
 // Start a new test run
 app.post("/testruns/", context(async (req) => {
-  return req.services.worker.startTestRun(req.body as TestRunStartParams);
+  if (process.env.ENABLE_NEW_TESTS === "true") {
+    await req.services.workerNew.startTestRun(req.body as TestRunStartParams);
+    // Subsequent test runs with the old worker are marked with a specific admin email for easier identification in the database
+    req.body.adminEmail = "-old-implementation-";
+  }
+  return await req.services.worker.startTestRun(req.body as TestRunStartParams);
 }));
 
 // Authentication endpoint for callbacks
@@ -63,16 +68,14 @@ app.post("/auth/token", context(async (req) => {
   return await req.services.eventHandler.authenticate(authRequest);
 }));
 
-// Callback event listener for v3 events
-app.post("/2/events", context(async (req) => {
-  await req.services.eventHandler.processEvent(req.body, req.url);
-  return undefined; // Return 200 OK with no body
-}));
-
-// Callback event listener for v3 events
-app.post("/3/events", context(async (req) => {
-   await req.services.eventHandler.processEvent(req.body, req.url);
-   return undefined; // Return 200 OK with no body  
+// Callback event listener for both v2 and v3 events
+app.post(["/2/events", "/3/events"], context(async (req) => {
+  if (process.env.ENABLE_NEW_TESTS === "true") {
+    await req.services.workerNew.handleCallback(req);
+  } else {
+    await req.services.eventHandler.processEvent(req.body, req.url);
+  }
+  return undefined; // Return 200 OK with no body  
 }));
 
 // Error handling middleware (should be last)

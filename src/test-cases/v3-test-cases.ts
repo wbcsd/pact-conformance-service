@@ -23,22 +23,18 @@ interface Footprint {
   status: string;
 }
 
-interface FootprintsData {
-  data: Footprint[];
-}
-
 function isValidDate(date: Date) {
   return date instanceof Date && !isNaN(date.getTime());
 }
 
-const getFilterParameters = (footprints: FootprintsData) => {
-  if (!footprints.data?.[0]) {
+export const getFilterParameters = (footprints: Footprint[]) => {
+  if (!footprints || !footprints[0]) {
     throw new Error(
       "Invalid footprints data: Missing required data structure. Please check the API response."
     );
   }
 
-  const firstFootprint = footprints.data[0];
+  const firstFootprint = footprints[0];
 
   // Check if validityPeriodStart or validityPeriodEnd are empty or invalid
   const hasValidityPeriod =
@@ -120,7 +116,7 @@ export const generateV3TestCases = async ({
 }): Promise<TestCase[]> => {
   
   const schema = await getSchema(version);
-  const filterParams = getFilterParameters(footprints);
+  const filterParams = getFilterParameters(footprints.data);
   const callbackBaseUrl = webhookUrl.replace(/\/+$/, "");
 
   return [
@@ -291,9 +287,8 @@ export const generateV3TestCases = async ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        // Create a unique ID for this event which we can trace back to the test run,
-        // when a callback is received.
-        id: testRunId + "/12",  
+        // Create a unique ID for this event which points to the corresponding callback test
+        id: testRunId + "/13",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,
@@ -332,9 +327,8 @@ export const generateV3TestCases = async ({
       expectedStatusCodes: [200],
       requestData: {
         specversion: "1.0",
-        // Create a unique ID for this event which we can trace back to the test run,
-        // when a callback is received.
-        id: testRunId + "/14.A",
+        // Create a unique ID for this event which points to the corresponding callback test
+        id: testRunId + "/14.B",
         source: webhookUrl,
         time: new Date().toISOString(),
         type: EventTypesV3.CREATED,

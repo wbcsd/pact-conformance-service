@@ -2,11 +2,13 @@ import { Kysely } from 'kysely';
 import { DB } from '../data/types';
 import { TestRunRepository } from './test-run-repository';
 import { TestRunWorker } from './test-run-worker';
+import { TestRunWorkerNew } from './test-run-worker-new';
 import { EventHandler } from './event-handler';
 
 export interface Services {
   repository: TestRunRepository;
   worker: TestRunWorker;
+  workerNew: TestRunWorkerNew;
   eventHandler: EventHandler;
 }
 
@@ -14,11 +16,13 @@ export class ServiceContainer implements Services {
 
   repository: TestRunRepository;
   worker: TestRunWorker;
+  workerNew: TestRunWorkerNew;
   eventHandler: EventHandler;
 
   constructor(db: Kysely<DB>) {
     this.repository = new TestRunRepository(db);
     this.worker = new TestRunWorker(this.repository);
+    this.workerNew = new TestRunWorkerNew(this.repository);
     this.eventHandler = new EventHandler(this.repository);
   }
   

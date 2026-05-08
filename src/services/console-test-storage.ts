@@ -34,13 +34,15 @@ export class ConsoleTestStorage implements TestStorage {
     
     if (!testRun) {
       throw new NotFoundError(`Test run with ID ${testRunId} not found`);
-    }
+    } 
     return testRun;
   }
 
   async updateTestRunStatus(testRunId: string): Promise<void> {
-    const testRun = await this.getTestRunWithResults(testRunId);
-    const mandatoryTests = testRun.results.filter(
+    const testRun = this.testRunData.get(testRunId)!;
+    const results = this.testResults.get(testRunId) || [];
+
+    const mandatoryTests = results.filter(
       (test) => test.mandatory
     );
     const failedMandatoryTests = mandatoryTests.filter(
@@ -86,12 +88,10 @@ export class ConsoleTestStorage implements TestStorage {
     }
     
     this.testResults.set(testRunId, results);
-    
-    // Display results summary
-    this.displayTestResults(testResults);
   }
 
-  private displayTestResults(results: TestResult[]): void {
+  public displayTestResults(testRunId: string): void {
+    const results = this.testResults.get(testRunId) || [];
     logger.info("\n" + "=".repeat(80));
     logger.info("TEST RESULTS SUMMARY");
     logger.info("=".repeat(80));
