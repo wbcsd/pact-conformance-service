@@ -56,6 +56,8 @@ app.get("/testruns/:id", context(async (req) => {
 app.post("/testruns/", context(async (req) => {
   if (process.env.ENABLE_NEW_TESTS === "true") {
     await req.services.workerNew.startTestRun(req.body as TestRunStartParams);
+    // Subsequent test runs with the old worker are marked with a specific admin email for easier identification in the database
+    req.body.adminEmail = "-old-implementation-";
   }
   return await req.services.worker.startTestRun(req.body as TestRunStartParams);
 }));
