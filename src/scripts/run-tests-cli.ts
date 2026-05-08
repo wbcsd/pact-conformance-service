@@ -263,15 +263,28 @@ async function waitForPendingCallbacks(
   logger.warn(`Timed out after ${timeoutMs}ms waiting for callback events; some test cases remain PENDING.`);
 }
 
+function isLocalhostUrl(rawUrl: string): boolean {
+  try {
+    const { hostname } = new URL(rawUrl);
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
 async function main() {
   let server: Server | undefined;
   let exitCode = 1;
   try {
     logger.info("PACT Conformance Test CLI");
     logger.info("=".repeat(80));
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; // Allow self-signed certificates for testing purposes
 
     const params = parseArgs();
+    const allowInsecureTls = process.argv.includes("--insecure") || isLocalhostUrl(params.baseUrl);
+    if (allowInsecureTls) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+      logger.warn("TLS certificate verification is disabled for this process.");
+    }
 
     // Create console-based storage (no database)
     const storage = new ConsoleTestStorage();
