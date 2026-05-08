@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "clean": "npm run clean --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace pact-conformance-test && npm run build --workspace pact-conformance-service",
     "dev": "npm run dev --workspace pact-conformance-service",
     "start": "npm run start --workspace pact-conformance-service",
     "cli": "npm run cli --workspace pact-conformance-test",
