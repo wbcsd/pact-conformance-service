@@ -65,11 +65,25 @@ function parseTestCaseList(raw: string): number[] {
   return [...new Set(result)].sort((a, b) => a - b);
 }
 
-function parseArgs(): TestRunStartParams {
+/**
+ * Defines the expected command-line arguments for the test run, including required parameters
+ */
+type CommandLineArguments = TestRunStartParams & {
+  verbose: boolean;
+  insecure: boolean;
+};
+
+/**
+ * Parses command-line arguments and returns them as a structured object.
+ * @returns {CommandLineArguments} The parsed command-line arguments
+ */
+function parseArgs(): CommandLineArguments {
   const args = process.argv.slice(2);
-  const params: Partial<TestRunStartParams> = {
+  const params: Partial<CommandLineArguments> = {
     adminEmail: "cli@example.com",
     adminName: "CLI User",
+    verbose: false,
+    insecure: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -127,10 +141,11 @@ function parseArgs(): TestRunStartParams {
         i++;
         break;
       }
+      case "--verbose":
+        params.verbose = true;
+        break;
       case "--insecure":
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-        logger.warn("TLS certificate verification is disabled for this process.");
-        i++;
+        params.insecure = true;
         break;
       case "--help":
       case "-h":
@@ -155,7 +170,7 @@ function parseArgs(): TestRunStartParams {
     process.exit(1);
   }
 
-  return params as TestRunStartParams;
+  return params as CommandLineArguments;
 }
 
 function printHelp(): void {
@@ -180,6 +195,7 @@ Optional Options:
   --adminEmail <email>         Admin email address (default: cli@example.com)
   --adminName <name>           Admin name (default: CLI User)
   --testCases <list>           Comma-separated numbers and ranges (e.g. 1-2,9). Omit to run all.
+  --verbose                    Show logs for passing tests in addition to failing ones
   --insecure                   Disable TLS certificate verification (not recommended; use only for localhost testing)  
   --help, -h                   Show this help message
 
@@ -283,11 +299,18 @@ async function main() {
   try {
     logger.info("PACT Conformance Test CLI");
     logger.info("=".repeat(80));
+    
+    // Parse command-line arguments
+    const args = parseArgs();
 
-    const params = parseArgs();
+    // Disable TLS certificate verification if --insecure flag is set
+    if (args.insecure) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+      logger.warn("TLS certificate verification is disabled for this process.");
+    }
 
     // Create console-based storage (no database)
-    const storage = new ConsoleTestStorage();
+    const storage = new ConsoleTestStorage(args.verbose);
 
     // Create test run worker
     const worker = new TestRunWorker(storage, CONFORMANCE_API);
@@ -298,7 +321,7 @@ async function main() {
 
     // Start the test run
     logger.info("Starting test run...\n");
-    const initial = await worker.startTestRun(params);
+    const initial = await worker.startTestRun(args);
 
     // Wait for any callback-driven tests that are still PENDING after the sync phase.
     if (initial.results.some((r) => r.mandatory && r.status === TestCaseResultStatus.PENDING)) {
@@ -311,7 +334,7 @@ async function main() {
     
     // Display results in console
     storage.displayTestResults(initial.testRunId);
-    if (params.testCaseNumbers?.length) {
+    if (args.testCaseNumbers?.length) {
       logger.info("WARNING: Some test cases may have been excluded (see --testCases argument)");
     }
     const result = await storage.getTestRun(initial.testRunId);

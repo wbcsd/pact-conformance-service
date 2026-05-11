@@ -8,12 +8,10 @@ export const assert = (condition: boolean, failureMessage: string): void => {
   }
 };
 
-export const assertIncluded = <T>(value: T, array: T[] | T): void => {
-  if (!Array.isArray(array)) {
-    array = [array];
-  }
+export const assertIncluded = <T>(value: T, expected: T[] | T): void => {
+  const array = Array.isArray(expected) ? expected : [expected];
   if (!array.includes(value)) {
-    throw new Error(`Expected value ${value} to be in [${array}]`);
+    throw new Error(`Expected [${array}] but received value ${value}`);
   }
 };
 

@@ -20,6 +20,8 @@ export class ConsoleTestStorage implements TestStorage {
   private testRunData: Map<string, TestRun> = new Map();
   private testResults: Map<string, TestResult[]> = new Map();
 
+  constructor(private verbose = false) {}
+
   async saveTestRun(testRun: TestRun): Promise<void> {
     this.testRunData.set(testRun.testRunId, testRun);
     
@@ -127,7 +129,7 @@ export class ConsoleTestStorage implements TestStorage {
     logger.info(`  ✓ Passed: ${passed}`);
     logger.info(`  ✗ Failed: ${failed}`);
     logger.info(`  ⧗ Pending: ${pending}`);
-    logger.info(`\nMandatory Tests: ${mandatoryTests.length}`);
+    logger.info(`Mandatory Tests: ${mandatoryTests.length}`);
     logger.info(`  ✓ Passed: ${mandatoryPassed} (${mandatoryTests.length > 0 ? Math.round((mandatoryPassed / mandatoryTests.length) * 100) : 0}%)`);
     logger.info(`  ✗ Failed: ${mandatoryFailed}`);
     logger.info("=".repeat(80) + "\n");
@@ -155,11 +157,7 @@ export class ConsoleTestStorage implements TestStorage {
         logger.info(`  Error: ${result.errorMessage}`);
       }
 
-      if (result.status === TestCaseResultStatus.FAILURE && result.curlRequest) {
-        logger.info(`  Request: ${result.curlRequest}`);
-      }
-
-      if (result.log && result.log.length > 0) {
+      if (result.log && result.log.length > 0 && (result.status === TestCaseResultStatus.FAILURE || this.verbose)) {
         logger.info("  Logs:");
         for (const entry of result.log) {
           this.displayLogEntry(entry);
