@@ -1,60 +1,42 @@
 {
-  "name": "pact-api-test-service",
+  "name": "pact-conformance-service-workspace",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "clean": "rimraf ./dist",
-    "build": "tsc --build tsconfig.prod.json",
-    "dev": "ts-node-dev ./src/server.ts",
-    "dev:run": "ts-node-dev --respawn --transpile-only src/",
-    "start": "NODE_ENV=production node ./dist/server.js",
-    "cli": "ts-node ./src/scripts/run-tests-cli.ts",
+    "clean": "npm run clean --workspaces --if-present",
+    "build": "npm run build --workspace pact-conformance-test && npm run build --workspace pact-conformance-service",
+    "dev": "npm run dev --workspace pact-conformance-service",
+    "start": "npm run start --workspace pact-conformance-service",
+    "cli": "npm run cli --workspace pact-conformance-test --",
     "test": "jest --maxWorkers=1",
     "test:watch": "jest --watch",
-    "check": "ts-node ./src/scripts/check-config.ts",
-    "db:migrate": "ts-node ./src/data/migrate.ts latest",
-    "db:migrate:down": "ts-node ./src/data/migrate.ts down",
-    "db:migrate:up": "ts-node ./src/data/migrate.ts up",
-    "db:migrate:list": "ts-node ./src/data/migrate.ts list",
-    "migrate": "ts-node ./src/data/migrate.ts"
+    "check": "npm run check --workspace pact-conformance-service",
+    "db:migrate": "npm run db:migrate --workspace pact-conformance-service",
+    "db:migrate:down": "npm run db:migrate:down --workspace pact-conformance-service",
+    "db:migrate:up": "npm run db:migrate:up --workspace pact-conformance-service",
+    "db:migrate:list": "npm run db:migrate:list --workspace pact-conformance-service",
+    "migrate": "npm run migrate --workspace pact-conformance-service"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
-    "@types/express": "^5.0.2",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.10.7",
-    "dotenv": "^16.5.0",
     "jest": "^29.7.0",
     "nock": "^14.0.4",
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.7.3"
-  },
-  "dependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "@types/jsonwebtoken": "^9.0.9",
-    "@types/pg": "^8.10.9",
-    "ajv": "^8.17.1",
-    "ajv-errors": "^3.0.0",
-    "ajv-formats": "^3.0.1",
-    "express": "^5.1.0",
-    "js-yaml": "^4.1.1",
-    "jsonwebtoken": "^9.0.2",
-    "kysely": "^0.28.13",
-    "pg": "^8.11.3",
-    "pino-http": "^10.5.0",
-    "pino-pretty": "^13.1.1"
+    "typescript": "^5.7.3",
+    "rimraf": "^5.0.0"
   },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
     "testMatch": [
-      "**/__tests__/**/*.test.ts?(x)",
-      "**/?(*.)+(spec|test).ts?(x)"
+      "<rootDir>/packages/*/src/**/__tests__/**/*.test.ts?(x)",
+      "<rootDir>/packages/*/src/**/?(*.)+(spec|test).ts?(x)"
     ]
   }
 }

@@ -7,8 +7,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "useUnknownInCatchVariables": false,
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "types": ["jest", "node"]
   },
-  "exclude": ["__tests__", "**/__tests__/*", "scripts"]
+  "exclude": ["**/dist", "**/node_modules"]
 }

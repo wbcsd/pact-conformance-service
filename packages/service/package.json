@@ -1,0 +1,33 @@
+{
+  "name": "pact-conformance-service",
+  "version": "1.0.0",
+  "description": "PACT conformance service: HTTP API and persistent storage for test runs",
+  "main": "dist/server.js",
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "build": "tsc --build tsconfig.build.json",
+    "dev": "ts-node-dev ./src/server.ts",
+    "dev:run": "ts-node-dev --respawn --transpile-only src/",
+    "start": "NODE_ENV=production node ./dist/server.js",
+    "check": "ts-node ./src/scripts/check-config.ts",
+    "db:migrate": "ts-node ./src/data/migrate.ts latest",
+    "db:migrate:down": "ts-node ./src/data/migrate.ts down",
+    "db:migrate:up": "ts-node ./src/data/migrate.ts up",
+    "db:migrate:list": "ts-node ./src/data/migrate.ts list",
+    "migrate": "ts-node ./src/data/migrate.ts"
+  },
+  "dependencies": {
+    "pact-conformance-test": "1.0.0",
+    "@types/pg": "^8.10.9",
+    "express": "^5.1.0",
+    "kysely": "^0.28.13",
+    "pg": "^8.11.3",
+    "pino": "^9.0.0",
+    "pino-http": "^10.5.0",
+    "pino-pretty": "^13.1.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "dotenv": "^16.5.0"
+  }
+}

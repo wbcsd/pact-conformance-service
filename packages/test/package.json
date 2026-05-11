@@ -1,0 +1,26 @@
+{
+  "name": "pact-conformance-test",
+  "version": "1.0.0",
+  "description": "PACT conformance test runner and test definitions",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "build": "tsc --build tsconfig.build.json",
+    "cli": "ts-node ./src/cli.ts"
+  },
+  "dependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "ajv": "^8.17.1",
+    "ajv-errors": "^3.0.0",
+    "ajv-formats": "^3.0.1",
+    "express": "^5.1.0",
+    "js-yaml": "^4.1.1",
+    "pino": "^9.0.0",
+    "pino-pretty": "^13.1.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "dotenv": "^16.5.0"
+  }
+}
