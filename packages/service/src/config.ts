@@ -13,7 +13,6 @@ function getEnvVar(key: string, fallback?: string): string {
 
 /* eslint-disable n/no-process-env */
 export default {
-  NODE_ENV: getEnvVar("NODE_ENV"),
   PORT: getEnvVar("PORT"),
   DB_CONNECTION_STRING: getEnvVar("DB_CONNECTION_STRING"),
   CONFORMANCE_API: getEnvVar("CONFORMANCE_API"),

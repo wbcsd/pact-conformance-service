@@ -2,10 +2,13 @@ import pino from "pino";
 import pinoHttp from "pino-http";
 import config from "./config";
 
-const pinoInstance = pino({
-  ...(config.NODE_ENV !== "production"
-    ? {
-        level: "debug",
+const isProduction = process.env.NODE_ENV === "production";
+
+const pinoInstance = pino(
+  isProduction
+    ? { level: config.LOG_LEVEL ?? "info" }
+    : {
+        level: config.LOG_LEVEL ?? "debug",
         transport: {
           target: "pino-pretty",
           options: {
@@ -14,8 +17,7 @@ const pinoInstance = pino({
           },
         },
       }
-    : { level: "info" }),
-});
+);
 
 const wrap = (method: "info" | "error" | "warn" | "debug") =>
   (message: any, meta?: any) => {
