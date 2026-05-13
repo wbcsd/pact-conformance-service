@@ -11,6 +11,7 @@
     "dev": "npm run dev --workspace pact-conformance-service",
     "start": "npm run start --workspace pact-conformance-service",
     "cli": "npm run cli --workspace pact-conformance-test --",
+    "pretest": "npm run build --workspace pact-conformance-test",
     "test": "jest --maxWorkers=1",
     "test:watch": "jest --watch",
     "check": "npm run check --workspace pact-conformance-service",
