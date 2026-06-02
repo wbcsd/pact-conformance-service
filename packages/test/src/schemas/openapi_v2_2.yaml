@@ -3,32 +3,32 @@ info:
   title: PACT API Specification
   summary: Technical Specifications for PCF Data Exchange
   version: 2.2.0
-  contact: 
+  contact:
     name: WBCSD PACT Project
     url: https://github.com/wbcsd
     email: pact@wbcsd.org
   description: |
-    This document describes the technical specifications for the exchange of 
-    Product Carbon Footprint (PCF) data between systems. The specification is 
-    maintained by the WBCSD PACT project and intended to be used by organizations 
-    that wish to exchange PCF data with other organizations. The specifications 
+    This document describes the technical specifications for the exchange of
+    Product Carbon Footprint (PCF) data between systems. The specification is
+    maintained by the WBCSD PACT project and intended to be used by organizations
+    that wish to exchange PCF data with other organizations. The specifications
     are designed to be technology-agnostic.
 tags:
 - name: footprint
   description: Synchronous retrieval of footprints
 - name: event
   # description: Asynchronous exchange of footprints
-  description: Asynchronous Event API. This API is used to post events to the system. 
+  description: Asynchronous Event API. This API is used to post events to the system.
     Data recipients can request footprints and will receive notifications when these requests are fulfilled or rejected.
     Data owners can post updated and newly published footprints to data recipients.
-servers: 
+servers:
 - url: https://example.com
 paths:
   /2/footprints:
     get:
       summary: Action ListFootprints
       description: |
-        Retrieve a list of Product Carbon Footprints (PCFs) that are available. 
+        Retrieve a list of Product Carbon Footprints (PCFs) that are available.
         The list can be filtered by various criteria.
       operationId: listFootprints
       tags: [footprint]
@@ -118,7 +118,7 @@ paths:
     post:
       summary: Action Event
       description: |
-        Post an event to the system. The event will be processed by the system 
+        Post an event to the system. The event will be processed by the system
         and may trigger further actions.
       operationId: post_event
       tags: [event]
@@ -138,10 +138,10 @@ paths:
             application/json:
               schema:
                 type: object
-                properties: 
-                  code: 
+                properties:
+                  code:
                     type: string
-                  message: 
+                  message:
                     type: string
         '400':
           $ref: '#/components/responses/BadRequestResponse'
@@ -197,8 +197,8 @@ components:
       properties:
         id:
           description: |
-            A unique identifier that a system uses to refer to the entire dataset of the PCF. 
-            This is typically an automatically-generated number by the technology  solution to maintain 
+            A unique identifier that a system uses to refer to the entire dataset of the PCF.
+            This is typically an automatically-generated number by the technology  solution to maintain
             the required technical references to data within the system.
             UUID v4 [RFC4122](https://tools.ietf.org/html/rfc4122).
           type: string
@@ -207,7 +207,7 @@ components:
           - "f4b1225a-bd44-4c8e-861d-079e4e1dfd69"
         specVersion:
           description: |
-            The version of the PACT Tech Specs that the data being shared complies with. 
+            The version of the PACT Tech Specs that the data being shared complies with.
             This is a string in the format of "major.minor.patch" (e.g. "3.0.0").
           type: string
           pattern: '^\d+\.\d+\.\d+(-\d{8})?$'
@@ -215,9 +215,9 @@ components:
           - "3.0.0"
         precedingPfIds:
           description: |
-            A given PCF may change over time, due to updates to the calculation. 
-            This field lists all id's that reflect "past versions" of the current PCF. 
-            This is typically an automatically generated field of unique identifiers, 
+            A given PCF may change over time, due to updates to the calculation.
+            This field lists all id's that reflect "past versions" of the current PCF.
+            This is typically an automatically generated field of unique identifiers,
             maintained by the technology solution.
           type: array
           items:
@@ -226,11 +226,11 @@ components:
           minItems: 1
           uniqueItems: true
           examples:
-          - ["f4b1225a-bd44-4c8e-861d-079e4e1dfd69", 
+          - ["f4b1225a-bd44-4c8e-861d-079e4e1dfd69",
              "079e425a-464f-528d-341d-4a944a1dfd70"]
         version:
           description: |
-            The version number of the PCF; if changes are made to the PCF, 
+            The version number of the PCF; if changes are made to the PCF,
             this version number will increment.
           type: integer
           format: int32
@@ -240,7 +240,7 @@ components:
           - 3303
         created:
           description: |
-            The date and time when the PCF was created. This is typically an automatically 
+            The date and time when the PCF was created. This is typically an automatically
             generated field by the software solution.
           type: string
           format: date-time
@@ -248,34 +248,34 @@ components:
           - '2024-10-31T00:00:00Z'
         updated:
           description: |
-            The date and time when the PCF was last updated. This is typically an automatically 
-            generated field by the software solution. If the data has never been updated, 
+            The date and time when the PCF was last updated. This is typically an automatically
+            generated field by the software solution. If the data has never been updated,
             do not include this property.
           type: string
           format: date-time
         status:
           description: |
-            The status of the PCF. `Active` means that the PCF is the most recent version 
-            and is the one that can be used CAN be used by a data recipients, e.g. for product 
-            footprint calculations. `Deprecated` means that the PCF is no longer 
+            The status of the PCF. `Active` means that the PCF is the most recent version
+            and is the one that can be used CAN be used by a data recipients, e.g. for product
+            footprint calculations. `Deprecated` means that the PCF is no longer
             the most recent version and SHOULD NOT be used by data recipients.
-            
+
             See [[#lifecycle]] for details.
           type: string
           enum:
             - Active
             - Deprecated
-          examples: 
+          examples:
           - Active
         statusComment:
           type: string
           description: |
             TODO: Move this description to #lifecycle
 
-            If defined, a descriptive reasoning explaining the current status of 
-            the PCF, what was changed since the last version, etc. If the PCF was 
-            changed since a previous version, indicate all methodological and/or 
-            production process change(s) that occurred to result in the PCF change. 
+            If defined, a descriptive reasoning explaining the current status of
+            the PCF, what was changed since the last version, etc. If the PCF was
+            changed since a previous version, indicate all methodological and/or
+            production process change(s) that occurred to result in the PCF change.
             For example, include the relevant change(s) from the list below:
 
             Methodological:
@@ -289,24 +289,24 @@ components:
             - Change in energy source
             - Change in upstream supplier
             - Updated upstream data (i.e. upstream supplier updated their PCF based on process change)
-          
+
             See [[#lifecycle]] for details.
         validityPeriodStart:
           description: |
             TODO: Create a separate paragraph on validity period and reference period
 
-            The <dfn>validity period</dfn> is the time interval during which the 
+            The <dfn>validity period</dfn> is the time interval during which the
             ProductFootprint is declared as valid for use by a receiving [=data recipient=].
 
-            The validity period is OPTIONAL defined by the properties 
-            <{ProductFootprint/validityPeriodStart}> (including) and 
+            The validity period is OPTIONAL defined by the properties
+            <{ProductFootprint/validityPeriodStart}> (including) and
             <{ProductFootprint/validityPeriodEnd}> (excluding).
 
-            If no validity period is specified, the ProductFootprint is valid for 
+            If no validity period is specified, the ProductFootprint is valid for
             3 years starting with <{CarbonFootprint/referencePeriodEnd}>.
 
             If a validity period is to be specified, then
-              1. the value of <{ProductFootprint/validityPeriodStart}> MUST be defined with value 
+              1. the value of <{ProductFootprint/validityPeriodStart}> MUST be defined with value
                  greater than or equal to the value of <{CarbonFootprint/referencePeriodEnd}>.
               2. the value of <{ProductFootprint/validityPeriodEnd}> MUST be defined with value
 
@@ -314,11 +314,11 @@ components:
                  2. less than or equal to <{CarbonFootprint/referencePeriodEnd}> + 3 years.
 
           x-short-description: |
-            The start date and time of the validity period. The period of time between the 
-            validityPeriodStart and validityPeriodEnd is defined as the "validity period", 
-            and represents the time period during which the PCF is valid. Specifying the 
-            validity period is optional. If this is not specified, then it is assumed the 
-            PCF is valid for 3 years, beginning with the referencePeriodEnd. 
+            The start date and time of the validity period. The period of time between the
+            validityPeriodStart and validityPeriodEnd is defined as the "validity period",
+            and represents the time period during which the PCF is valid. Specifying the
+            validity period is optional. If this is not specified, then it is assumed the
+            PCF is valid for 3 years, beginning with the referencePeriodEnd.
           type: string
           format: date-time
         validityPeriodEnd:
@@ -333,16 +333,16 @@ components:
           minLength: 1
         companyIds:
           description: |
-            The non-empty set of Uniform Resource Names ([[!RFC8141|URN]]). Each value of 
-            this set is supposed to uniquely identify the ProductFootprint Data Owner. 
+            The non-empty set of Uniform Resource Names ([[!RFC8141|URN]]). Each value of
+            this set is supposed to uniquely identify the ProductFootprint Data Owner.
             TODO: See Company Identifier section for details
           x-short-description: |
-            A list of company identifiers which represent the companies that are considered 
+            A list of company identifiers which represent the companies that are considered
             data owners of the PCF. In a large organization, this may include multiple
-            subsidiaries or legal entities of a given corporation, hence the need to provide 
-            multiple identifiers. A list of only one identifier is also valid. The format 
+            subsidiaries or legal entities of a given corporation, hence the need to provide
+            multiple identifiers. A list of only one identifier is also valid. The format
             of each companyID MUST be provided as a Uniform Resource Names ([[!RFC8141|URN]]),
-            which helps ensure the data provided is standardized and can be interpreted by the 
+            which helps ensure the data provided is standardized and can be interpreted by the
             receiving system.
           examples:
           - ["urn:company:example:company1"]
@@ -354,24 +354,24 @@ components:
             $ref: '#/components/schemas/Urn'
         productDescription:
           description: |
-            The free-form description of the product, including any additional relevant information 
-            such as production technology, packaging, process, feedstock and technical parameters 
+            The free-form description of the product, including any additional relevant information
+            such as production technology, packaging, process, feedstock and technical parameters
             (e.g. dimensions). Products which are services (i.e. consulting) should include a short
             description of the service.
           x-short-description: |
-            A description of the product, including any additional relevant information 
-            such as production technology, production technology, packaging, process, feedstock 
-            and technical parameters (e.g. dimensions). Products which are services 
+            A description of the product, including any additional relevant information
+            such as production technology, production technology, packaging, process, feedstock
+            and technical parameters (e.g. dimensions). Products which are services
             (i.e. consulting) should include a short description of the service.
           type: string
         productIds:
           description: |
-            The non-empty set of [=ProductIds=] in [=URN=] format. Each of the values in the set is 
-            supposed to uniquely identify the product. See {#product-identifiers} for syntax and 
+            The non-empty set of [=ProductIds=] in [=URN=] format. Each of the values in the set is
+            supposed to uniquely identify the product. See {#product-identifiers} for syntax and
             examples.
           x-short-description: |
-            All relevant product identifiers to identify the product for which the provided 
-            PCF was calculated (e.g. supplier part number, GTIN, article number, CPC 
+            All relevant product identifiers to identify the product for which the provided
+            PCF was calculated (e.g. supplier part number, GTIN, article number, CPC
             classification, CAS Number, BOM Version, batch number, etc.)
           type: array
           minItems: 1
@@ -384,8 +384,8 @@ components:
 
             The UN Central Product Classification (CPC) that the given product belongs to.
           x-short-description: |
-            The UN Central Product Classification Code (CPC) for the given product. The relevant 
-            CPC code may be identified here https://unstats.un.org/unsd/classifications/Econ/cpc 
+            The UN Central Product Classification Code (CPC) for the given product. The relevant
+            CPC code may be identified here https://unstats.un.org/unsd/classifications/Econ/cpc
             Advisement: This property will become optional in v3
           type: string
           minLength: 1
@@ -393,7 +393,7 @@ components:
           description: |
             The non-empty trade name of the product.
           x-short-description: |
-            The trade name of the product in order for it to be recognizable by the receiver of the PCF information          
+            The trade name of the product in order for it to be recognizable by the receiver of the PCF information
           type: string
           minLength: 1
         comment:
@@ -404,23 +404,23 @@ components:
 
             Whereas the property <{ProductFootprint/productDescription}> contains product-level information, <{ProductFootprint/comment}> SHOULD be used for information and instructions related to the calculation of the footprint, or other information which informs the ability to interpret, to audit or to verify the Product Footprint.
           x-short-description: |
-            Any additional information related to the PCF. Whereas the property productDescription 
-            contains product-level information, comment should be used for information and instructions 
+            Any additional information related to the PCF. Whereas the property productDescription
+            contains product-level information, comment should be used for information and instructions
             related to the calculation of the PCF, or other information which informs the ability to interpret
-            (e.g. LUC not included as unable to calculate LUC), to audit or to verify the PCF          
+            (e.g. LUC not included as unable to calculate LUC), to audit or to verify the PCF
             Advisement: This property will become OPTIONAL in version 3 of the Technical Specifications.
           type: string
         pcf:
           description: |
-            The carbon footprint of the given product with value conforming to the data 
+            The carbon footprint of the given product with value conforming to the data
             type <{CarbonFootprint}>.
           $ref: '#/components/schemas/CarbonFootprint'
-        extensions: 
+        extensions:
           type: array
           description: |
             If defined, 1 or more data model extensions associated with the ProductFootprint.
             See <{DataModelExtension}> for details.
-          items: 
+          items:
             $ref: '#/components/schemas/DataModelExtension'
 
     CarbonFootprint:
@@ -439,7 +439,7 @@ components:
         3. Has a country-specific geographical granularity, then property <{CarbonFootprint/geographyCountry}> MUST be `defined` AND the properties <{CarbonFootprint/geographyRegionOrSubregion}> and <{CarbonFootprint/geographyCountrySubdivision}> MUST be `undefined`;
         4. Has a country subdivision-specific geographical granularity, then property <{CarbonFootprint/geographyCountrySubdivision}> MUST be `defined` AND the properties <{CarbonFootprint/geographyRegionOrSubregion}> and <{CarbonFootprint/geographyCountry}> MUST be `undefined`.
       x-short-description: |
-        The CarbonFootprint represents the carbon footprint of a product and related data 
+        The CarbonFootprint represents the carbon footprint of a product and related data
         in accordance with the PACT Methodology.
       title: CarbonFootprint
       type: object
@@ -480,7 +480,7 @@ components:
           description: |
             The unit of analysis of the product. See Data Type {{DeclaredUnit}} for further information.
           x-short-description: |
-            The unit with which the PCF was calculated 
+            The unit with which the PCF was calculated
           type: string
           enum:
             - liter
@@ -494,16 +494,16 @@ components:
           description: |
             The amount of <{CarbonFootprint/declaredUnit|Declared Units}> contained within the product to which the [[#carbonfootprint|PCF]] is referring to. The value MUST be strictly greater than `0`.
           x-short-description: |
-            The amount of Declared Units contained within the product to which the PCF refers to. 
-            This is not representing the total annual quantity supplied (e.g. if the product is 
-            supplied in bulk in kg, which is the declared unit selected, please enter 1)   
+            The amount of Declared Units contained within the product to which the PCF refers to.
+            This is not representing the total annual quantity supplied (e.g. if the product is
+            supplied in bulk in kg, which is the declared unit selected, please enter 1)
           x-unit: declared unit
           type: string
           format: decimal
           x-comment: '> 0'
         pCfExcludingBiogenic:
           description: |
-            The product carbon footprint of the product <i>excluding</i> biogenic CO2 emissions. 
+            The product carbon footprint of the product <i>excluding</i> biogenic CO2 emissions.
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg of CO2 equivalent per declared unit` (`kgCO2e / declaredUnit`), expressed as a [=decimal=] equal to or greater than zero.
           x-short-description: |
             The PCF of the product excluding biogenic CO2 emissions.
@@ -513,7 +513,7 @@ components:
           x-comment: '>= 0'
         pCfIncludingBiogenic:
           description: |
-            If present, the product carbon footprint of the product <i>including all</i> biogenic emissions (CO2 and otherwise). 
+            If present, the product carbon footprint of the product <i>including all</i> biogenic emissions (CO2 and otherwise).
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg of CO2 equivalent per declared unit` (`kgCO2e / declaredUnit`), expressed as a [=decimal=].
 
             Note: the value of this property can be less than `0` (zero).
@@ -524,18 +524,18 @@ components:
           format: decimal
         fossilGhgEmissions:
           description: |
-            The emissions from fossil sources as a result of fuel combustion, from fugitive emissions, and from process emissions. 
+            The emissions from fossil sources as a result of fuel combustion, from fugitive emissions, and from process emissions.
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg of CO2 equivalent per declared unit` (`kgCO2e / declaredUnit`), expressed as a [=decimal=] equal to or greater than zero.
           x-short-description: |
-            The emissions from fossil sources as a result of fuel combustion, from fugitive 
-            emissions, and from process emissions. 
+            The emissions from fossil sources as a result of fuel combustion, from fugitive
+            emissions, and from process emissions.
           x-unit: kgCO2e/declared unit
           type: string
           format: decimal
           x-comment: '>= 0'
         fossilCarbonContent:
           description: |
-            The fossil carbon content of the product (mass of carbon). 
+            The fossil carbon content of the product (mass of carbon).
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg Carbon per declared unit` (`kgC / declaredUnit`), expressed as a [=decimal=] equal to or greater than zero.
           x-short-description: |
             The fossil carbon content of the product (mass of carbon).
@@ -545,7 +545,7 @@ components:
           x-comment: '>= 0'
         biogenicCarbonContent:
           description: |
-            The biogenic carbon content of the product (mass of carbon). 
+            The biogenic carbon content of the product (mass of carbon).
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg Carbon per declared unit` (`kgC / declaredUnit`), expressed as a [=decimal=] equal to or greater than zero.
           x-short-description: |
             The biogenic carbon content of the product (mass of carbon).
@@ -555,15 +555,15 @@ components:
           x-comment: '>= 0'
         dLucGhgEmissions:
           description: |
-            If present, emissions resulting from recent (i.e., previous 20 years) carbon stock loss due to land conversion directly on the area of land under consideration. 
+            If present, emissions resulting from recent (i.e., previous 20 years) carbon stock loss due to land conversion directly on the area of land under consideration.
             The value of this property MUST include direct land use change (dLUC) where available, otherwise statistical land use change (sLUC) can be used.
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg of CO2 equivalent per declared unit` (`kgCO2e / declaredUnit`), expressed as a [=decimal=] equal to or greater than zero.
             See [=PACT Methodology=] (Appendix B) for details.
           x-short-description: |
-            The emissions from land use change (LUC) activities. Emissions resulting from 
-            recent (i.e., previous 20 years) carbon stock loss due to land conversion directly 
-            on the area of land under consideration. The value of this property MUST include 
-            direct land use change (dLUC) where available, otherwise statistical land use 
+            The emissions from land use change (LUC) activities. Emissions resulting from
+            recent (i.e., previous 20 years) carbon stock loss due to land conversion directly
+            on the area of land under consideration. The value of this property MUST include
+            direct land use change (dLUC) where available, otherwise statistical land use
             change (sLUC) can be used.
           x-unit: kgCO2e/declared unit
           type: string
@@ -574,7 +574,7 @@ components:
             If present, GHG emissions and removals associated with land-management-related changes, including non-CO2 sources.
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg of CO2 equivalent per declared unit` (`kgCO2e / declaredUnit`), expressed as a [=decimal=].
           x-short-description: |
-            GHG emissions and removals associated with land-management-related changes, 
+            GHG emissions and removals associated with land-management-related changes,
             including non-CO2 sources.
           x-unit: kgCO2e/declared unit
           type: string
@@ -585,9 +585,9 @@ components:
             If present, all other biogenic GHG emissions associated with product manufacturing and transport that are not included in dLUC (<{CarbonFootprint/dLucGhgEmissions}>), iLUC (<{CarbonFootprint/iLucGhgEmissions}>), and land management (<{CarbonFootprint/landManagementGhgEmissions}>).
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg of CO2 equivalent per declared unit` (`kgCO2e / declaredUnit`), expressed as a [=decimal=] equal to or greater than zero.
           x-short-description: |
-            All other biogenic GHG emissions associated with product manufacturing and transport 
-            that are not included in dLUC (dLucGhgEmissions), iLUC (iLucGhgEmissions), and land 
-            management (landManagementGhgEmissions). 
+            All other biogenic GHG emissions associated with product manufacturing and transport
+            that are not included in dLUC (dLucGhgEmissions), iLUC (iLucGhgEmissions), and land
+            management (landManagementGhgEmissions).
           x-unit: kgCO2e/declared unit
           type: string
           format: decimal
@@ -598,8 +598,8 @@ components:
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg of CO2 equivalent per declared unit` (`kgCO2e / declaredUnit`), expressed as a [=decimal=] equal to or greater than zero.
             See [=PACT Methodology=] (Appendix B) for details.
           x-short-description: |
-            Emissions resulting from recent (i.e., previous 20 years) carbon stock loss due to 
-            land conversion on land not owned or controlled by the company or in its supply 
+            Emissions resulting from recent (i.e., previous 20 years) carbon stock loss due to
+            land conversion on land not owned or controlled by the company or in its supply
             chain, induced by change in demand for products produced or sourced by the company.
           x-unit: kgCO2e/declared unit
           type: string
@@ -607,7 +607,7 @@ components:
           x-comment: '>= 0'
         biogenicCarbonWithdrawal:
           description: |
-            If present, the Biogenic Carbon contained in the product converted to kilogram of CO2e. 
+            If present, the Biogenic Carbon contained in the product converted to kilogram of CO2e.
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kgCO2e / declaredUnit` expressed as a [=decimal=] equal to or <i>less than</i> zero.
           x-short-description: |
             The Biogenic Carbon contained in the product converted to kilogram of CO2e.
@@ -617,7 +617,7 @@ components:
           x-comment: '<= 0'
         aircraftGhgEmissions:
           description: |
-            If present, the GHG emissions resulting from aircraft engine usage for the transport of the product, excluding radiative forcing. 
+            If present, the GHG emissions resulting from aircraft engine usage for the transport of the product, excluding radiative forcing.
             TODO: The value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg of CO2 equivalent per declared unit` (`kgCO2e / declaredUnit`), expressed as a [=decimal=] equal to or greater than zero.
           x-short-description: |
             The GHG emissions resulting from aircraft engine usage for the transport of the
@@ -638,7 +638,7 @@ components:
             TODO: If present, the value MUST be calculated per <{CarbonFootprint/declaredUnit|declared unit}> with unit `kg of CO2 equivalent per kilogram` (`kgCO2e / declared unit`), expressed as a [=decimal=] equal to or greater than zero.
             The value MUST NOT be defined if <{CarbonFootprint/packagingEmissionsIncluded}> is `false`.
           x-short-description: |
-            Emissions resulting from the packaging of the product. The value MUST NOT 
+            Emissions resulting from the packaging of the product. The value MUST NOT
             be defined if packagingEmissionsIncluded is False.
           type: string
           format: decimal
@@ -650,17 +650,17 @@ components:
 
             The IPCC version of the GWP characterization factors used in the calculation of the PCF (see [=PACT Methodology=] Section 3.2.2). In case several characterization factors are used, indicate the earliest version used in your calculations, disregarding supplier provided PCFs. The value MUST be one of the following: `AR6`, `AR5`.
           x-short-description: |
-            The IPCC (Intergovernmental Panel of Climate Change) frequently releases (GWP) 
-            global warming potential values for climate gases related to CO2. These GWP 
-            values are released in Assessment Reports (AR), which are numbered. The AR 
-            number can be used to track the age and accuracy of the GWP values used in 
-            reporting. This field indicates the IPCC version of the GWP characterization 
+            The IPCC (Intergovernmental Panel of Climate Change) frequently releases (GWP)
+            global warming potential values for climate gases related to CO2. These GWP
+            values are released in Assessment Reports (AR), which are numbered. The AR
+            number can be used to track the age and accuracy of the GWP values used in
+            reporting. This field indicates the IPCC version of the GWP characterization
             factors used in the calculation of the PCF.
 
-            Advisement: This property is DEPRECATED and only kept to ensure backwards-compatibility. 
+            Advisement: This property is DEPRECATED and only kept to ensure backwards-compatibility.
             It will be removed in version 3 of these Technical Specifications. It does not replace the (also mandatory) property <{CarbonFootprint/ipccCharacterizationFactorsSources}>.
           deprecated: true
-          x-comment: This property is deprecated and only kept to ensure backwards-compatibility. 
+          x-comment: This property is deprecated and only kept to ensure backwards-compatibility.
             It will be removed in version 3. It is replaced by ipccCharacterizationFactors.
           type: string
           enum:
@@ -680,19 +680,19 @@ components:
 
             Advisement: Supersedes `characterizationFactors` deprecated in version 2.3.
 
-          x-short-description: |              
-            The IPCC (Intergovernmental Panel of Climate Change) frequently releases (GWP) 
-            global warming potential values for climate gases related to CO2. These GWP 
-            values are released in Assessment Reports (AR), which are numbered. 
-            
+          x-short-description: |
+            The IPCC (Intergovernmental Panel of Climate Change) frequently releases (GWP)
+            global warming potential values for climate gases related to CO2. These GWP
+            values are released in Assessment Reports (AR), which are numbered.
 
-            The AR number can be used to track the age and accuracy of the GWP values used in 
-            reporting. This field indicates the IPCC version of the GWP characterization 
+
+            The AR number can be used to track the age and accuracy of the GWP values used in
+            reporting. This field indicates the IPCC version of the GWP characterization
             factors used in the calculation of the PCF.
 
 
-            Per the PACT Methodology, the latest available characterization factor version shall 
-            be used, i.e., [""AR6""]. In the event this is not possible, include the set 
+            Per the PACT Methodology, the latest available characterization factor version shall
+            be used, i.e., [""AR6""]. In the event this is not possible, include the set
             of all characterization factors used.
           type: array
           items:
@@ -702,10 +702,10 @@ components:
           uniqueItems: true
         crossSectoralStandardsUsed:
           description: |
-            The cross sectoral standard(s) used as a basis for the PCF calculation. 
+            The cross sectoral standard(s) used as a basis for the PCF calculation.
             If multiple apply, list all.
           x-short-description: |
-            The cross sectoral standard(s) used as a basis for the PCF calculation. 
+            The cross sectoral standard(s) used as a basis for the PCF calculation.
             If multiple apply, list all.
           type: array
           items:
@@ -718,27 +718,26 @@ components:
           uniqueItems: true
           deprecated: true
           x-comment: This property is deprecated and only kept to ensure backwards-
-            compatibility. It will be removed in version 3. It does not replace the 
+            compatibility. It will be removed in version 3. It does not replace the
             (also mandatory) property crossSectoralStandards.
         productOrSectorSpecificRules:
           description: |
             The product-specific or sector-specific rules applied for calculating or allocating GHG emissions. If no product or sector specific rules were followed, this set MUST be empty.
           x-short-description: |
-            The product-specific or sector-specific rules applied for calculating or 
-            allocating GHG emissions. Sector specific guidance frameworks, such as 
-            Product Category Rules (PCR), are sets of rules for how to calculate and 
+            The product-specific or sector-specific rules applied for calculating or
+            allocating GHG emissions. Sector specific guidance frameworks, such as
+            Product Category Rules (PCR), are sets of rules for how to calculate and
             document Life Cycle Assessments. They provide product category specific
-            guidance and enhance comparability between assessments of the different 
-            suppliers for the same category (sector). The same applies to Product 
-            Environmental Footprint Category Rules (PEFCR)).  If no rules were used, 
+            guidance and enhance comparability between assessments of the different
+            suppliers for the same category (sector). The same applies to Product
+            Environmental Footprint Category Rules (PEFCR)).  If no rules were used,
             leave this field empty.
           type: array
           items:
             $ref: '#/components/schemas/ProductOrSectorSpecificRule'
-          minItems: 1
           uniqueItems: true
-          examples: 
-          -  
+          examples:
+          -
             - operator: PEF
               ruleNames:
               - "PEF 1.0"
@@ -765,19 +764,19 @@ components:
             - ISO
             - GHGP
             - Quantis
-          examples: 
+          examples:
           - GHGP
         boundaryProcessesDescription:
           description: |
             Advisement: OPTIONAL in 3.0.
 
-            The processes attributable to each lifecycle stage. 
-            
+            The processes attributable to each lifecycle stage.
+
             For example: electricity consumption included as an input in the production phase
-          x-short-description: |  
-            Brief description of the processes attributable to each life cycle stage included 
-            in the PCF (e.g. electricity consumption for manufacturing), especially those 
-            that significantly contribute manufacturing steps of the product (including 
+          x-short-description: |
+            Brief description of the processes attributable to each life cycle stage included
+            in the PCF (e.g. electricity consumption for manufacturing), especially those
+            that significantly contribute manufacturing steps of the product (including
             general description of used technologies).
             Advisement: This property will become OPTIONAL in version 3 of the Technical Specifications.
           type: string
@@ -786,13 +785,13 @@ components:
             The start (including) of the time boundary for which the PCF value
             is considered to be representative. Specifically, this start date
             represents the earliest date from which activity data was collected
-            to include in the PCF calculation. 
+            to include in the PCF calculation.
 
-            See the [=PACT Methodology=] section 6.1.2.1 for further details. 
+            See the [=PACT Methodology=] section 6.1.2.1 for further details.
             Can also be referred to as 'reporting period'.
           x-short-description: |
-            The start date and time of the earliest activity data used to calculate the 
-            PCF. This start date can be considered the start of the period over which 
+            The start date and time of the earliest activity data used to calculate the
+            PCF. This start date can be considered the start of the period over which
             the given PCF is referencing, or reporting on.
           type: string
           format: date-time
@@ -803,11 +802,11 @@ components:
             represents the latest date from which activity data was collected
             to include in the PCF calculation. Can al
 
-            See the [=PACT Methodology=] section 6.1.2.1 for further details. 
+            See the [=PACT Methodology=] section 6.1.2.1 for further details.
             Can also be referred to as 'reporting period'.
           x-short-description: |
-            The end date and time of the latest activity data used to calculate the PCF. 
-            This end date can be considered the end of the period over which the given 
+            The end date and time of the latest activity data used to calculate the PCF.
+            This end date can be considered the end of the period over which the given
             PCF is referencing, or reporting on.
           type: string
           format: date-time
@@ -816,10 +815,10 @@ components:
             If present, the value MUST conform to data type {{RegionOrSubregion}}. See [[#dt-carbonfootprint-scope]] for further details. Additionally, see the [=PACT Methodology=] Section 6.1.2.2.
 
           x-short-description: |
-            The geographic representation of the PCF may be reported at different 
-            levels of granularity, depending on the prefere of the data provider 
-            (e.g., at a plant, region, or country level). This attribute specifies 
-            the geographic region to which the PCF refers, i.e. "Africa", 
+            The geographic representation of the PCF may be reported at different
+            levels of granularity, depending on the prefere of the data provider
+            (e.g., at a plant, region, or country level). This attribute specifies
+            the geographic region to which the PCF refers, i.e. "Africa",
             "Central Asia", etc.
           type: string
           enum:
@@ -845,7 +844,7 @@ components:
             - Sub-Saharan Africa
             - Western Asia
             - Western Europe
-          examples: 
+          examples:
           - "Eastern Asia"
           - "Southern Europe"
         geographyCountry:
@@ -853,9 +852,9 @@ components:
             If present, the value MUST conform to data type [=ISO3166CC=]. See [[#dt-carbonfootprint-scope]] for further details.
           x-short-description: |
             The geographic representation of the PCF may be reported at different levels
-            of granularity, depending on the prefere of the data provider (e.g., at a 
-            plant, region, or country level). This field indicates the country to which 
-            the PCF refers. The country name must be according to ISO 3166-2 alpha-2 
+            of granularity, depending on the prefere of the data provider (e.g., at a
+            plant, region, or country level). This field indicates the country to which
+            the PCF refers. The country name must be according to ISO 3166-2 alpha-2
             country code (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)
           type: string
           pattern: '^[A-Z]{2}$'
@@ -867,11 +866,11 @@ components:
           description: |
             If present, a ISO 3166-2 Subdivision Code. See [[#dt-carbonfootprint-scope]] for further details.
           x-short-description: |
-            The geographic representation of the PCF may be reported at different 
-            levels of granularity, depending on the prefere of the data provider 
-            (e.g., at a plant, region, or country level). This attribute represents 
-            the most granular (i.e. "most specific") geography, i.e. the specific 
-            subdivision within a given country, for example New York State within 
+            The geographic representation of the PCF may be reported at different
+            levels of granularity, depending on the prefere of the data provider
+            (e.g., at a plant, region, or country level). This attribute represents
+            the most granular (i.e. "most specific") geography, i.e. the specific
+            subdivision within a given country, for example New York State within
             the USA. Follows ISO 3166-2.
           type: string
           pattern: '^[A-Z]{2}-[A-Z0-9]{1,3}$'
@@ -885,8 +884,8 @@ components:
 
             If no secondary data is used, this property MUST BE undefined.
           x-short-description: |
-            The list of secondary data sources and versions which have been used by 
-            you or by suppliers (e.g. data bases such as ecoinvent) for the PCF 
+            The list of secondary data sources and versions which have been used by
+            you or by suppliers (e.g. data bases such as ecoinvent) for the PCF
             calculation
           type: array
           minItems: 1
@@ -895,17 +894,17 @@ components:
           examples:
           -
             - name: ecoinvent
-              version: "3.7"          
+              version: "3.7"
         exemptedEmissionsPercent:
           description: |
             The percentage of emissions excluded from PCF, expressed as a decimal number. See [=PACT Methodology=].
 
             Advisement: [=Decimal=] in 3.0, was Number in 2.x
           x-short-description: |
-            Percentage of emissions EXCLUDED from the cradle to gate PCF in total. 
-            The percentage MUST be expressed as a decimal number, and SHOULD comply 
-            with the PACT Methodology (a maximum of 5% of the cradle to gate PCF emissions 
-            may be excluded) as well as any relevant sector specific guidelines 
+            Percentage of emissions EXCLUDED from the cradle to gate PCF in total.
+            The percentage MUST be expressed as a decimal number, and SHOULD comply
+            with the PACT Methodology (a maximum of 5% of the cradle to gate PCF emissions
+            may be excluded) as well as any relevant sector specific guidelines
             referring to exemption rules/cut-off criteria.
             Advisement: The upper boundary of this property (currently `5`) will be removed in version 3 of the Technical Specifications.
           type: number
@@ -926,15 +925,15 @@ components:
           description: |
             If present, a description of any allocation rules applied and the rationale explaining how the selected approach aligns with [=PACT Methodology=] rules (see Section 3.3.1.4).
           x-short-description: |
-            Description of the allocation rules applied to the PCF's foreground data 
-            including an explanation of the underlying reasons (way of allocating 
+            Description of the allocation rules applied to the PCF's foreground data
+            including an explanation of the underlying reasons (way of allocating
             all activities from your manufacturing steps to the declared unit).
           type: string
         uncertaintyAssessmentDescription:
           description: |
             If present, the results, key drivers, and a short qualitative description of the uncertainty assessment.
           x-short-description: |
-            Results, key drivers, and a short qualitative description of the 
+            Results, key drivers, and a short qualitative description of the
             uncertainty assessment, if applicable.
           type: string
         primaryDataShare:
@@ -948,7 +947,7 @@ components:
             Advisement: [=Decimal=] in 3.0, was Number in 2.x
 
           x-short-description: |
-            Share of primary data in the final PCF, calculated according to 
+            Share of primary data in the final PCF, calculated according to
             the PACT Methodology.
           type: number
           format: double
@@ -962,7 +961,7 @@ components:
 
             For reference periods including the beginning of year 2025 or after, this property MUST be defined.
           x-short-description: |
-            Data Quality Indicators (dqi) in accordance with the PACT Methodology. 
+            Data Quality Indicators (dqi) in accordance with the PACT Methodology.
           $ref: '#/components/schemas/DataQualityIndicators'
         assurance:
           description: |
@@ -978,7 +977,7 @@ components:
         [JSON Representation of a Data Model Extension](https://wbcsd.github.io/data-model-extensions/spec/#instantiation).
 
         See [[!DATA-MODEL-EXTENSIONS]] for technical details and [[!EXTENSIONS-GUIDANCE]] for data model extension guidance.
-      examples: 
+      examples:
       - |
         Example imaginary Data Model Extension for encoding shipment-related data, encoded in JSON:
         ```json
@@ -1003,8 +1002,8 @@ components:
         specVersion:
           type: string
           description: |
-            The version of the Data Model Extension specification. The value 
-            MUST be a string in the format major.minor.patch as defined in 
+            The version of the Data Model Extension specification. The value
+            MUST be a string in the format major.minor.patch as defined in
             Semantic Versioning 2.0.0.
         dataSchema:
           type: string
@@ -1019,10 +1018,10 @@ components:
         data:
           type: object
           description: |
-            The value MUST be a JSON Object that conforms to the extension schema file 
+            The value MUST be a JSON Object that conforms to the extension schema file
             referenced by the dataSchema property.
 
-    ProductOrSectorSpecificRule:    
+    ProductOrSectorSpecificRule:
       title: ProductOrSectorSpecificRule
       description: |
         A ProductOrSectorSpecificRule refers to a set of product or sector specific rules published by a specific operator and applied during product carbon footprint calculation.
@@ -1033,9 +1032,9 @@ components:
       properties:
         operator:
           description: |
-            Selection of operator of PCR being used for the PCF calculation. If 
+            Selection of operator of PCR being used for the PCF calculation. If
             operator is not available in the given list, or if you have followed
-            a sector specific guidance, please select "Other" and include details 
+            a sector specific guidance, please select "Other" and include details
             under "otherOperatorName".
           type: string
           enum:
@@ -1044,7 +1043,7 @@ components:
             - Other
         ruleNames:
           description: |
-            Names of the product or sector specific rules being used for the PCF 
+            Names of the product or sector specific rules being used for the PCF
             calculation.
           type: array
           items:
@@ -1052,13 +1051,13 @@ components:
             minLength: 1
           minItems: 1
           uniqueItems: true
-        otherOperatorName: 
+        otherOperatorName:
           description: |
-            If operator is Other, then this attribute must be populated with the name 
+            If operator is Other, then this attribute must be populated with the name
             of the operator.
           type: string
           minLength: 1
-      examples: 
+      examples:
       - |
         ```json
         {
@@ -1079,7 +1078,7 @@ components:
           "name": "ecoinvent",
           "version": "3.9.1"
         }
-        ```      
+        ```
       type: object
       required:
       - name
@@ -1097,11 +1096,11 @@ components:
           minLength: 1
 
     DataQualityIndicators:
-      description: | 
+      description: |
         Data type DataQualityIndicators contains the quantitative data quality indicators in conformance with PACT Methodology Section 4.2.3 and Appendix B.
 
         Each property is optional until the reference period includes the beginning of calendar year 2025, or later, when all properties MUST be defined.
-      examples: 
+      examples:
       - |
         Example value for the case that all DQIs are known but no coverage after exemption assessment performed:
 
@@ -1113,7 +1112,7 @@ components:
           "completenessDQR": "2.0",
           "reliabilityDQR": "2.0"
         }
-        ```        
+        ```
       title: DataQualityIndicators
       type: object
       required:
@@ -1127,11 +1126,11 @@ components:
         coveragePercent:
           description: |
             Percentage of PCF included in the data quality assessment based on the `>5%` emissions threshold.
-            
+
             Advisement: [=Decimal=] in 3.0, was Number in 2.x
 
           x-short-description: |
-            Percentage of PCF included in the data quality assessment based on 
+            Percentage of PCF included in the data quality assessment based on
             the >5% emissions threshold.
           type: number
           format: double
@@ -1149,8 +1148,8 @@ components:
 
           x-short-description: |
             Quantitative data quality rating (DQR) based on the data quality matrix
-            (PACT Methodology Table 9), scoring the technological representativeness of the 
-            sources used for PCF calculation based on weighted average of all inputs 
+            (PACT Methodology Table 9), scoring the technological representativeness of the
+            sources used for PCF calculation based on weighted average of all inputs
             representing >5% of PCF emissions.
           $ref: '#/components/schemas/FloatBetween1And3'
         temporalDQR:
@@ -1160,13 +1159,13 @@ components:
             weighted average of all inputs representing >5% of PCF emissions.
 
             The value MUST be between `1` and `3` inclusive.
-            
+
             Advisement: [=Decimal=] in 3.0, was Number in 2.x
 
           x-short-description: |
-            Quantitative data quality rating (DQR) based on the data quality matrix 
-            (PACT Methodology Table 9), scoring the temporal representativeness of the sources 
-            used for PCF calculation based on weighted average of all inputs 
+            Quantitative data quality rating (DQR) based on the data quality matrix
+            (PACT Methodology Table 9), scoring the temporal representativeness of the sources
+            used for PCF calculation based on weighted average of all inputs
             representing >5% of PCF emissions.
           $ref: '#/components/schemas/FloatBetween1And3'
         geographicalDQR:
@@ -1176,13 +1175,13 @@ components:
             based on weighted average of all inputs representing >5% of PCF emissions.
 
             The value MUST be between `1` and `3` inclusive.
-            
+
             Advisement: [=Decimal=] in 3.0, was Number in 2.x
-          
+
           x-short-description: |
-            Quantitative data quality rating (DQR) based on the data quality matrix 
-            (PACT Methodology Table 9), scoring the geographical representativeness of the 
-            sources used for PCF calculation based on weighted average of all inputs 
+            Quantitative data quality rating (DQR) based on the data quality matrix
+            (PACT Methodology Table 9), scoring the geographical representativeness of the
+            sources used for PCF calculation based on weighted average of all inputs
             representing >5% of PCF emissions.
           $ref: '#/components/schemas/FloatBetween1And3'
         completenessDQR:
@@ -1192,13 +1191,13 @@ components:
             weighted average of all inputs representing >5% of PCF emissions.
 
             The value MUST be between `1` and `3` inclusive.
-            
+
             Advisement: [=Decimal=] in 3.0, was Number in 2.x
 
           x-short-description: |
-            Quantitative data quality rating (DQR) based on the data quality matrix 
-            (PACT Methodology Table 9), scoring the completeness of the data collected for 
-            PCF calculation based on weighted average of all inputs representing 
+            Quantitative data quality rating (DQR) based on the data quality matrix
+            (PACT Methodology Table 9), scoring the completeness of the data collected for
+            PCF calculation based on weighted average of all inputs representing
             >5% of PCF emissions.
           $ref: '#/components/schemas/FloatBetween1And3'
         reliabilityDQR:
@@ -1208,12 +1207,12 @@ components:
             weighted average of all inputs representing >5% of PCF emissions.
 
             The value MUST be between `1` and `3` inclusive.
-            
+
             Advisement: [=Decimal=] in 3.0, was Number in 2.x
           x-short-description: |
-            Quantitative data quality rating (DQR) based on the data quality matrix 
-            (PACT Methodology Table 9), scoring the reliability of the data collected for 
-            PCF calculation based on weighted average of all inputs representing 
+            Quantitative data quality rating (DQR) based on the data quality matrix
+            (PACT Methodology Table 9), scoring the reliability of the data collected for
+            PCF calculation based on weighted average of all inputs representing
             >5% of PCF emissions.
           $ref: '#/components/schemas/FloatBetween1And3'
     Assurance:
@@ -1221,11 +1220,11 @@ components:
       description: |
         Data type `Assurance` contains the assurance in conformance with [=PACT Methodology=] chapter 5 and appendix B.
 
-        Advisement: the boolean property `assurance` has been REMOVED in version 3.0. The presence of the <{Assurance}> element indicates whether or not the <{CarbonFootprint}> has been assured in line with [=PACT Methodology=] requirements (section 5). 
-      examples: 
+        Advisement: the boolean property `assurance` has been REMOVED in version 3.0. The presence of the <{Assurance}> element indicates whether or not the <{CarbonFootprint}> has been assured in line with [=PACT Methodology=] requirements (section 5).
+      examples:
       - |
         Example value for the case that 42% of the product’s overall GHG emissions covered by the data quality assessment:
-        ```json 
+        ```json
         {
           "assurance": true,
           "coverage": "PCF system",
@@ -1293,7 +1292,7 @@ components:
             The non-empty name of the independent third party engaged to undertake the assurance.
 
             Advisement: OPTIONAL in version 3.0.
-            
+
           x-short-description: |
             Name of the independent third party engaged to undertake assurance
             Advisement: Given this property was incorrectly and unintentionally published in V2 of the Technical Specifications as Mandatory, it will be reverted to Optional in version 3 of the Technical Specifications.
