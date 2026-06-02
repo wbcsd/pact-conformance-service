@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY tsconfig.json ./
+COPY packages/test/package*.json ./packages/test/
+COPY packages/service/package*.json ./packages/service/
 
 RUN npm install
 
