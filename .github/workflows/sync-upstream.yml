@@ -1,0 +1,26 @@
+name: Sync from upstream
+
+on:
+  schedule:
+    - cron: '0 2 1,15 * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync main and develop from upstream
+        run: |
+          git remote add upstream https://github.com/wbcsd/pact-conformance-service.git
+          git fetch upstream
+
+          for branch in main develop; do
+            git push origin "refs/remotes/upstream/$branch:refs/heads/$branch" --force-with-lease
+          done
