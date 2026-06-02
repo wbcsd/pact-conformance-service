@@ -2,7 +2,7 @@
 
 This repository contains a copy of [PACT's Conformance Service](https://github.com/wbcsd/pact-conformance-service), used on [ACT](https://github.com/sine-fdn/conformance-test).
 
-It is not a forked repository. Rather, it is an independent clone, kept in sync with the `wbcsd/pact-conformance-service`. 
+It is not a forked repository. Rather, it is an independent clone, kept in sync with the `wbcsd/pact-conformance-service`.
 
 ## `ileap` branch
 
@@ -14,17 +14,36 @@ Additionally, `ileap` contains a fix to `wbcsd/pact-conformance-service`, which 
 
 ## Syncing
 
-The workflow Sync from upstream is triggered automatically every two weeks. 
+The "Sync from upstream" workflow runs automatically every two weeks.
 
-It updates branches `main` and `develop` to their most up to date version on `wbcsd/pact-conformance-service`.
+It updates the `main` and `develop` branches to match the latest versions in `wbcsd/pact-conformance-service`.
 
-Branch `ileap` stays intact. Updating `ileap` must be done manually, since changes to `main` can break ACT. 
+Branch `ileap` stays intact. Updating `ileap` should be done manually, since changes to `main` can break ACT.
 
 ## Deployment
 
-Branch `ileap` is deployed on fly.io, with the database on Neon.
+Branch `ileap` is deployed on fly.io, with a Neon PostgreSQL database.
 
 Pushes to `ileap` trigger the migrations on the database and the redeployment, through the CI/CD pipeline.
+
+## Run locally
+
+Spin-up the database with
+```sh
+docker-compose up
+```
+
+Set the env var `DB_CONNECTION_STRING` to the local db's connection string.
+
+Then run
+```sh
+npm run db:migrate
+```
+
+Start the development server with
+```sh
+NODE_ENV=development npm run dev
+```
 
 ---
 
@@ -37,7 +56,7 @@ PACT publishes  [Technical Specifications for PCF Data Exchange](https://docs.ca
 Use of the tool is free and open to anyone. Sign up and start using the tool at https://services.carbon-transparency.org/
 
 ### Timeline
-- PACT released an MVP version of the service in March 2025, which can now be used for testing. 
+- PACT released an MVP version of the service in March 2025, which can now be used for testing.
 - PACT is releasing a production version of the tool in June 2025, which must be used to gain PACT Conformance status
 
 ### Acknowledgements
