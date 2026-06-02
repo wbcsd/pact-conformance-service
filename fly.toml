@@ -1,6 +1,9 @@
 app = "pact-conformance-service-broken-leaf-2099"
 primary_region = "fra"
 
+[deploy]
+  release_command = "npm run db:migrate"
+
 [http_service]
 auto_start_machines = true
 auto_stop_machines = true
