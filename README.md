@@ -1,4 +1,34 @@
-# PACT Conformance Tool
+# Self-hosted Version of PACT Conformance Service for ACT
+
+This repository contains a copy of [PACT's Conformance Service](https://github.com/wbcsd/pact-conformance-service), used on [ACT](https://github.com/sine-fdn/conformance-test).
+
+It is not a forked repository. Rather, it is an independent clone, kept in sync with the `wbcsd/pact-conformance-service`. 
+
+## `ileap` branch
+
+The default branch of this repository is `ileap` and not `main`.
+
+`ileap` contains a Dockerfile and a fly.toml used for deployment, as well as CI/CD GitHub workflows.
+
+Additionally, `ileap` contains a fix to `wbcsd/pact-conformance-service`, which has been reported [here](https://github.com/wbcsd/pact-conformance-service/issues/236). Other than that, the code does not diverge from upstream.
+
+## Syncing
+
+The workflow Sync from upstream is triggered automatically every two weeks. 
+
+It updates branches `main` and `develop` to their most up to date version on `wbcsd/pact-conformance-service`.
+
+Branch `ileap` stays intact. Updating `ileap` must be done manually, since changes to `main` can break ACT. 
+
+## Deployment
+
+Branch `ileap` is deployed on fly.io, with the database on Neon.
+
+Pushes to `ileap` trigger the migrations on the database and the redeployment, through the CI/CD pipeline.
+
+---
+
+## PACT Conformance Tool
 
 ### About this Project
 PACT publishes  [Technical Specifications for PCF Data Exchange](https://docs.carbon-transparency.org/), which any organization or company can implement. Software solutions that implement the PACT Technical Specifications are known as [PACT Conformant Solutions](https://www.carbon-transparency.org/network). This GitHub repository creates a conformance tool which enables organizations to automatically assess their implementation of the specifications, and become PACT Conformant. The tool is a service of [PACT Network Services](https://www.carbon-transparency.org/pact-network-services).
