@@ -38,7 +38,7 @@ import { writeFileSync } from "fs";
 import { resolve } from "path";
 import { TestRunWorker } from "./runner/test-run-worker";
 import { ConsoleTestStorage } from "./runner/console-test-storage";
-import { ApiVersion, TestCaseResultStatus, TestRunStartParams } from "./types";
+import { ApiVersion, TestCaseResultStatus, TestRunStartParams, TestRunWithResults } from "./types";
 import logger from "./logger";
 
 const PORT = process.env.PORT ?? "8080";
@@ -348,7 +348,13 @@ async function main() {
         logger.warn(`Output path "${outputPath}" does not end in .json; writing JSON content anyway.`);
       }
       const runWithResults = await storage.getTestRunWithResults(initial.testRunId);
-      writeFileSync(outputPath, JSON.stringify(runWithResults, null, 2));
+      // The run record carries the full start params plus CLI-internal flags.
+      // Strip credentials and internal fields so they are never written to disk.
+      // These keys aren't on TestRunWithResults' type (the worker spreads them in
+      // at runtime), so widen with the keys we intend to drop.
+      const { clientId, clientSecret, verbose, insecure, ...sanitizedResults } =
+        runWithResults as TestRunWithResults & Record<string, unknown>;
+      writeFileSync(outputPath, JSON.stringify(sanitizedResults, null, 2));
       logger.info(`Test results written to ${outputPath}`);
     }
 
