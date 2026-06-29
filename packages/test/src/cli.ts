@@ -25,6 +25,7 @@
  *   --resource         OAuth resource
  *   --adminEmail       Admin email address
  *   --adminName        Admin name
+ *   --output           Path to write the full test results as JSON
  */
 
 import dotenv from "dotenv";
@@ -33,6 +34,8 @@ dotenv.config();
 import express from "express";
 import { Server } from "http";
 import { randomBytes } from "crypto";
+import { writeFileSync } from "fs";
+import { resolve } from "path";
 import { TestRunWorker } from "./runner/test-run-worker";
 import { ConsoleTestStorage } from "./runner/console-test-storage";
 import { ApiVersion, TestCaseResultStatus, TestRunStartParams } from "./types";
@@ -71,6 +74,7 @@ function parseTestCaseList(raw: string): number[] {
 type CommandLineArguments = TestRunStartParams & {
   verbose: boolean;
   insecure: boolean;
+  output?: string;
 };
 
 /**
@@ -141,6 +145,10 @@ function parseArgs(): CommandLineArguments {
         i++;
         break;
       }
+      case "--output":
+        params.output = value;
+        i++;
+        break;
       case "--verbose":
         params.verbose = true;
         break;
@@ -195,6 +203,7 @@ Optional Options:
   --adminEmail <email>         Admin email address (default: cli@example.com)
   --adminName <name>           Admin name (default: CLI User)
   --testCases <list>           Comma-separated numbers and ranges (e.g. 1-2,9). Omit to run all.
+  --output <path>              Write the full test results (run metadata + all results) as JSON to this file
   --verbose                    Show logs for passing tests in addition to failing ones
   --insecure                   Disable TLS certificate verification (not recommended; use only for localhost testing)  
   --help, -h                   Show this help message
@@ -331,7 +340,18 @@ async function main() {
 
     // Update final status based on any changes from callback events
     await storage.updateTestRunStatus(initial.testRunId);
-    
+
+    // Write the full results to a file if requested
+    if (args.output) {
+      const outputPath = resolve(args.output);
+      if (!outputPath.toLowerCase().endsWith(".json")) {
+        logger.warn(`Output path "${outputPath}" does not end in .json; writing JSON content anyway.`);
+      }
+      const runWithResults = await storage.getTestRunWithResults(initial.testRunId);
+      writeFileSync(outputPath, JSON.stringify(runWithResults, null, 2));
+      logger.info(`Test results written to ${outputPath}`);
+    }
+
     // Display results in console
     storage.displayTestResults(initial.testRunId);
     if (args.testCaseNumbers?.length) {
