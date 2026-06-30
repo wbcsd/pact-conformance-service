@@ -147,9 +147,7 @@ function parseArgs(): CommandLineArguments {
       }
       case "--output": {
         if (!value || value.startsWith("--")) {
-          logger.error("--output requires a <path> value");
-          printHelp();
-          process.exit(1);
+          usageError("--output requires a <path> value");
         }
         params.output = value;
         i++;
@@ -167,9 +165,7 @@ function parseArgs(): CommandLineArguments {
         process.exit(0);
       default:
         if (arg.startsWith("--")) {
-          logger.error(`Unknown argument: ${arg}`);
-          printHelp();
-          process.exit(1);
+          usageError(`Unknown argument: ${arg}`);
         }
     }
   }
@@ -179,12 +175,19 @@ function parseArgs(): CommandLineArguments {
   const missing = required.filter((key) => !params[key as keyof TestRunStartParams]);
 
   if (missing.length > 0) {
-    logger.error(`Missing required arguments: ${missing.join(", ")}`);
-    printHelp();
-    process.exit(1);
+    usageError(`Missing required arguments: ${missing.join(", ")}`);
   }
 
   return params as CommandLineArguments;
+}
+
+// Report an invalid command line: a concise error on stderr plus a pointer to
+// --help, then exit. Full help is reserved for an explicit --help request so a
+// simple mistake (like a missing value) isn't buried under the whole usage text.
+function usageError(message: string): never {
+  console.error(`error: ${message}`);
+  console.error("Run with --help for usage.");
+  process.exit(1);
 }
 
 function printHelp(): void {
@@ -312,11 +315,12 @@ async function main() {
   let server: Server | undefined;
   let exitCode = 1;
   try {
+    // Parse arguments first so a usage error isn't preceded by the banner,
+    // which would make a rejected command look like a run that started.
+    const args = parseArgs();
+
     logger.info("PACT Conformance Test CLI");
     logger.info("=".repeat(80));
-    
-    // Parse command-line arguments
-    const args = parseArgs();
 
     // Disable TLS certificate verification if --insecure flag is set
     if (args.insecure) {
