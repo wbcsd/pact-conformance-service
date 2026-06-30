@@ -7,6 +7,17 @@ on:
   workflow_dispatch:
 
 jobs:
+  meta:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - id: version
+        # CLI version comes from the test package's package.json — bump it to release.
+        run: echo "version=$(jq -r .version packages/test/package.json)" >> "$GITHUB_OUTPUT"
+
   build-x86_64:
     name: Build for Linux x86_64
     runs-on: ubuntu-latest
@@ -63,10 +74,11 @@ jobs:
 
   upload:
     runs-on: ubuntu-latest
-    needs: [build-x86_64, build-mac]
+    needs: [meta, build-x86_64, build-mac]
 
     env:
       AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+      VERSION: ${{ needs.meta.outputs.version }}
 
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
@@ -79,7 +91,30 @@ jobs:
           name: pact_cli_arm64
           path: target/release/arm64
 
-      - name: Upload blobs to storage
+      - name: Upload versioned blobs
+        run: |
+          az storage blob upload --file target/release/x86_64/pact_cli_x86_64 --name "pact_cli_x86_64-$VERSION" -c act-bin --overwrite
+          az storage blob upload --file target/release/arm64/pact_cli_arm64   --name "pact_cli_arm64-$VERSION"   -c act-bin --overwrite
+
+      - name: Update unversioned "latest" aliases
+        # Convenience for humans / existing download URLs; the index below is the
+        # source of truth that conformance-test consumes.
         run: |
           az storage blob upload --file target/release/x86_64/pact_cli_x86_64 --name pact_cli_x86_64 -c act-bin --overwrite
-          az storage blob upload --file target/release/arm64/pact_cli_arm64 --name pact_cli_arm64 -c act-bin --overwrite
+          az storage blob upload --file target/release/arm64/pact_cli_arm64   --name pact_cli_arm64   -c act-bin --overwrite
+
+      - name: Update version index (index.json)
+        # Accumulate versions across releases: fetch the existing index (if any),
+        # add/replace this version's entry, point "latest" at it, re-upload.
+        run: |
+          if [ "$(az storage blob exists -c act-bin --name index.json --query exists -o tsv)" = "true" ]; then
+            az storage blob download -c act-bin --name index.json --file index.json --no-progress
+          else
+            echo '{"latest":null,"versions":{}}' > index.json
+          fi
+          jq --arg v "$VERSION" \
+             --arg arm64 "pact_cli_arm64-$VERSION" \
+             --arg x86_64 "pact_cli_x86_64-$VERSION" \
+             '.versions[$v] = {arm64: $arm64, x86_64: $x86_64} | .latest = $v' \
+             index.json > index.updated.json
+          az storage blob upload --file index.updated.json --name index.json -c act-bin --overwrite --content-type application/json
