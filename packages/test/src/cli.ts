@@ -145,10 +145,16 @@ function parseArgs(): CommandLineArguments {
         i++;
         break;
       }
-      case "--output":
+      case "--output": {
+        if (!value || value.startsWith("--")) {
+          logger.error("--output requires a <path> value");
+          printHelp();
+          process.exit(1);
+        }
         params.output = value;
         i++;
         break;
+      }
       case "--verbose":
         params.verbose = true;
         break;
@@ -350,10 +356,19 @@ async function main() {
       const runWithResults = await storage.getTestRunWithResults(initial.testRunId);
       // The run record carries the full start params plus CLI-internal flags.
       // Strip credentials and internal fields so they are never written to disk.
-      // These keys aren't on TestRunWithResults' type (the worker spreads them in
-      // at runtime), so widen with the keys we intend to drop.
-      const { clientId, clientSecret, verbose, insecure, ...sanitizedResults } =
-        runWithResults as TestRunWithResults & Record<string, unknown>;
+      const {
+        clientId,
+        clientSecret,
+        verbose,
+        insecure,
+        output,
+        results,
+        ...runMeta
+      } = runWithResults as TestRunWithResults & Record<string, unknown>;
+      const sanitizedResults = {
+        ...runMeta,
+        results: results.map(({ log, ...r }) => r),
+      };
       writeFileSync(outputPath, JSON.stringify(sanitizedResults, null, 2));
       logger.info(`Test results written to ${outputPath}`);
     }
