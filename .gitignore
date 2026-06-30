@@ -118,3 +118,8 @@ lambdas.zip
 # Exports
 exports/
 .vscode/launch.json
+
+# Standalone CLI build (see Makefile)
+packages/test/src/.cli-standalone.gen.ts
+pact_cli_x86_64
+pact_cli_arm64

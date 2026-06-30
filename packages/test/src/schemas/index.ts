@@ -27,14 +27,24 @@ const extractorCache = new Map<string, OpenApiSchemaExtractor>();
 const getExtractor = async (version: string): Promise<OpenApiSchemaExtractor> => {
   if (!extractorCache.has(version)) {
     const file = `openapi_v${version.replace('.', '_')}.yaml`;
-    const localPath = path.resolve(__dirname, file);
-    const sourcePath = path.resolve(__dirname, '..', '..', 'src', 'schemas', file);
-    let yamlPath = localPath;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      require('fs').accessSync(localPath);
-    } catch {
-      yamlPath = sourcePath;
+    // In the standalone Bun binary the YAML is embedded in the executable and its
+    // path is registered on globalThis (see schemas/embedded-schemas.ts) — __dirname
+    // there points at the build-time path which doesn't exist at runtime, so use the
+    // embedded copy when available and fall back to the filesystem otherwise.
+    const embedded = (globalThis as any).__PACT_EMBEDDED_SCHEMA_PATHS as
+      | Record<string, string>
+      | undefined;
+    let yamlPath = embedded?.[version];
+    if (!yamlPath) {
+      const localPath = path.resolve(__dirname, file);
+      const sourcePath = path.resolve(__dirname, '..', '..', 'src', 'schemas', file);
+      yamlPath = localPath;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        require('fs').accessSync(localPath);
+      } catch {
+        yamlPath = sourcePath;
+      }
     }
     extractorCache.set(version, await OpenApiSchemaExtractor.create(yamlPath));
   }

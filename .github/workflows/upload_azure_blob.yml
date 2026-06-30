@@ -25,12 +25,7 @@ jobs:
         run: bun install
 
       - name: Build pact_cli_x86_64
-        run: |
-          bun build --compile \
-            --define 'process.env.NODE_ENV="production"' \
-            --target=bun-linux-x86_64 \
-            packages/test/src/cli.ts \
-            --outfile pact_cli_x86_64
+        run: make build-linux
 
       - name: Upload build artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -57,12 +52,7 @@ jobs:
         run: bun install
 
       - name: Build pact_cli_arm64
-        run: |
-          bun build --compile \
-            --define 'process.env.NODE_ENV="production"' \
-            --target=bun-darwin-arm64 \
-            packages/test/src/cli.ts \
-            --outfile pact_cli_arm64
+        run: make build-mac
 
       - name: Upload build artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
