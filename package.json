@@ -21,6 +21,9 @@
     "db:migrate:list": "npm run db:migrate:list --workspace pact-conformance-service",
     "migrate": "npm run migrate --workspace pact-conformance-service"
   },
+  "overrides": {
+    "brace-expansion": "^5.0.8"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^22.10.7",
